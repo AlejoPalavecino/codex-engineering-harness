@@ -1,0 +1,40 @@
+{
+  "description": "Inventario orientativo. No es un archivo de configuración directamente cargado por Codex.",
+  "integrations": [
+    {
+      "name": "engram",
+      "kind": "mcp",
+      "purpose": "Memoria persistente por proyecto",
+      "install": "Manual desde proveedor",
+      "required": false
+    },
+    {
+      "name": "context7",
+      "kind": "mcp",
+      "purpose": "Documentación de librerías",
+      "install": "Manual",
+      "required": false
+    },
+    {
+      "name": "exa",
+      "kind": "mcp",
+      "purpose": "Investigación externa",
+      "install": "Manual con credenciales según proveedor",
+      "required": false
+    },
+    {
+      "name": "github",
+      "kind": "connector-or-mcp",
+      "purpose": "Operaciones de repositorio autorizadas",
+      "install": "Autenticación manual",
+      "required": false
+    },
+    {
+      "name": "ego-browser",
+      "kind": "skill",
+      "purpose": "Validación visual e interacción web",
+      "install": "Separado; no se incluye código de terceros",
+      "required": false
+    }
+  ]
+}
