@@ -11,6 +11,7 @@ param(
     [switch]$Apply,
     [switch]$ConfigureModels,
     [switch]$RemoveLegacyAgents,
+    [switch]$SkipTaskProgress,
     [string]$CodexHome
 )
 
@@ -93,6 +94,7 @@ if ($RemoveLegacyAgents) {
         $managed.Add(@{ relative=('agents/' + $name + '.toml'); source=''; operation='remove' })
     }
 }
+$managed.Add(@{ relative='harness/bin/taskboard.py'; source='scripts/taskboard.py'; operation='copy' })
 $managed.Add(@{ relative='config.toml'; source=''; operation='config' })
 
 foreach ($item in $managed) {
@@ -112,6 +114,9 @@ foreach ($name in $roleDescriptions.Keys) {
     $config = Set-TomlValue $config ('agents.' + $name) 'description' ('"' + $roleDescriptions[$name] + '"')
     $config = Set-TomlValue $config ('agents.' + $name) 'config_file' ('"./agents/' + $name + '.toml"')
 }
+if (-not $SkipTaskProgress) {
+    $config = Set-TomlValue $config 'tools.update_plan' 'enabled' 'true'
+}
 if ($ConfigureModels) {
     $config = Set-TomlValue $config '' 'model' '"gpt-6.1-sol"'
     $config = Set-TomlValue $config '' 'model_reasoning_effort' '"medium"'
@@ -121,6 +126,7 @@ Write-Output ("Harness: directorio de Codex " + $homePath)
 Write-Output ("Archivos administrados: " + $managed.Count)
 Write-Output ("Configurar modelos principales: " + [bool]$ConfigureModels)
 Write-Output ("Retirar cinco agentes heredados: " + [bool]$RemoveLegacyAgents)
+Write-Output ("Habilitar progreso nativo update_plan: " + (-not [bool]$SkipTaskProgress))
 Write-Output 'MCP, hooks, plugins, datos Engram y otros agentes permanecen intactos.'
 if (-not $Apply) {
     Write-Output 'DRY-RUN: no se modifico nada. Para aplicar, usa -Apply.'
@@ -169,7 +175,7 @@ try {
         $records[$i].installed_sha256 = Get-Hash $target
     }
     $info = [ordered]@{
-        version='0.1.0-rc.1'
+        version='0.1.1'
         installed_at=(Get-Date).ToString('o')
         backup_dir=$backup
         previous_state_existed=[bool]$previousStateExisted
