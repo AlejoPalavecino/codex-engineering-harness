@@ -13,7 +13,7 @@
 - **Depends on:** none
 - **Owner:** orchestrator
 - **Acceptance:** Casos R0/R1/R2/C con prompts, rubricas y baseline v0.1.3 identificable.
-- **Evidence:** none
+- **Evidence:** evals/manifest.json + evals/cases + TestActualRepositoryCatalog; CI 41714293479 Go / structure PASS
 - **Blocker:** none
 
 ### TASK-002 — Preparar fixtures aislados y repetibles
@@ -21,7 +21,7 @@
 - **Depends on:** TASK-001
 - **Owner:** worker
 - **Acceptance:** Fixtures sin datos reales, pruebas básicas ejecutables, sin necesidad de acceso externo.
-- **Evidence:** none
+- **Evidence:** evals/fixtures, unittest loans/importer en CI 41714293479 structure PASS
 - **Blocker:** none
 
 ### TASK-003 — Implementar herramientas de evaluación Go
@@ -29,7 +29,7 @@
 - **Depends on:** TASK-002
 - **Owner:** worker
 - **Acceptance:** CLI offline valida catálogo y registros, captura snapshots, compara evidencia y rechaza valores inventados sin fuente.
-- **Evidence:** none
+- **Evidence:** internal/eval y tests Go en Ubuntu/Windows, CI 41714293479 PASS
 - **Blocker:** none
 
 ### TASK-004 — Verificar regresiones de la fundación
