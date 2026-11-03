@@ -18,6 +18,15 @@ GitHub Actions ejecuta validaciones estructurales y tests Python de TOML. Window
 
 La validación conductual de agentes, modelos y aislamiento permanece en v0.2/v0.3.
 
+## Pruebas de Chuli Manager v0.1.3
+
+```bash
+go test ./...
+go build ./cmd/chuli
+```
+
+En Windows probar una instalación con CODEX_HOME temporal: navegación, vista previa, cancelación sin cambios, confirmación, verificación y rollback. Las releases anteriores a v0.1.2 deben rechazarse para instalaciones automáticas. El Manager no comprueba la calidad de los agentes ni las garantías de su sandbox.
+
 ## Pruebas manuales dentro de Codex
 
 1. **R0:** pedir análisis de un repo sin autorizar cambios; comprobar ausencia de modificaciones.

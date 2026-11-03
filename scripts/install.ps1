@@ -67,6 +67,10 @@ function Is-Within([string]$Root, [string]$Path) {
 
 $homePath = if ($CodexHome) { [IO.Path]::GetFullPath($CodexHome) } elseif ($env:CODEX_HOME) { [IO.Path]::GetFullPath($env:CODEX_HOME) } else { Join-Path $HOME '.codex' }
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$harnessVersion = [IO.File]::ReadAllText((Join-Path $root 'VERSION')).Trim()
+if ($harnessVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+    throw 'VERSION inválido; instalación cancelada antes de modificar Codex.'
+}
 $statePath = Join-Path $homePath 'harness-install/state.json'
 $configPath = Join-Path $homePath 'config.toml'
 $previous = $null
@@ -216,7 +220,7 @@ try {
     $tracked = @{}
     foreach ($property in $report.tracked.PSObject.Properties) { $tracked[$property.Name] = $property.Value }
     $state = [ordered]@{
-        version='0.1.2'
+        version=$harnessVersion
         installed_at=(Get-Date).ToString('o')
         backup_dir=$backup
         previous_state_existed=[bool]($null -ne $previous)

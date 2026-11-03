@@ -44,3 +44,43 @@ jobs:
       - name: Regression tests for TOML, personalization and rollback
         shell: pwsh
         run: ./tests/windows-regression.ps1
+
+  chuli-go:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v6
+        with:
+          go-version: "1.26"
+      - name: Check pinned Go dependencies
+        run: go mod tidy -diff
+      - name: Check Go source formatting
+        shell: bash
+        run: |
+          dirty=$(gofmt -l cmd/chuli internal/manager internal/tui)
+          if [[ -n "$dirty" ]]; then
+            echo "$dirty"
+            exit 1
+          fi
+      - name: Test Chuli
+        run: go test ./...
+      - name: Build Chuli TUI
+        shell: bash
+        run: |
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            go build -o chuli.exe ./cmd/chuli
+          else
+            go build -o chuli ./cmd/chuli
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chuli-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            chuli
+            chuli.exe
+          if-no-files-found: error
+          retention-days: 14

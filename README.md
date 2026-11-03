@@ -1,10 +1,27 @@
-# Codex Engineering Harness
+# Chuli
 
-**Ingeniería de software asistida por IA, con decisiones humanas y complejidad proporcional.**
+**AI Engineering Harness — de la idea al código, sin perder el hilo.**
 
-Un harness abierto para Codex que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
+Chuli es un harness abierto, inicialmente para Codex, que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **v0.1.2 candidata (aún no publicada):** endurecimiento de instalación y rollback. La release pública vigente es v0.1.1. Se conservan las limitaciones de aislamiento efectivo de subagentes y verificación de modelos en runtime.
+> **Chuli v0.1.3:** identidad propia y primer Manager TUI en Go. Se conserva el repositorio y las rutas heredadas para mantener compatibilidad. Los roles y protocolos previos mantienen su comportamiento.
+
+## Chuli Manager — primera TUI
+
+**Ejecutables oficiales:** disponibles en [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), junto con `SHA256SUMS.txt`. En Windows, descargá el ZIP `chuli_v0.1.3_windows_amd64.zip`, extraé `chuli.exe` y ejecutalo desde PowerShell. El ejecutable no requiere Go; la instalación de Codex sigue necesitando PowerShell y Python 3.11+.
+
+Interfaz en Go y Bubble Tea para consultar el estado de Codex, preparar instalaciones y actualizaciones, revisar cambios y confirmar su aplicación, diagnosticar y realizar rollback. **Ningún cambio se aplica al iniciar la TUI.**
+
+```powershell
+# Requiere Go 1.26+ solo para compilar desde el código:
+go run ./cmd/chuli --source .
+
+# O compilar el ejecutable para Windows:
+go build -o chuli.exe ./cmd/chuli
+.\chuli.exe --source .
+```
+
+El instalador sigue siendo el de la v0.1.2, incluida su protección de personalizaciones. Ver [guía Chuli Manager](docs/TUI.md). La autoactualización del propio ejecutable y otros proveedores llegarán en versiones posteriores.
 
 ## Filosofía
 
@@ -27,6 +44,7 @@ Un harness abierto para Codex que combina análisis de requisitos, arquitectura 
 | `skills/` | Cinco procedimientos reutilizables de ingeniería |
 | `docs/protocols/` | EWP, MRP, ASEP, TKA, CES y TTP documentados |
 | `scripts/` | Instalación con respaldo, verificación y reversión |
+| `cmd/chuli`, `internal/` | Manager TUI Go y ejecución segura de operaciones existentes |
 | `tests/` | Validación estructural, instalador y transiciones TTP |
 | `odd/tasks/<feature>.md` en proyectos | Fuente persistente de tareas, estados, dependencias y evidencias |
 | Engram, MCP y Ego(lite) | Integraciones externas **opcionales**; sus memorias y credenciales no se incluyen |
@@ -77,6 +95,8 @@ Después de instalar, reiniciá Codex y abrí una sesión nueva. Consultá [inst
 - [Tareas y progreso (TTP)](docs/protocols/TTP.md)
 - [Pruebas y límites conocidos](docs/TESTING.md)
 - [Hoja de ruta](docs/ROADMAP.md)
+- [Identidad de Chuli](docs/BRAND.md)
+- [Chuli Manager TUI](docs/TUI.md)
 
 ## Seguridad y privacidad
 

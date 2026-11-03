@@ -32,9 +32,9 @@ jobs:
       - name: Require exact approved SHA and successful CI
         shell: bash
         env:
-          GH_TOKEN: \${{ github.token }}
-          APPROVED_SHA: \${{ inputs.commit_sha }}
-          APPROVED_VERSION: \${{ inputs.version }}
+          GH_TOKEN: ${{ github.token }}
+          APPROVED_SHA: ${{ inputs.commit_sha }}
+          APPROVED_VERSION: ${{ inputs.version }}
         run: |
           set -euo pipefail
           git fetch origin main
@@ -62,5 +62,5 @@ jobs:
           gh release create "v$version" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$requested" \
-            --title "Codex Engineering Harness v$version" \
+            --title "Chuli v$version" \
             --notes-file "docs/releases/v$version.md"
