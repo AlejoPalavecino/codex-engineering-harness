@@ -63,9 +63,9 @@ jobs:
           go mod tidy -diff
           go test ./...
           mkdir -p dist/build-windows dist/build-linux dist/build-macos dist
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/build-windows/chuli.exe ./cmd/chuli
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -buildvcs=false -o dist/build-linux/chuli ./cmd/chuli
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -trimpath -buildvcs=false -o dist/build-macos/chuli ./cmd/chuli
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags='-X main.version=0.1.3' -trimpath -buildvcs=false -o dist/build-windows/chuli.exe ./cmd/chuli
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags='-X main.version=0.1.3' -trimpath -buildvcs=false -o dist/build-linux/chuli ./cmd/chuli
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags='-X main.version=0.1.3' -trimpath -buildvcs=false -o dist/build-macos/chuli ./cmd/chuli
           (cd dist/build-windows && zip -q ../chuli_v0.1.3_windows_amd64.zip chuli.exe)
           tar -C dist/build-linux -czf dist/chuli_v0.1.3_linux_amd64.tar.gz chuli
           tar -C dist/build-macos -czf dist/chuli_v0.1.3_darwin_arm64.tar.gz chuli

@@ -16,11 +16,11 @@
 - Verificación por capas, distinguiendo sintaxis, integridad y modificaciones ajenas válidas.
 - Publicación mediante autorización humana explícita del SHA probado.
 
-## v0.1.3 — Chuli: identidad y TUI (candidata)
+## v0.1.3 — Chuli: identidad y TUI
 - Producto y comando `chuli`, preservando referencias existentes y el CODEX_HOME de usuarios.
 - Manager en Go con menú interactivo, vista previa y confirmación, consulta de GitHub Releases, diagnóstico y rollback sobre scripts de v0.1.2.
 - CI compilando y probando Go en Windows, Linux y macOS; instalación sobre Codex habilitada solo en Windows.
-- Posteriormente: empaquetar binarios oficiales, autoactualización segura y adaptadores Antigravity.
+- Binarios oficiales para Windows, Linux y macOS con archivo SHA-256; autoactualización segura y adaptadores Antigravity quedan para próximas versiones.
 
 ## v0.2 — Routing medido
 - Benchmarks reproducibles R0/R1/R2, modelos efectivamente usados, consumo observado.

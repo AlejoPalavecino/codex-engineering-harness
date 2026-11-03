@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — v0.1.3 candidate
+## [0.1.3] — 2026-11-03
 
 ### Added
 - Identidad Chuli; comando `chuli` y Manager TUI en Go (Bubble Tea v2).

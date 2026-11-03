@@ -4,9 +4,11 @@
 
 Chuli es un harness abierto, inicialmente para Codex, que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **Chuli v0.1.3 candidata:** identidad propia y primera interfaz de terminal en Go. Se conserva el repositorio y las rutas heredadas hasta una migración independiente; los roles y protocolos mantienen su comportamiento.
+> **Chuli v0.1.3:** identidad propia y primer Manager TUI en Go. Se conserva el repositorio y las rutas heredadas para mantener compatibilidad. Los roles y protocolos previos mantienen su comportamiento.
 
 ## Chuli Manager — primera TUI
+
+**Ejecutables oficiales:** disponibles en [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), junto con `SHA256SUMS.txt`. En Windows, descargá el ZIP `chuli_v0.1.3_windows_amd64.zip`, extraé `chuli.exe` y ejecutalo desde PowerShell. El ejecutable no requiere Go; la instalación de Codex sigue necesitando PowerShell y Python 3.11+.
 
 Interfaz en Go y Bubble Tea para consultar el estado de Codex, preparar instalaciones y actualizaciones, revisar cambios y confirmar su aplicación, diagnosticar y realizar rollback. **Ningún cambio se aplica al iniciar la TUI.**
 
