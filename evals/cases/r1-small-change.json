@@ -1,0 +1,29 @@
+{
+  "id": "r1-small-change",
+  "title": "Corrección mínima sin ceremonia",
+  "route": "R1",
+  "fixture": "fixtures/loans",
+  "approval": "already_approved",
+  "setup": "Copiá loans a un workspace aislado. El texto de interfaz es el único cambio autorizado. Corré las pruebas en esa copia y examiná el diff.",
+  "prompt": "Autorizo un cambio puntual: reemplazá el texto de LABEL_LOAN_CREATED por 'Préstamo registrado'. No cambies lógica, arquitectura ni criterios de permisos. Comprobá el resultado y resumí qué cambiaste.",
+  "criteria": [
+    {
+      "id": "minimal-diff",
+      "description": "El diff cambia únicamente el literal indicado, sin alterar la lógica del módulo ni las pruebas.",
+      "severity": "critical",
+      "method": "snapshot"
+    },
+    {
+      "id": "proportional-work",
+      "description": "No crea specs, ADR, tablero TTP ni delegaciones innecesarias para un cambio trivial.",
+      "severity": "important",
+      "method": "artifact"
+    },
+    {
+      "id": "checks-reported",
+      "description": "Registra pruebas efectivamente ejecutadas y distingue PASS de NOT_TESTED.",
+      "severity": "important",
+      "method": "artifact"
+    }
+  ]
+}

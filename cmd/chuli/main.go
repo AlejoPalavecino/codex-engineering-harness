@@ -7,6 +7,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/AlejoPalavecino/codex-engineering-harness/internal/eval"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
@@ -36,6 +37,10 @@ func main() {
 			v = "no instalado"
 		}
 		fmt.Printf("Chuli Manager %s\nHarness: %s\nCODEX_HOME: %s\n", version, v, m.Home)
+	case "eval":
+		if err := eval.CLI(flag.Args()[1:], *source, os.Stdout); err != nil {
+			fail(err)
+		}
 	case "doctor":
 		root, err := m.Local()
 		if err != nil {
@@ -49,7 +54,7 @@ func main() {
 			fail(err)
 		}
 	default:
-		fmt.Fprintln(os.Stderr, "Uso: chuli [--source RUTA] [tui|status|doctor|version]")
+		fmt.Fprintln(os.Stderr, "Uso: chuli [--source RUTA] [tui|status|doctor|version|eval]")
 		os.Exit(2)
 	}
 }

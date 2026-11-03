@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "suite": "chuli-evaluation-v1",
+  "run_id": "REEMPLAZAR_ID_EJECUCION",
+  "harness_version": "0.1.3",
+  "baseline_tag": "v0.1.3",
+  "baseline_sha": "68b756bd5e39539b4e277bb490321f8c06870755",
+  "catalog_fingerprint": "PEGAR_SALIDA_DE_chuli_eval_fingerprint",
+  "host": {
+    "client": "Codex Desktop",
+    "client_version": "NO_OBSERVADO",
+    "os": "Windows",
+    "config_sha256": ""
+  },
+  "results": []
+}

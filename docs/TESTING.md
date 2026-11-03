@@ -27,6 +27,21 @@ go build ./cmd/chuli
 
 En Windows probar una instalación con CODEX_HOME temporal: navegación, vista previa, cancelación sin cambios, confirmación, verificación y rollback. Las releases anteriores a v0.1.2 deben rechazarse para instalaciones automáticas. El Manager no comprueba la calidad de los agentes ni las garantías de su sandbox.
 
+## Chuli Evaluation Protocol (v0.2 — PR #5)
+
+El CI valida estructura del catálogo, criterios y fixtures **sin llamar a Codex ni usar tokens**:
+
+```bash
+go test ./...
+go run ./cmd/chuli eval check
+# Desde el directorio evals/fixtures/loans:
+python -m unittest discover -s tests -v
+# Desde evals/fixtures/importer:
+python -m unittest discover -s tests -v
+```
+
+Las ejecuciones conductuales (Codex Desktop, memoria Engram y modelos) son **NOT_TESTED** hasta registrarlas con evidencia externa y permiso. Ver [EVALUATION.md](EVALUATION.md), rúbricas y `evals/reports/README.md`. Los casos se corren en una COPIA del fixture y nunca sobre los originales.
+
 ## Pruebas manuales dentro de Codex
 
 1. **R0:** pedir análisis de un repo sin autorizar cambios; comprobar ausencia de modificaciones.

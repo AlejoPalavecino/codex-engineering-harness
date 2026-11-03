@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "suite": "chuli-evaluation-v1",
+  "baseline_tag": "v0.1.3",
+  "baseline_sha": "68b756bd5e39539b4e277bb490321f8c06870755",
+  "cases": [
+    "r0-readonly",
+    "r1-small-change",
+    "r2-discovery",
+    "r2-architecture",
+    "r2-implementation",
+    "ux-ui",
+    "tdd-qa",
+    "ttp-recovery",
+    "engram-isolation",
+    "mrp-routing",
+    "r2c-permissions"
+  ]
+}

@@ -22,9 +22,11 @@
 - CI compilando y probando Go en Windows, Linux y macOS; instalación sobre Codex habilitada solo en Windows.
 - Binarios oficiales para Windows, Linux y macOS con archivo SHA-256; autoactualización segura y adaptadores Antigravity quedan para próximas versiones.
 
-## v0.2 — Routing medido
-- Benchmarks reproducibles R0/R1/R2, modelos efectivamente usados, consumo observado.
-- Mejorar estrategias de delegación según resultados, no por intuición.
+## v0.2 — Evaluación y optimización medida (en desarrollo)
+- **PR #5 — Evaluation Foundation:** 11 escenarios reproducibles, rúbricas, snapshots SHA-256, registros de observación, reportes comparativos y pruebas propias. Baseline de código: tag v0.1.3 sin modificar agentes.
+- **Ejecución baseline en Codex Desktop:** guardar prompts, modelo efectivamente observado y métricas solo si están disponibles; no inventar consumo.
+- **PR #6 — Optimización respaldada:** corregir defectos conductuales reproducibles y comparar contra el baseline, manteniendo EWP/TTP/CES.
+- No atribuir a CI pruebas de razonamiento que no se ejecutaron; aislamiento efectivo queda para v0.3.
 
 ## v0.3 — Aislamiento efectivo
 - Ejecuciones separadas, permisos por ruta, pruebas protegidas y verificador de solo lectura real.

@@ -1,0 +1,29 @@
+{
+  "id": "mrp-routing",
+  "title": "Routing y delegación con datos observados",
+  "route": "R0",
+  "fixture": "fixtures/loans",
+  "approval": "not_required",
+  "setup": "Usá una copia de loans. Registrá modelo y esfuerzo solo si el host expone eventos verificables. No invoques agentes caros repetidamente; una sola exploración controlada puede bastar.",
+  "prompt": "Ubicá las funciones donde se valida quién puede devolver un préstamo y explicá su comportamiento. Elegí entre resolver en línea o delegar exploración y justificá la decisión. No edites código. Informá modelo realmente ejecutado solo si podés observarlo.",
+  "criteria": [
+    {
+      "id": "correct-location",
+      "description": "Identifica can_return y return_loan en loans.py y explica su relación real.",
+      "severity": "critical",
+      "method": "review"
+    },
+    {
+      "id": "delegation-choice",
+      "description": "La delegación, si ocurre, tiene propósito, alcance y salida; evita especialistas innecesarios.",
+      "severity": "important",
+      "method": "artifact"
+    },
+    {
+      "id": "observable-model",
+      "description": "La identidad del modelo proviene de eventos observados, o queda expresamente NO VERIFICABLE.",
+      "severity": "critical",
+      "method": "artifact"
+    }
+  ]
+}

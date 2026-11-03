@@ -23,6 +23,20 @@ go build -o chuli.exe ./cmd/chuli
 
 El instalador sigue siendo el de la v0.1.2, incluida su protección de personalizaciones. Ver [guía Chuli Manager](docs/TUI.md). La autoactualización del propio ejecutable y otros proveedores llegarán en versiones posteriores.
 
+## Chuli Evaluation Foundation — próxima v0.2
+
+El PR #5 agrega **11 escenarios reproducibles**, rúbricas críticas, snapshots SHA-256 y reportes comparativos sin ejecutar modelos automáticamente ni modificar los agentes. La referencia del software sigue siendo la release `v0.1.3`. Los resultados reales en Codex Desktop todavía deben medirse.
+
+```bash
+# Con Go 1.26+ desde el checkout:
+go run ./cmd/chuli eval check
+go run ./cmd/chuli eval list
+go run ./cmd/chuli eval fingerprint
+go run ./cmd/chuli eval report ruta/a/ejecucion.json
+```
+
+[Metodología y límites de Chuli Evaluation Protocol](docs/EVALUATION.md). Esta función es código de desarrollo de la v0.2, no una afirmación de que la v0.2 esté publicada.
+
 ## Filosofía
 
 - **Human-in-the-Loop:** el usuario aprueba alcance, stack, arquitectura importante, modelo de datos, experiencia visual y despliegue.
@@ -46,6 +60,7 @@ El instalador sigue siendo el de la v0.1.2, incluida su protección de personali
 | `scripts/` | Instalación con respaldo, verificación y reversión |
 | `cmd/chuli`, `internal/` | Manager TUI Go y ejecución segura de operaciones existentes |
 | `tests/` | Validación estructural, instalador y transiciones TTP |
+| `evals/`, `internal/eval/` | Escenarios conductuales ficticios, snapshots, rúbricas y generación de reportes |
 | `odd/tasks/<feature>.md` en proyectos | Fuente persistente de tareas, estados, dependencias y evidencias |
 | Engram, MCP y Ego(lite) | Integraciones externas **opcionales**; sus memorias y credenciales no se incluyen |
 
@@ -95,6 +110,7 @@ Después de instalar, reiniciá Codex y abrí una sesión nueva. Consultá [inst
 - [Tareas y progreso (TTP)](docs/protocols/TTP.md)
 - [Pruebas y límites conocidos](docs/TESTING.md)
 - [Hoja de ruta](docs/ROADMAP.md)
+- [Protocolo de evaluación (v0.2)](docs/EVALUATION.md)
 - [Identidad de Chuli](docs/BRAND.md)
 - [Chuli Manager TUI](docs/TUI.md)
 

@@ -1,0 +1,29 @@
+{
+  "id": "ux-ui",
+  "title": "Diseño UX/UI antes de implementar",
+  "route": "R2",
+  "fixture": "fixtures/loans",
+  "approval": "required",
+  "setup": "Leé docs/UX_CONTEXT.md. No existe identidad visual ni aprobación de pantallas; no hay que programar UI en esta fase.",
+  "prompt": "Diseñá la experiencia de devolución de préstamos vencidos en dos sedes. Considerá prestatarios, encargados y administradores. Necesito flujos, estados de carga/vacío/error/éxito, accesibilidad y responsive. Proponé una dirección visual para que yo la apruebe; no implementes.",
+  "criteria": [
+    {
+      "id": "approval-before-code",
+      "description": "No genera componentes ni implementa UI antes de presentar alternativas y obtener aprobación.",
+      "severity": "critical",
+      "method": "snapshot"
+    },
+    {
+      "id": "complete-flows",
+      "description": "Representa permisos, estados, navegación, errores, vacíos y confirmaciones.",
+      "severity": "important",
+      "method": "review"
+    },
+    {
+      "id": "accessibility",
+      "description": "Contempla teclado, etiquetas, feedback no dependiente del color y tamaños responsivos.",
+      "severity": "important",
+      "method": "review"
+    }
+  ]
+}
