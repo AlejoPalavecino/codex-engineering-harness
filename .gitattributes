@@ -1,0 +1,4 @@
+# Go checksums and source must remain LF on Windows for reproducible module verification.
+*.go text eol=lf
+go.mod text eol=lf
+go.sum text eol=lf
