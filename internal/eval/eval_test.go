@@ -20,7 +20,7 @@ func createFixtureCatalog(t *testing.T) Catalog {
 	m := Manifest{
 		Schema: Schema, Suite: "chuli-test-v1", BaselineTag: "v0.1.3",
 		BaselineSHA: "68b756bd5e39539b4e277bb490321f8c06870755",
-		Cases: []string{"demo"},
+		Cases:       []string{"demo"},
 	}
 	c := Case{
 		ID: "demo", Title: "Prueba sintética", Route: "R0", Fixture: "fixtures/demo",
@@ -41,7 +41,7 @@ func createFixtureCatalog(t *testing.T) Catalog {
 	}
 	for path, data := range map[string]string{
 		"fixtures/demo/demo.txt": "fixture sintético",
-		"rubrics/readme.md": "criterios de revisión",
+		"rubrics/readme.md":      "criterios de revisión",
 	} {
 		if err := os.WriteFile(filepath.Join(root, path), []byte(data), 0600); err != nil {
 			t.Fatal(err)

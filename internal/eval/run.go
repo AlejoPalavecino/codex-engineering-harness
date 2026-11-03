@@ -280,7 +280,7 @@ func PrintReport(out io.Writer, catalog Catalog, run Run, baseline *Run) error {
 			fmt.Fprintln(out, "\nNo hay regresiones entre los resultados comparables registrados; esto no prueba ausencia de fallos.")
 		}
 	}
-	fmt.Fprintln(out, "\n## Evidencia y observaciones registradas\n")
+	fmt.Fprint(out, "\n## Evidencia y observaciones registradas\n\n")
 	for _, c := range catalog.Cases {
 		item := results[c.ID]
 		if item == nil {

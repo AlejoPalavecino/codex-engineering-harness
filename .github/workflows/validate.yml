@@ -63,16 +63,6 @@ jobs:
           go-version: "1.26"
       - name: Check pinned Go dependencies
         run: go mod tidy -diff
-      - name: Format and emit eval sources (temporary)
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          gofmt -w internal/eval
-          for file in internal/eval/*.go; do
-            echo "CHULI_EVAL_FILE_BEGIN:$file"
-            cat "$file"
-            echo "CHULI_EVAL_FILE_END:$file"
-          done
       - name: Check Go source formatting
         shell: bash
         run: |
