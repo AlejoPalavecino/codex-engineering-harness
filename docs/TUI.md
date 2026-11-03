@@ -12,7 +12,7 @@ go build -o chuli.exe ./cmd/chuli
 .\chuli.exe --source .
 ```
 
-GitHub Actions genera binarios de evaluación para Windows, Linux y macOS. La **instalación/rollback solo están habilitados en Windows** por ahora.
+La release oficial incluye binarios para Windows x64, Linux x64 y macOS arm64, además de `SHA256SUMS.txt`. En Windows, descargá el ZIP desde [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), extraé `chuli.exe` y ejecutalo desde PowerShell. No hace falta tener Go instalado. La **instalación/rollback solo están habilitados en Windows** por ahora.
 
 ## Menú principal
 
@@ -41,9 +41,9 @@ La bandera `--source` debe preceder al subcomando. Si no se indica se utiliza el
 3. Por defecto no ofrece `-ReplaceCustomized`: las personalizaciones se conservan conforme al instalador. Para forzar un reemplazo hay que revisarlo manualmente.
 4. Obtener una release requiere Internet y Git. Se cotejan el tag y el archivo `VERSION`, pero **esta primera versión no verifica firmas criptográficas de la release**. Los artefactos oficiales firmados y su comprobación quedan antes de un mecanismo de actualización sin supervisión.
 5. Diagnóstico y rollback requieren un checkout local válido. Las instalaciones v0.1.1 se recuperan manualmente desde el backup por el fallo conocido de su script.
-6. Si la última release pública sigue siendo v0.1.1, no permite descargarla para instalar: es deliberado para evitar reintroducir sus defectos.
+6. La opción remota consulta la última release estable. Los instaladores anteriores a v0.1.2 se rechazan por sus defectos conocidos.
 7. El Manager todavía no autoactualiza su propio binario, no soporta Antigravity y no instala en macOS/Linux.
 
 ## Próximos pasos
 
-Distribución del ejecutable con checksums verificables, recuperación independiente del checkout, actualizaciones del Manager, adaptadores específicos y soporte en otros sistemas.
+Firmas verificables para ejecutables/releases, recuperación independiente del checkout, actualizaciones del Manager, adaptadores específicos y soporte en otros sistemas.
