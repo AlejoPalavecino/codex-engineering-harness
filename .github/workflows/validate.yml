@@ -56,28 +56,16 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
-      - name: Resolve Go dependencies
-        run: go mod tidy
-      - name: Format and emit Go files (temporary review step)
-        if: matrix.os == 'ubuntu-latest'
+      - name: Check pinned Go dependencies
+        run: go mod tidy -diff
+      - name: Check Go source formatting
         shell: bash
         run: |
-          gofmt -w cmd/chuli/main.go internal/manager/manager.go internal/manager/manager_test.go internal/tui/tui.go
-          for file in cmd/chuli/main.go internal/manager/manager.go internal/manager/manager_test.go internal/tui/tui.go; do
-            printf "CHULI_FILE_BEGIN:%s\n" "$file"
-            cat "$file"
-            printf "CHULI_FILE_END:%s\n" "$file"
-          done
-      - name: Capture reproducible dependency checksums
-        if: matrix.os == 'ubuntu-latest'
-        shell: bash
-        run: |
-          echo CHULI_MOD_BEGIN
-          cat go.mod
-          echo CHULI_MOD_END
-          echo CHULI_SUM_BEGIN
-          cat go.sum
-          echo CHULI_SUM_END
+          dirty=$(gofmt -l cmd/chuli internal/manager internal/tui)
+          if [[ -n "$dirty" ]]; then
+            echo "$dirty"
+            exit 1
+          fi
       - name: Test Chuli
         run: go test ./...
       - name: Build Chuli TUI
