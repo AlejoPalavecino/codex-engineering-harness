@@ -33,15 +33,15 @@
 - **Blocker:** none
 
 ### TASK-004 — Verificar regresiones de la fundación
-- **State:** VERIFYING
+- **State:** DONE
 - **Depends on:** TASK-003
 - **Owner:** test_engineer
 - **Acceptance:** Unit tests y fixtures pasan en CI para Windows, Linux y macOS, sin ejecutar agentes ni modificar la configuración.
-- **Evidence:** none
+- **Evidence:** GitHub Actions 41714827622 PASS (structure, windows-installer, chuli-go ubuntu/windows/macos); fingerprint 7ee5b69e... idéntico entre SO
 - **Blocker:** none
 
 ### TASK-005 — Preparar revisión humana del PR
-- **State:** PLANNED
+- **State:** VERIFYING
 - **Depends on:** TASK-004
 - **Owner:** orchestrator
 - **Acceptance:** PR documentado, green CI, limitaciones explícitas, comparación conductual pendiente para la fase de evaluación.
