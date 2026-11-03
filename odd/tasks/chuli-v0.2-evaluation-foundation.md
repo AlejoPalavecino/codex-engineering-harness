@@ -9,7 +9,7 @@
 ## Tasks
 
 ### TASK-001 — Definir catálogo y criterios de evaluación
-- **State:** IN_PROGRESS
+- **State:** DONE
 - **Depends on:** none
 - **Owner:** orchestrator
 - **Acceptance:** Casos R0/R1/R2/C con prompts, rubricas y baseline v0.1.3 identificable.
@@ -17,7 +17,7 @@
 - **Blocker:** none
 
 ### TASK-002 — Preparar fixtures aislados y repetibles
-- **State:** PLANNED
+- **State:** DONE
 - **Depends on:** TASK-001
 - **Owner:** worker
 - **Acceptance:** Fixtures sin datos reales, pruebas básicas ejecutables, sin necesidad de acceso externo.
@@ -25,7 +25,7 @@
 - **Blocker:** none
 
 ### TASK-003 — Implementar herramientas de evaluación Go
-- **State:** PLANNED
+- **State:** DONE
 - **Depends on:** TASK-002
 - **Owner:** worker
 - **Acceptance:** CLI offline valida catálogo y registros, captura snapshots, compara evidencia y rechaza valores inventados sin fuente.
@@ -33,7 +33,7 @@
 - **Blocker:** none
 
 ### TASK-004 — Verificar regresiones de la fundación
-- **State:** PLANNED
+- **State:** VERIFYING
 - **Depends on:** TASK-003
 - **Owner:** test_engineer
 - **Acceptance:** Unit tests y fixtures pasan en CI para Windows, Linux y macOS, sin ejecutar agentes ni modificar la configuración.

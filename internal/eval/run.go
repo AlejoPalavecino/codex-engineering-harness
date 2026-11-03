@@ -241,6 +241,8 @@ func PrintReport(out io.Writer, catalog Catalog, run Run, baseline *Run) error {
 		}
 		if baseline.Host.ConfigSHA256 == "" || run.Host.ConfigSHA256 == "" {
 			fmt.Fprintln(out, "- Configuración no identificada en ambos registros; equivalencia de configuración NO VERIFICABLE.")
+		} else if baseline.Host.ConfigSHA256 != run.Host.ConfigSHA256 {
+			fmt.Fprintln(out, "- ADVERTENCIA: hashes de configuración distintos; la atribución causal requiere comprobar qué variable cambió.")
 		}
 	}
 	fmt.Fprintln(out, "\n| Caso | Ruta | Resultado |"+func() string {

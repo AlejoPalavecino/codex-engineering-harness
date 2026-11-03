@@ -2,3 +2,6 @@
 *.go text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
+
+# Identical fixture/catalog bytes and SHA-256 across operating systems.
+evals/** text eol=lf

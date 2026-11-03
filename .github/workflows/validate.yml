@@ -20,6 +20,8 @@ jobs:
         run: python tests/validate_repository.py
       - name: Validate TTP task-state transitions
         run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Validate v0.2 TTP task plan
+        run: python scripts/taskboard.py check odd/tasks/chuli-v0.2-evaluation-foundation.md
       - name: Check synthetic Python fixture tests
         shell: bash
         run: |
@@ -73,6 +75,8 @@ jobs:
           fi
       - name: Test Chuli
         run: go test ./...
+      - name: Validate evaluation catalog from CLI
+        run: go run ./cmd/chuli eval check
       - name: Build Chuli TUI
         shell: bash
         run: |
