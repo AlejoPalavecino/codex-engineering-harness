@@ -59,7 +59,7 @@ if ($null -eq $python) {
     $command = [string]$python.command
     $allArgs = @($python.prefix) + $params
     $result = & $command @allArgs 2>&1
-    Write-Output ($result | Out-String).Trim()
+    Write-Output (($result | Out-String).Trim())
     if ($LASTEXITCODE -ne 0) { $errors++ }
     foreach ($name in @('solution_architect','product_designer','test_engineer','quality_reviewer')) {
         $agentPath = Join-Path $homePath ('agents/' + $name + '.toml')

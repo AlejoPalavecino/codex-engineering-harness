@@ -84,7 +84,10 @@ def update_text(source: str, path: tuple[str, ...], value) -> str:
         if len(sections) > 1:
             raise ValueError("Duplicate TOML section: " + ".".join(path_header))
         if not sections:
-            # Inline tables / dotted keys need an explicit, conflict-safe migration.
+            # Refuse inline tables and dotted-key layouts rather than
+            # appending a duplicate table declaration.
+            if value_at(tomllib.loads(source), path_header) is not UNSET:
+                raise ValueError("Unsafe TOML layout: table exists without a supported header")
             return source.rstrip("\r\n") + "\n\n[" + ".".join(path_header) + "]\n" + key + " = " + json.dumps(value, ensure_ascii=True) + "\n"
         start = sections[0][0] + 1
         end = next((i for i, _ in headers if i >= start), len(lines))

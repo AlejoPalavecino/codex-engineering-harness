@@ -95,13 +95,14 @@ try {
     $mutating = $true
     foreach ($item in $restore) {
         if ($item.existed) {
-            Save-Text $item.target ([IO.File]::ReadAllText($item.saved))
+            New-Item -ItemType Directory -Path (Split-Path -Parent $item.target) -Force | Out-Null
+            Copy-Item -LiteralPath $item.saved -Destination $item.target -Force
         } elseif (Test-Path -LiteralPath $item.target) {
             Remove-Item -LiteralPath $item.target -Force
         }
     }
     if ($state.previous_state_existed) {
-        Save-Text $statePath $previousText
+        Copy-Item -LiteralPath $previous -Destination $statePath -Force
     } else {
         Remove-Item -LiteralPath $statePath -Force
     }
@@ -117,7 +118,7 @@ try {
                     if (Test-Path -LiteralPath $item.target) { Remove-Item -LiteralPath $item.target -Force }
                 } else {
                     if ((Get-Hash $snapshot) -ne $item.current) { throw 'Snapshot de recuperación no coincide' }
-                    Save-Text $item.target ([IO.File]::ReadAllText($snapshot))
+                    Copy-Item -LiteralPath $snapshot -Destination $item.target -Force
                 }
             } catch {
                 $problems.Add(($item.path + ': ' + $_.Exception.Message))

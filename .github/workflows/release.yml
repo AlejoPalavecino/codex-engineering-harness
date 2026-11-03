@@ -1,0 +1,66 @@
+name: Publish approved release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.1.2)"
+        required: true
+        type: string
+      commit_sha:
+        description: "Exact reviewed and approved main commit SHA"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: codex-harness-manual-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out approved branch
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Require exact approved SHA and successful CI
+        shell: bash
+        env:
+          GH_TOKEN: \${{ github.token }}
+          APPROVED_SHA: \${{ inputs.commit_sha }}
+          APPROVED_VERSION: \${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          current=$(git rev-parse origin/main)
+          requested=$(git rev-parse "$APPROVED_SHA^{commit}")
+          if [[ "$requested" != "$current" ]]; then
+            echo "Approved SHA is not current main. Refusing publication."
+            exit 1
+          fi
+          version=$(tr -d '\r\n' < VERSION)
+          if [[ "$APPROVED_VERSION" != "$version" ]]; then
+            echo "Approval version does not match VERSION."
+            exit 1
+          fi
+          matches=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$requested&per_page=50" \
+            --jq '[.workflow_runs[] | select(.name == "Validate harness" and .head_branch == "main" and .conclusion == "success")] | length')
+          if [[ "$matches" == "0" ]]; then
+            echo "No successful Validate harness run for the reviewed main SHA."
+            exit 1
+          fi
+          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Release already exists."
+            exit 1
+          fi
+          gh release create "v$version" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$requested" \
+            --title "Codex Engineering Harness v$version" \
+            --notes-file "docs/releases/v$version.md"

@@ -44,7 +44,9 @@ function Get-Python {
 }
 function Invoke-Toml {
     param($Runtime, [string[]]$Arguments)
-    $output = & $Runtime.command @($Runtime.prefix) @Arguments 2>&1
+    $command = [string]$Runtime.command
+    $allArgs = @($Runtime.prefix) + $Arguments
+    $output = & $command @allArgs 2>&1
     if ($LASTEXITCODE -ne 0) {
         throw ('TOML preflight failed: ' + (($output | Out-String).Trim()))
     }
@@ -236,7 +238,8 @@ try {
                 if ($entry.existed) {
                     $saved = Join-Path $backup $entry.path
                     if ((Get-Hash $saved) -ne $entry.backup_sha256) { throw 'Backup no coincide con SHA esperado' }
-                    Save-Text $target ([IO.File]::ReadAllText($saved))
+                    New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+                    Copy-Item -LiteralPath $saved -Destination $target -Force
                 } elseif (Test-Path -LiteralPath $target) {
                     Remove-Item -LiteralPath $target -Force
                 }
@@ -244,6 +247,16 @@ try {
                 $recoveryErrors.Add(($entry.path + ': ' + $_.Exception.Message))
             }
         }
+    }
+    if ($applied) {
+        try {
+            $oldState = Join-Path $backup '_previous_state.json'
+            if ($null -ne $previous -and (Test-Path -LiteralPath $oldState -PathType Leaf)) {
+                Copy-Item -LiteralPath $oldState -Destination $statePath -Force
+            } elseif ($null -eq $previous -and (Test-Path -LiteralPath $statePath -PathType Leaf)) {
+                Remove-Item -LiteralPath $statePath -Force
+            }
+        } catch { $recoveryErrors.Add(('state.json: ' + $_.Exception.Message)) }
     }
     if ($recoveryErrors.Count -gt 0) {
         throw ('Instalación fallida: ' + $errorText + '. Recuperación INCOMPLETA, revisar backup ' + $backup + ': ' + ($recoveryErrors -join '; '))

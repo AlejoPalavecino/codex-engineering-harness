@@ -29,6 +29,12 @@ instructions = (root / "config/AGENTS.md").read_text(encoding="utf-8")
 for required in ("R0", "R1", "R2", "Criticidad", "Human-in-the-Loop", "Engram", "CES v1.0"):
     assert required in instructions, required
 
+for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "tests/test_taskboard.py", "VERSION"):
+    assert (root / required_path).is_file(), required_path
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "0.1.2"
+assert "update_plan" in (root / "scripts/install.ps1").read_text(encoding="utf-8")
+assert "TTP v1.0" in instructions
+
 for script in ("install.ps1", "verify.ps1", "rollback.ps1"):
     assert (root / "scripts" / script).is_file(), script
 

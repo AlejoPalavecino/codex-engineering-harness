@@ -1,15 +1,19 @@
 # Changelog
 
-## [Unreleased] — v0.1.0-rc.1
+## [Unreleased] — v0.1.2 candidate
+
+### Fixed
+- P1-1: parseo TOML real y validación previa; encabezados con comentarios no generan tablas duplicadas.
+- P1-2: rollback con prevalidación de todos los backups y manifiesto anterior.
+- P1-3: plan de actualizaciones explícito y preservación de archivos y claves personalizadas salvo autorización.
+- P2-1: verificación distingue sintaxis y deriva de claves administradas de cambios válidos en claves ajenas.
 
 ### Added
-- Protocolos EWP, MRP, ASEP, TKA y CES con responsabilidades explícitas.
-- Orquestación global, cuatro subagentes y cinco skills propias.
-- Instalación Windows PowerShell con dry-run, backups, verificación y reversión.
-- Inventario de MCP recomendado sin credenciales ni instalación automática de terceros.
-- Documentación para contribuciones y validaciones de estructura.
+- Regression fixtures Windows y tests de TOML sin dependencias externas de Python.
+- Workflow de publicación manual por SHA aprobado y CI exitoso.
 
-### Not yet guaranteed
-- Aislamiento estricto real de permisos entre subagentes.
-- Selección automática del modelo efectivo en todas las versiones de Codex.
-- Instalador multiplataforma o actualizador de componentes externos.
+## [0.1.1] — 2026-11-02
+
+### Added
+- TTP v1.0 con tareas, dependencias y evidencias.
+- Seguimiento nativo `update_plan` configurable, validador de tareas y scripts de reversión.

@@ -8,7 +8,8 @@ No publiques secretos, exploits activos ni datos personales en issues públicas.
 
 - Los subagentes nativos pueden compartir permisos, filesystem y MCP con el proceso principal. Instrucciones como «no escribas» **no garantizan aislamiento**.
 - Los MCP pueden realizar acciones externas no cubiertas por el sandbox de filesystem.
-- El instalador modifica archivos del home de Codex solo después de `-Apply`, guarda un respaldo local y no toca memorias Engram.
+- El instalador v0.1.2 requiere Python 3.11+ para validar TOML, preserva personalizaciones por defecto y muestra el plan de cambios. Para reemplazarlas se exige `-ReplaceCustomized` explícito, además de `-Apply`.
+- El rollback v0.1.2 comprueba todos los backups y el manifiesto previo antes de restaurar. No borra las memorias Engram.
 - Los perfiles ASEP estrictos necesitan una implementación y prueba de aislamiento separadas; **no están garantizados en v0.1**.
 - Los identificadores de modelos pueden no estar disponibles en todas las cuentas/versiones; comprobar el modelo ejecutado.
 

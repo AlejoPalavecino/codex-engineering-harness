@@ -15,7 +15,6 @@ class SafeTomlTests(unittest.TestCase):
     def test_comment_after_header_no_duplicate(self):
         source = '[tools.update_plan] # valid comment\n enabled = false\n[mcp_servers.engram]\ncommand = "engram"\n'
         updated, report = mod.prepare(source)
-        self.assertEqual(len(mod.segments(updated.splitlines(keepends=True))), 6 if False else len(mod.segments(updated.splitlines(keepends=True))))
         parsed = tomllib.loads(updated)
         self.assertFalse(parsed["tools"]["update_plan"]["enabled"])
         self.assertEqual(parsed["mcp_servers"]["engram"]["command"], "engram")
