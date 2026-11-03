@@ -4,7 +4,7 @@
 
 Un harness abierto para Codex que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **Versión v0.1.1:** seguimiento de tareas persistente y progreso nativo opt-in de Codex. Se mantienen limitaciones: el aislamiento efectivo entre subagentes, los modelos utilizados y la representación de la tarjeta en Codex Desktop deben comprobarse en cada entorno.
+> **Estado: versión inicial candidata (v0.1.0-rc.1).** Esta propuesta todavía no es una release estable. Los permisos efectivos, el enrutamiento real de modelos y la compatibilidad de cada versión de Codex deben comprobarse en la instalación de destino.
 
 ## Filosofía
 
@@ -15,7 +15,6 @@ Un harness abierto para Codex que combina análisis de requisitos, arquitectura 
 - **UX y UI primero:** flujos y dirección visual aprobados antes de implementar interfaces sustanciales.
 - **Evidencia antes que promesas:** pruebas, contratos y validaciones objetivas, con límites de seguridad reconocidos.
 - **Contexto selectivo:** skills cargadas por necesidad y Engram opcional como memoria del proyecto.
-- **Seguimiento TTP:** tareas por funcionalidad en Git y checklist nativo de Codex durante ejecución R2, cuando esté disponible.
 
 ## Arquitectura
 
@@ -25,10 +24,9 @@ Un harness abierto para Codex que combina análisis de requisitos, arquitectura 
 | `agents/` | Cuatro especialistas personalizados: arquitectura, producto, pruebas y calidad |
 | `explorer` y `worker` | Roles nativos de Codex cuando la versión los admita |
 | `skills/` | Cinco procedimientos reutilizables de ingeniería |
-| `docs/protocols/` | EWP, MRP, ASEP, TKA, CES y TTP documentados |
+| `docs/protocols/` | EWP, MRP, ASEP, TKA y CES, documentados |
 | `scripts/` | Instalación con respaldo, verificación y reversión |
-| `tests/` | Validación estructural, instalador y transiciones TTP |
-| `odd/tasks/<feature>.md` en proyectos | Fuente persistente de tareas, estados, dependencias y evidencias |
+| `tests/` | Validación estructural y de seguridad del paquete |
 | Engram, MCP y Ego(lite) | Integraciones externas **opcionales**; sus memorias y credenciales no se incluyen |
 
 ## Instalación (Windows / PowerShell)
@@ -53,7 +51,7 @@ cd codex-engineering-harness
 .\scripts\verify.ps1
 ```
 
-El instalador habilita `[tools.update_plan] enabled = true` (salvo `-SkipTaskProgress`), con backup y rollback; esta opción no garantiza que Codex Desktop presente la tarjeta visual en todas las versiones. También instala el validador opcional `harness/bin/taskboard.py` (requiere Python 3.11+ solo si se usa). **No ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Si ya hay agentes/skills propios con los mismos nombres, los respalda antes de sustituirlos. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
+El instalador **no ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Si ya hay agentes/skills propios con los mismos nombres, los respalda antes de sustituirlos. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
 
 **Revertir la última instalación:**
 
@@ -71,7 +69,6 @@ Después de instalar, reiniciá Codex y abrí una sesión nueva. Consultá [inst
 - [Permisos y aislamiento (ASEP)](docs/protocols/ASEP.md)
 - [Herramientas y memoria (TKA)](docs/protocols/TKA.md)
 - [Comunicación argentina (CES)](docs/protocols/CES.md)
-- [Tareas y progreso (TTP)](docs/protocols/TTP.md)
 - [Pruebas y límites conocidos](docs/TESTING.md)
 - [Hoja de ruta](docs/ROADMAP.md)
 
@@ -81,7 +78,7 @@ Después de instalar, reiniciá Codex y abrí una sesión nueva. Consultá [inst
 
 ## Contribuir
 
-Issues y PR son bienvenidos. Leé [CONTRIBUTING.md](CONTRIBUTING.md) y [SECURITY.md](SECURITY.md). El proyecto se distribuye bajo la licencia [MIT](LICENSE), con componentes externos opcionales sujetos a sus propias licencias.
+Issues y PR son bienvenidos. Leé [CONTRIBUTING.md](CONTRIBUTING.md) y [SECURITY.md](SECURITY.md). El proyecto propone licencia [MIT](LICENSE); la licencia y la primera release deben revisarse antes de fusionar este PR.
 
 ---
 

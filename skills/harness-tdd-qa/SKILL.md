@@ -12,7 +12,3 @@ description: "Aplicar test-first cuando corresponde y seleccionar verificaciones
 5. Si una prueba aprobada está mal, detenerse para revisión; el implementador no puede modificarla para autoaprobarse.
 6. Verificar types, lint, build, integración, E2E, CI, seguridad, accesibilidad y rendimiento según corresponda.
 7. Registrar comandos y resultados; declarar límites y omisiones. No afirmar «verificado» si existen bloqueantes.
-
-## Conexión con seguimiento TTP
-
-Devolvé resultados de pruebas, comandos y evidencia por ID de tarea. Cuando la implementación finalice, el orquestador pasa la tarea a VERIFYING; solo después de satisfacer sus criterios pasa a DONE y se registra evidencia. Si falla, mantener IN_PROGRESS o BLOCKED con motivo. El verificador no debe editar directamente el registro de tareas, y el cierre no depende de lo que afirma el implementador.

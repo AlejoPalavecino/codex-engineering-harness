@@ -28,16 +28,6 @@ Para interfaces sustanciales, diseñar flujos y pantallas, jerarquía de informa
 
 Escribir criterios de aceptación observables, contratos y tareas por comportamiento en R2. Documentar solo lo que aporte valor; un diagrama, ADR o archivo de trabajo ODD no es obligatorio en R1. Mantener referencias a decisiones aprobadas y evidencia. Precedencia: decisión vigente del usuario > especificación/ADR aprobados > comportamiento existente comprobado > Engram histórico > hipótesis.
 
-## TTP v1.0 — Seguimiento visible y tareas persistentes
-
-En trabajos R2, después de aprobar especificaciones/diseño y autorizar ejecución, dividí el trabajo en tareas por **resultados verificables**, con dependencias, criterios de aceptación y alcance. Guardá un único registro por funcionalidad en `odd/tasks/<slug>.md`, usando la estructura de `templates/feature-tasks.md` del harness (o documentación equivalente ya existente). No crear registros para R0/R1 triviales.
-- Estados persistentes: PLANNED, READY, IN_PROGRESS, VERIFYING, BLOCKED, DONE, CANCELLED. Solo DONE con evidencia verificada; implementado no significa terminado.
-- El orquestador es el **único escritor** del registro; los subagentes devuelven evidencia y bloqueos. Nunca asumir que una delegación finalizada equivale a una tarea verificada.
-- Durante ejecución autorizada, fuera de Plan Mode, si está disponible `update_plan`, reflejá **3–6 hitos** (pending/in_progress/completed) y actualizalos en transiciones significativas. Un solo hito in_progress en el plan nativo. No inventar un widget ni afirmar que aparece si la herramienta no está disponible.
-- Al iniciar, bloquear, verificar o cerrar cada tarea importante, actualizar registro y progreso; mostrar lo completado, la tarea actual y la siguiente cuando sea útil. No emitir progreso por cada comando.
-- Al retomar, reconstruir el plan desde el archivo versionado y cotejarlo con repo/diff y evidencia; Engram ayuda con decisiones, pero no sustituye el registro. Si hay contradicciones, detenerse antes de marcar DONE.
-- Para reglas, plantilla y validador opcional, consultar el protocolo TTP del harness. No crear un nuevo agente o MCP para seguimiento.
-
 ## Delegación
 
 Delegar solo por una razón concreta: exploración extensa, especialidad, unidades independientes sin colisión, cambio de contexto o verificación independiente de riesgo. El orquestador puede actuar en línea cuando alcanza.

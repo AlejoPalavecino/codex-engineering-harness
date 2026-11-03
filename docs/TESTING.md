@@ -4,7 +4,6 @@
 
 ```bash
 python tests/validate_repository.py
-python -m unittest discover -s tests -p 'test_*.py'
 ```
 
 GitHub Actions ejecuta validaciones estructurales. Windows también ejecuta pruebas de instalación, verificación y rollback sobre un home descartable.
@@ -19,10 +18,6 @@ GitHub Actions ejecuta validaciones estructurales. Windows también ejecuta prue
 6. **Visual:** revisar flujos y pantallas, estados, responsive y accesibilidad con herramienta adecuada.
 7. **Memoria:** recuperar una decisión del proyecto correcto sin modificar memorias por accidente.
 8. **Regresión:** comprobar que MCP, plugins y hooks existentes siguen registrados.
-9. **TTP:** R1 no genera tablero; R2 aprobada genera tareas con dependencias, estados y evidencia.
-10. **Progreso nativo:** en ejecución R2 fuera de Plan Mode, comprobar que `update_plan` está disponible y se refleja en el cliente real (Codex Desktop y/o CLI). Registrar si no se muestra.
-11. **Recuperación:** interrumpir una tarea IN_PROGRESS, reiniciar la sesión y corroborar estado real contra Git antes de continuar.
-12. **Integridad TTP:** probar DONE sin evidencia, dependencias pendientes y bloqueo sin causa; el validador debe rechazarlos.
 
 ## Limitaciones
 

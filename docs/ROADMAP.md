@@ -4,11 +4,6 @@
 - Protocolos, agentes, cinco skills originales, instalador Windows, verificación y documentación pública.
 - Probar que la integración no toca Engram ni configura MCP con credenciales ficticias.
 
-## v0.1.1 — Seguimiento de trabajo
-- Registro persistente de tareas por funcionalidad, vinculadas a specs y diseño aprobados.
-- Checklist nativo `update_plan` habilitado con backup, sujeto a compatibilidad de Codex Desktop.
-- Protocolo TTP y validador de estados/dependencias/evidencias; pruebas de instalación y rollback.
-
 ## v0.2 — Routing medido
 - Benchmarks reproducibles R0/R1/R2, modelos efectivamente usados, consumo observado.
 - Mejorar estrategias de delegación según resultados, no por intuición.

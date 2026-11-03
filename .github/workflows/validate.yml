@@ -18,8 +18,6 @@ jobs:
           python-version: "3.11"
       - name: Validate manifests, skills, and agents
         run: python tests/validate_repository.py
-      - name: Validate TTP task-state transitions
-        run: python -m unittest discover -s tests -p 'test_*.py'
 
   windows-installer:
     runs-on: windows-latest
