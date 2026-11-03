@@ -1,27 +1,19 @@
 # Changelog
 
+## [Unreleased] — v0.1.2 candidate
+
+### Fixed
+- P1-1: parseo TOML real y validación previa; encabezados con comentarios no generan tablas duplicadas.
+- P1-2: rollback con prevalidación de todos los backups y manifiesto anterior.
+- P1-3: plan de actualizaciones explícito y preservación de archivos y claves personalizadas salvo autorización.
+- P2-1: verificación distingue sintaxis y deriva de claves administradas de cambios válidos en claves ajenas.
+
+### Added
+- Regression fixtures Windows y tests de TOML sin dependencias externas de Python.
+- Workflow de publicación manual por SHA aprobado y CI exitoso.
+
 ## [0.1.1] — 2026-11-02
 
 ### Added
-- TTP v1.0: tareas persistentes por funcionalidad con dependencias, aceptación, evidencias y estados.
-- `update_plan` habilitado desde el instalador, sin depender del formato de visualización de Codex Desktop.
-- Plantilla de tareas y validador/actualizador opcional en Python estándar.
-- Pruebas de transiciones, bloqueo, recuperación del instalador y config nativa.
-
-### Limitations
-- No incluye panel de tareas propio ni sincronización automática con GitHub Projects.
-- El aislamiento de agentes y la representación real de la UI deben comprobarse en cada instalación.
-
-## [0.1.0-rc.1] — 2026-11-02
-
-### Added
-- Protocolos EWP, MRP, ASEP, TKA y CES con responsabilidades explícitas.
-- Orquestación global, cuatro subagentes y cinco skills propias.
-- Instalación Windows PowerShell con dry-run, backups, verificación y reversión.
-- Inventario de MCP recomendado sin credenciales ni instalación automática de terceros.
-- Documentación para contribuciones y validaciones de estructura.
-
-### Not yet guaranteed
-- Aislamiento estricto real de permisos entre subagentes.
-- Selección automática del modelo efectivo en todas las versiones de Codex.
-- Instalador multiplataforma o actualizador de componentes externos.
+- TTP v1.0 con tareas, dependencias y evidencias.
+- Seguimiento nativo `update_plan` configurable, validador de tareas y scripts de reversión.

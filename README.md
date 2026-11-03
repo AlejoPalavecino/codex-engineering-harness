@@ -4,7 +4,7 @@
 
 Un harness abierto para Codex que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **Versión v0.1.1:** seguimiento de tareas persistente y progreso nativo opt-in de Codex. Se mantienen limitaciones: el aislamiento efectivo entre subagentes, los modelos utilizados y la representación de la tarjeta en Codex Desktop deben comprobarse en cada entorno.
+> **v0.1.2 candidata (aún no publicada):** endurecimiento de instalación y rollback. La release pública vigente es v0.1.1. Se conservan las limitaciones de aislamiento efectivo de subagentes y verificación de modelos en runtime.
 
 ## Filosofía
 
@@ -33,7 +33,7 @@ Un harness abierto para Codex que combina análisis de requisitos, arquitectura 
 
 ## Instalación (Windows / PowerShell)
 
-Requiere una instalación funcional de **Codex CLI o Desktop**. Se recomienda PowerShell 7 o Windows PowerShell 5.1.
+Requiere **Codex CLI o Desktop**, **Python 3.11+** para validar TOML y PowerShell 7 o Windows PowerShell 5.1.
 
 ```powershell
 git clone https://github.com/AlejoPalavecino/codex-engineering-harness.git
@@ -42,8 +42,11 @@ cd codex-engineering-harness
 # Inspeccionar el plan (no escribe)
 .\scripts\install.ps1
 
-# Aplicar los archivos administrados (con backup)
+# Aplicar los cambios propuestos con respaldo; conserva personalizaciones
 .\scripts\install.ps1 -Apply
+
+# Opcional, solo después de revisar las diferencias del dry-run:
+# .\scripts\install.ps1 -Apply -ReplaceCustomized
 
 # Opcional: también configurar Sol como modelo principal.
 # Usar solo si la cuenta y versión de Codex ofrecen ese modelo:
@@ -53,7 +56,7 @@ cd codex-engineering-harness
 .\scripts\verify.ps1
 ```
 
-El instalador habilita `[tools.update_plan] enabled = true` (salvo `-SkipTaskProgress`), con backup y rollback; esta opción no garantiza que Codex Desktop presente la tarjeta visual en todas las versiones. También instala el validador opcional `harness/bin/taskboard.py` (requiere Python 3.11+ solo si se usa). **No ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Si ya hay agentes/skills propios con los mismos nombres, los respalda antes de sustituirlos. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
+El instalador habilita `[tools.update_plan] enabled = true` salvo `-SkipTaskProgress` o que exista una preferencia personalizada distinta. La actualización valida el TOML original y candidato antes de escribir, muestra las rutas afectadas y **preserva personalizaciones salvo reemplazo explícito** (`-ReplaceCustomized`). Esta opción no garantiza que Codex Desktop muestre una tarjeta visual en todas las versiones. También instala el validador opcional `harness/bin/taskboard.py` (requiere Python 3.11+ solo si se usa). **No ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Si ya hay agentes/skills propios con los mismos nombres, los respalda antes de sustituirlos. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
 
 **Revertir la última instalación:**
 

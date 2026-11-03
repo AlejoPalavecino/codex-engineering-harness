@@ -1,56 +1,66 @@
-name: Publish validated v0.1.1
+name: Publish approved release
 
 on:
-  workflow_run:
-    workflows: ["Validate harness"]
-    types: [completed]
-    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 0.1.2)"
+        required: true
+        type: string
+      commit_sha:
+        description: "Exact reviewed and approved main commit SHA"
+        required: true
+        type: string
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
-  group: publish-codex-harness-v0.1.1
+  group: codex-harness-manual-release
   cancel-in-progress: false
 
 jobs:
-  release:
-    if: >-
-      ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main' &&
-          github.event.workflow_run.head_repository.full_name == github.repository }}
+  publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out approved branch
+        uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          ref: main
           fetch-depth: 0
-
-      - name: Publish only the verified current main commit
+      - name: Require exact approved SHA and successful CI
         shell: bash
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: \${{ github.token }}
+          APPROVED_SHA: \${{ inputs.commit_sha }}
+          APPROVED_VERSION: \${{ inputs.version }}
         run: |
           set -euo pipefail
           git fetch origin main
-          sha=$(git rev-parse HEAD)
-          current_main=$(git rev-parse origin/main)
-          if [[ "$sha" != "$current_main" ]]; then
-            echo "Not publishing an old main commit."
-            exit 0
+          current=$(git rev-parse origin/main)
+          requested=$(git rev-parse "$APPROVED_SHA^{commit}")
+          if [[ "$requested" != "$current" ]]; then
+            echo "Approved SHA is not current main. Refusing publication."
+            exit 1
           fi
           version=$(tr -d '\r\n' < VERSION)
-          if [[ "$version" != "0.1.1" ]]; then
-            echo "This workflow only publishes v0.1.1; found $version"
-            exit 0
+          if [[ "$APPROVED_VERSION" != "$version" ]]; then
+            echo "Approval version does not match VERSION."
+            exit 1
+          fi
+          matches=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$requested&per_page=50" \
+            --jq '[.workflow_runs[] | select(.name == "Validate harness" and .head_branch == "main" and .conclusion == "success")] | length')
+          if [[ "$matches" == "0" ]]; then
+            echo "No successful Validate harness run for the reviewed main SHA."
+            exit 1
           fi
           if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release v$version already exists."
-            exit 0
+            echo "Release already exists."
+            exit 1
           fi
           gh release create "v$version" \
             --repo "$GITHUB_REPOSITORY" \
-            --target "$sha" \
+            --target "$requested" \
             --title "Codex Engineering Harness v$version" \
-            --notes-file "docs/releases/v$version.md" \
-            --latest
+            --notes-file "docs/releases/v$version.md"
