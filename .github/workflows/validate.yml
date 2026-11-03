@@ -62,6 +62,9 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         shell: bash
         run: |
+          echo CHULI_MOD_BEGIN
+          cat go.mod
+          echo CHULI_MOD_END
           echo CHULI_SUM_BEGIN
           cat go.sum
           echo CHULI_SUM_END
