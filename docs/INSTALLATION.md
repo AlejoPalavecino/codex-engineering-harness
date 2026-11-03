@@ -1,4 +1,6 @@
-# Instalación y actualización
+# Instalación y actualización de Chuli (antes Codex Engineering Harness)
+
+La TUI Go es opcional. El instalador PowerShell conserva compatibilidad con todas las instalaciones actuales. Ver [Chuli Manager](TUI.md).
 
 ## Requisitos
 
