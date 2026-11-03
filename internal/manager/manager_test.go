@@ -28,7 +28,7 @@ func TestCompare(t *testing.T){
 func TestReleaseJSON(t *testing.T){
  server:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
   if r.Header.Get("User-Agent")==""{t.Error("missing User-Agent")}
-  _,_=w.Write([]byte("`{\"tag_name\":\"v0.1.3\",\"draft\":false,\"prerelease\":false}`"))
+  _,_=w.Write([]byte(`{"tag_name":"v0.1.3","draft":false,"prerelease":false}`))
  }))
  defer server.Close()
  m:=Manager{Client:server.Client(),LatestURL:server.URL}
@@ -37,7 +37,7 @@ func TestReleaseJSON(t *testing.T){
 }
 func TestRejectPrerelease(t *testing.T){
  server:=httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter,r *http.Request){
-  _,_=w.Write([]byte("`{\"tag_name\":\"v0.1.3\",\"prerelease\":true}`"))
+  _,_=w.Write([]byte(`{"tag_name":"v0.1.3","prerelease":true}`))
  }))
  defer server.Close()
  m:=Manager{Client:server.Client(),LatestURL:server.URL}

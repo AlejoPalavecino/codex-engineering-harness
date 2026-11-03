@@ -174,6 +174,8 @@ func (m Manager) Prepare(ctx context.Context,action string)(Prepared,error){
   root,err=m.Local()
   if err!=nil{return Prepared{},err}
   v,_=ValidateSource(root)
+  cmp,_:=Compare(v,"v0.1.2")
+  if cmp<0{return Prepared{},errors.New("checkout local anterior a v0.1.2; instalador rechazado por riesgos conocidos")}
  case "latest":
   rel,e:=m.Latest(ctx)
   if e!=nil{return Prepared{},e}
