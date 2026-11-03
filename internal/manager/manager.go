@@ -61,7 +61,8 @@ func Compare(a,b string)(int,error){
  aa,bb:=version.FindStringSubmatch(strings.TrimSpace(a)),version.FindStringSubmatch(strings.TrimSpace(b))
  if aa==nil||bb==nil{return 0,fmt.Errorf("versión no reconocida: %q / %q",a,b)}
  for i:=1;i<=3;i++{
-  x,_:=strconv.Atoi(aa[i]);y,_:=strconv.Atoi(bb[i])
+  x,ex:=strconv.Atoi(aa[i]);y,ey:=strconv.Atoi(bb[i])
+  if ex!=nil||ey!=nil{return 0,errors.New("componente de versión fuera de rango")}
   if x<y{return -1,nil};if x>y{return 1,nil}
  }
  return 0,nil

@@ -5,7 +5,7 @@
 **Lema propuesto:** «De la idea al código, sin perder el hilo».  
 **Comando de terminal:** `chuli`.
 
-Chuli es la marca del producto completo, no una configuración exclusiva de Codex. El nombre fue elegido por el creador a partir de un apodo afectivo personal, sin forzar acrónimos técnicos.
+Chuli es la marca del producto completo, no una configuración exclusiva de Codex. Es una marca corta y cercana; no necesita convertirse en un acrónimo técnico.
 
 ## Piezas de la plataforma
 

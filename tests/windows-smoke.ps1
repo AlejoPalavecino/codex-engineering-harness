@@ -26,6 +26,8 @@ try {
     Assert-That ($config.Contains('[tools.update_plan]')) 'Falta configuracion update_plan.'
     Assert-That ($config.Contains('enabled = true')) 'update_plan no se habilito.'
     Assert-That (Test-Path (Join-Path $homePath 'harness/bin/taskboard.py')) 'Falta validador de tareas.'
+    $installedState = (Get-Content -LiteralPath (Join-Path $homePath 'harness-install/state.json') -Raw | ConvertFrom-Json)
+    Assert-That ($installedState.version -eq '0.1.3') 'El instalador no registró VERSION correctamente.'
     & (Join-Path $repo 'scripts/verify.ps1') -CodexHome $homePath
     & (Join-Path $repo 'scripts/rollback.ps1') -CodexHome $homePath -Apply
     Assert-That (([IO.File]::ReadAllText((Join-Path $homePath 'AGENTS.md'))) -eq 'anterior') 'Rollback no restauro AGENTS.'
