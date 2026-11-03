@@ -36,6 +36,14 @@ class SafeTomlTests(unittest.TestCase):
         self.assertEqual(doc["mcp_servers"]["github"]["url"], "example")
         self.assertIn("# personal note", updated)
 
+    def test_implicit_parent_table_is_valid(self):
+        source = '[agents.solution_architect]\ndescription = "x"\n'
+        updated, _ = mod.prepare(source, configure_models=True, replace_managed=True)
+        parsed = tomllib.loads(updated)
+        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
+        self.assertEqual(parsed["agents"]["solution_architect"]["description"],
+                         "Evalua arquitectura, stacks y decisiones tecnicas")
+
     def test_models_only_on_explicit_flag(self):
         source = 'model = "another-model"\n'
         updated, report = mod.prepare(source, configure_models=True)

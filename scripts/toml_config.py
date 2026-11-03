@@ -86,7 +86,12 @@ def update_text(source: str, path: tuple[str, ...], value) -> str:
         if not sections:
             # Refuse inline tables and dotted-key layouts rather than
             # appending a duplicate table declaration.
-            if value_at(tomllib.loads(source), path_header) is not UNSET:
+            existing = value_at(tomllib.loads(source), path_header)
+            implicit_parent = any(
+                len(section) > len(path_header) and section[:len(path_header)] == path_header
+                for _, section in headers
+            )
+            if existing is not UNSET and not implicit_parent:
                 raise ValueError("Unsafe TOML layout: table exists without a supported header")
             return source.rstrip("\r\n") + "\n\n[" + ".".join(path_header) + "]\n" + key + " = " + json.dumps(value, ensure_ascii=True) + "\n"
         start = sections[0][0] + 1
