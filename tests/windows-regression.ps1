@@ -74,6 +74,8 @@ try {
     [IO.File]::WriteAllText($configFile,$invalid)
     & pwsh -NoProfile -File $verify -CodexHome $homePath *> $null
     Assert-That ($LASTEXITCODE -ne 0) 'Invalid TOML was not rejected.'
+    # Expected failure cases ran in child pwsh; clear inherited exit code.
+    $global:LASTEXITCODE = 0
     Write-Output 'SAFETY REGRESSION TESTS OK'
 } finally {
     Remove-Item -LiteralPath $homePath -Recurse -Force -ErrorAction SilentlyContinue
