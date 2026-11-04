@@ -45,6 +45,8 @@ go run ./cmd/chuli eval assert-unchanged $before $after
 
 Si el `workspace` o los snapshots ya existen, elegí rutas nuevas. No sobrescribimos snapshots para conservar trazabilidad. Los snapshots ignoran internals de `.git` pero incluyen archivos nuevos/untracked, también logs o artefactos. **No cubren escrituras fuera del workspace, MCP externos ni secretos**.
 
+El destino se crea de forma exclusiva y se comprueba su directorio real antes de escribir. Se rechazan alias que resuelven dentro del workspace y junctions que el host no puede resolver con seguridad. Esto no protege frente a reemplazos hostiles concurrentes de directorios padre ni constituye un sandbox.
+
 Para R1 o R2 donde se esperan modificaciones, utilizá `chuli eval diff BEFORE AFTER` y revisá el diff de Git. No se debe evaluar directamente sobre el fixture versionado de Chuli.
 
 ## Registro de una ejecución
@@ -76,6 +78,8 @@ Los directorios `evals/reports/` ignoran por defecto los archivos de resultados 
 6. Cambiar **una variable a la vez** (p. ej., un modelo o contrato de agente) para atribuir el resultado; nunca afirmar superioridad por un ejemplo aislado.
 
 El reporte indica `NO COMPARABLE` si alguno de los dos escenarios está NOT_TESTED; advierte sobre cambios de cliente, SO o versión y configuraciones no identificadas.
+
+También compara cada criterio: un nuevo FAIL crítico se informa como regresión aunque el caso completo ya estuviera en FAIL. Una pérdida de cobertura PASS → PARTIAL conserva su advertencia agregada; no demuestra por sí sola un defecto conductual nuevo.
 
 ## Gates de aceptación para la próxima implementación (PR #6)
 

@@ -185,10 +185,10 @@ func resultsByID(r Run) map[string]*CaseResult {
 
 func verdictChange(old, next string) string {
 	switch {
-	case old == next:
-		return "SIN CAMBIO"
 	case old == NotTested || next == NotTested:
 		return "NO COMPARABLE"
+	case old == next:
+		return "SIN CAMBIO"
 	case old == Pass && next != Pass:
 		return "REGRESIÓN"
 	case (old == Fail || old == Partial) && next == Pass:
@@ -200,6 +200,17 @@ func verdictChange(old, next string) string {
 	default:
 		return "REVISAR"
 	}
+}
+
+func criterionStatus(result *CaseResult, id string) string {
+	if result != nil {
+		for _, cr := range result.Criteria {
+			if cr.ID == id {
+				return cr.Status
+			}
+		}
+	}
+	return NotTested
 }
 
 func mdCell(s string) string {
@@ -266,7 +277,16 @@ func PrintReport(out io.Writer, catalog Catalog, run Run, baseline *Run) error {
 		} else {
 			old := Status(c, baseResults[c.ID])
 			change := verdictChange(old, current)
-			if change == "REGRESIÓN" {
+			previousRegressions := len(regressions)
+			// Aggregate FAIL can conceal a newly failing critical criterion.
+			for _, cr := range c.Criteria {
+				if verdictChange(criterionStatus(baseResults[c.ID], cr.ID),
+					criterionStatus(results[c.ID], cr.ID)) == "REGRESIÓN" {
+					regressions = append(regressions, c.ID+"/"+cr.ID)
+					change = "REGRESIÓN"
+				}
+			}
+			if change == "REGRESIÓN" && len(regressions) == previousRegressions {
 				regressions = append(regressions, c.ID)
 			}
 			fmt.Fprintf(out, "| %s | %s | %s | %s | %s |\n", c.ID, c.Route, current, old, change)

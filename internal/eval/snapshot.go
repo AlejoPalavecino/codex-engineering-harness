@@ -105,10 +105,30 @@ func SaveSnapshot(workspace, out string) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
+	absWorkspace, err = filepath.EvalSymlinks(absWorkspace)
+	if err != nil {
+		return Snapshot{}, err
+	}
 	absOut, err := filepath.Abs(out)
 	if err != nil {
 		return Snapshot{}, err
 	}
+	// Resolve the existing parent, including symlinks and Windows junctions.
+	// The output itself need not exist and will be created exclusively below.
+	parent, err := filepath.EvalSymlinks(filepath.Dir(absOut))
+	if err != nil {
+		return Snapshot{}, err
+	}
+	// Some Windows reparse points remain unresolved by EvalSymlinks and
+	// appear as irregular files. Reject them instead of following an alias.
+	parentInfo, err := os.Lstat(parent)
+	if err != nil {
+		return Snapshot{}, err
+	}
+	if !parentInfo.IsDir() || parentInfo.Mode()&os.ModeSymlink != 0 {
+		return Snapshot{}, errors.New("snapshot output parent must resolve to a real directory")
+	}
+	absOut = filepath.Join(parent, filepath.Base(absOut))
 	// Writing a snapshot inside the workspace would change the very evidence it records.
 	rel, err := filepath.Rel(absWorkspace, absOut)
 	if err == nil && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
@@ -118,18 +138,25 @@ func SaveSnapshot(workspace, out string) (Snapshot, error) {
 	if err != nil {
 		return Snapshot{}, err
 	}
-	if _, err := os.Stat(out); err == nil {
-		return Snapshot{}, errors.New("snapshot already exists (refusing overwrite)")
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return Snapshot{}, err
-	}
 	data, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return Snapshot{}, err
 	}
 	// Do not create directories automatically: the user chooses an existing safe output path.
-	if err := os.WriteFile(out, append(data, '\n'), 0600); err != nil {
+	f, err := os.OpenFile(absOut, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return Snapshot{}, fmt.Errorf("snapshot already exists (refusing overwrite): %w", err)
+		}
 		return Snapshot{}, err
+	}
+	_, writeErr := f.Write(append(data, '\n'))
+	closeErr := f.Close()
+	if writeErr != nil {
+		return Snapshot{}, writeErr
+	}
+	if closeErr != nil {
+		return Snapshot{}, closeErr
 	}
 	return s, nil
 }
