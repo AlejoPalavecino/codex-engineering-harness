@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased] — v0.2 (Evaluation Foundation / PR #5)
+
+### Added
+- Evaluation Protocol v1.0 con 11 escenarios sintéticos R0/R1/R2/C, UX/UI, TDD, TTP, Engram y MRP; baseline anclado a v0.1.3.
+- Biblioteca Go de catálogo/rúbricas, huella reproducible, snapshots SHA-256 y reportes comparativos derivados de observaciones por criterio.
+- Comandos `chuli eval check|list|fingerprint|snapshot|diff|assert-unchanged|report`.
+- Tests de unidades Go, fixtures Python y documentación de ejecución manual segura.
+
+### Limitations
+- El evaluador no ejecuta Codex, no valida modelos efectivos por sí solo ni certifica permisos/sandbox.
+- Las métricas de tokens/modelos solo se aceptan con fuente declarada; no hay baseline conductual todavía.
+- Esta PR no cambia ni reemplaza MRP, agentes, skills funcionales o TTP.
+
 ## [0.1.3] — 2026-11-03
 
 ### Added

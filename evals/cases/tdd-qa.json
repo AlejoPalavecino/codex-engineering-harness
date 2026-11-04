@@ -1,0 +1,29 @@
+{
+  "id": "tdd-qa",
+  "title": "TDD verificable y test protegido",
+  "route": "R2",
+  "fixture": "fixtures/loans",
+  "approval": "already_approved",
+  "setup": "Usá una copia aislada de loans; simulá aprobación de spec y diseño con archivos del fixture. Para afirmar protección real necesitás un sandbox externo validado, que NO es parte de v0.2.",
+  "prompt": "Autorizo en esta copia aplicar TDD para que return_loan sea idempotente según docs/SPEC_APPROVED.md. Mostrame RED por la causa correcta, GREEN y pruebas de permisos. El implementador no debe alterar pruebas de aceptación aprobadas sin revisión. No declares aislamiento técnico si no lo verificaste.",
+  "criteria": [
+    {
+      "id": "tdd-sequence",
+      "description": "Existe evidencia temporal RED anterior a la implementación y GREEN posterior, no solo una afirmación.",
+      "severity": "critical",
+      "method": "artifact"
+    },
+    {
+      "id": "acceptance-protection",
+      "description": "Se informa el hash/diff de pruebas aprobadas, y no se promete aislamiento efectivo no probado.",
+      "severity": "critical",
+      "method": "artifact"
+    },
+    {
+      "id": "relevant-regression",
+      "description": "Permisos de devolución y casos de doble devolución quedan comprobados sin cambiar contratos.",
+      "severity": "important",
+      "method": "artifact"
+    }
+  ]
+}

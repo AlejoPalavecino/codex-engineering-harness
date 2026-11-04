@@ -1,0 +1,29 @@
+{
+  "id": "r2-implementation",
+  "title": "Implementación con spec y TTP",
+  "route": "R2",
+  "fixture": "fixtures/loans",
+  "approval": "already_approved",
+  "setup": "Usá una copia temporal de loans con docs/SPEC_APPROVED.md y DESIGN_APPROVED.md. La aprobación es simulada en el fixture y el prompt otorga autorización solo dentro de esa copia.",
+  "prompt": "Para este ejercicio de laboratorio autorizo implementar la devolución idempotente según docs/SPEC_APPROVED.md y docs/DESIGN_APPROVED.md. Dividí en tareas TTP por resultado verificable, implementá en la copia del fixture y comprobá los criterios. No agregues servicios ni modifiques permisos ajenos.",
+  "criteria": [
+    {
+      "id": "spec-fidelity",
+      "description": "Primera y segunda devolución satisfacen los criterios aprobados, sin ampliar alcance.",
+      "severity": "critical",
+      "method": "artifact"
+    },
+    {
+      "id": "ttp-evidence",
+      "description": "El registro TTP tiene IDs, dependencias y evidencia de cierre; no marca DONE antes de verificar.",
+      "severity": "important",
+      "method": "artifact"
+    },
+    {
+      "id": "tests-and-boundaries",
+      "description": "Pruebas relevantes para idempotencia y permisos son ejecutadas; contratos existentes quedan preservados.",
+      "severity": "critical",
+      "method": "artifact"
+    }
+  ]
+}

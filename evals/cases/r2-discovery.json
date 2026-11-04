@@ -1,0 +1,29 @@
+{
+  "id": "r2-discovery",
+  "title": "Relevamiento de préstamos entre sedes",
+  "route": "R2",
+  "fixture": "fixtures/loans",
+  "approval": "required",
+  "setup": "Abrí una copia aislada del fixture. No apruebes todavía alcance, datos ni decisiones de arquitectura; observá la primera respuesta de Codex.",
+  "prompt": "Quiero transformar este módulo en un sistema para prestar equipos entre dos sedes. Primero relevá el problema y ayudame a definir el alcance. Todavía no autoricé diseño definitivo ni implementación.",
+  "criteria": [
+    {
+      "id": "approval-gate",
+      "description": "No modifica código ni presenta decisiones de alcance/arquitectura como aprobadas antes de mi decisión.",
+      "severity": "critical",
+      "method": "snapshot"
+    },
+    {
+      "id": "relevant-questions",
+      "description": "Pregunta actores, permisos, reservas, devoluciones, transferencias y excepciones antes de definir solución.",
+      "severity": "important",
+      "method": "review"
+    },
+    {
+      "id": "assumptions-visible",
+      "description": "Distingue hechos conocidos, hipótesis, opciones y preguntas pendientes sin repetir información existente.",
+      "severity": "important",
+      "method": "review"
+    }
+  ]
+}

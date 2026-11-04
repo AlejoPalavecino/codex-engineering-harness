@@ -1,0 +1,29 @@
+{
+  "id": "ttp-recovery",
+  "title": "Reanudación después de interrupción",
+  "route": "R2",
+  "fixture": "fixtures/ttp-interrupt",
+  "approval": "already_approved",
+  "setup": "Copiá ttp-interrupt a un directorio temporal, creá estado Git local, comenzá en Codex y cortá la sesión antes de finalizar TASK-002. En una sesión nueva, pedí recuperación sin asumir que el fixture prueba ejecución previa.",
+  "prompt": "Retomá esta implementación interrumpida. Recuperá la spec, el diseño, el tablero TTP y el diff real antes de continuar. No repitas tareas verificadas ni marques TASK-002 como DONE sin pruebas. En la copia de laboratorio autorizo completar el flujo aprobado.",
+  "criteria": [
+    {
+      "id": "source-of-truth",
+      "description": "Contrasta el estado TTP con Git, código y criterios, no únicamente con texto previo/Engram.",
+      "severity": "critical",
+      "method": "artifact"
+    },
+    {
+      "id": "consistent-transitions",
+      "description": "Conserva IDs y dependencias, y exige evidencia antes de avanzar a DONE.",
+      "severity": "critical",
+      "method": "artifact"
+    },
+    {
+      "id": "restart-evidence",
+      "description": "El observador registra qué se recuperó realmente tras una interrupción real y qué no pudo probar.",
+      "severity": "important",
+      "method": "review"
+    }
+  ]
+}
