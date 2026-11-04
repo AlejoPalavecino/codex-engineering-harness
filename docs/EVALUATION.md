@@ -18,6 +18,20 @@ Una prueba de un modelo no prueba todo un proyecto. Un `PASS` escrito por el eva
 
 ## Iniciar una evaluación local
 
+### Preflight antes de consumir una ejecución conductual
+
+No interpretes exit 0 o `turn.completed` como prueba de que el agente pudo trabajar. En un home descartable, registrá versión del cliente, SHA del harness, huella del catálogo, permiso solicitado y permiso observado. No copies configuración personal al informe.
+
+1. Comprobá la configuración efectiva sin modelo cuando el cliente lo soporte (`codex debug prompt-input` en CLI 0.166.0). Conservá esa salida privada: contiene instrucciones y rutas.
+2. Ejecutá probes reales sobre un fixture descartable: lectura de un sentinel, escritura/lectura/borrado dentro de la copia y pruebas con salida identificable. Para R0 comprobá también que no se pueda escribir; para escritura comprobá una denegación fuera de la copia usando otro archivo sintético.
+3. Contrastá esas pruebas con la ruta real de herramientas del piloto R0/R1. El comando sandbox directo no certifica que el router de herramientas del agente acepte la operación.
+4. Prepará un registro schema 1 con `client` (`name`, `version`), `harness_commit`, `catalog_fingerprint`, `requested_permission`, `observed_permission` y `probes`. Cada probe contiene `capability` (`read`, `write` o `tests`), `exit_code`, `marker_expected` y `stdout`; el marcador debe ocupar una línea completa. `events` es opcional y conserva los errores del cliente si existen.
+5. Ejecutá `python scripts/eval_preflight.py RUTA_PRIVADA/preflight.json`. READY devuelve 0, BLOCKED devuelve 1 y NOT_VERIFIABLE/input inválido devuelve 2. No inicies escenarios dependientes si el gate no es READY o el piloto muestra herramientas bloqueadas. Los rechazos deliberados de probes negativos se conservan aparte; no son operaciones exitosas.
+
+El helper es offline: valida evidencia aportada, no la autentica, no ejecuta comandos ni configura permisos. Exige lectura; en `workspace-write` exige además escritura y pruebas. Rechaza permisos discordantes, escritura observada bajo `read-only`, probes fallidos y eventos de error. Su salida usa códigos fijos sin publicar stdout ni trazas.
+
+**Hallazgo versionado de Windows CLI 0.166.0:** en el laboratorio `sandbox_mode` legacy seguía mostrando read-only incluso para workspace-write. Los perfiles `default_permissions` documentados sí reflejaron el límite solicitado; MXC pasó los probes, mientras la selección nativa predeterminada y el fallback unelevated agotaron el timeout de escritura. Esto es una receta de laboratorio observada, no una migración automática de configuración personal ni una garantía para otras versiones. No mezclar perfiles nuevos con flags `--sandbox` legacy. Consultá la [documentación oficial de perfiles](https://learn.chatgpt.com/docs/permissions) y verificá el comportamiento real antes de usarla.
+
 Compilá Chuli v0.2 en la rama de desarrollo o usá `go run` (Go 1.26+ para el proyecto). Desde la raíz:
 
 ```powershell

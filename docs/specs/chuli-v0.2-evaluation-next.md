@@ -1,6 +1,6 @@
 # Chuli v0.2 — Próxima etapa de evaluación y optimización
 
-**Estado:** propuesta pendiente de aprobación; no autoriza implementación.
+**Estado:** diseño aprobado y ejecución de OPT-001 a OPT-006 autorizada por el usuario el 2026-11-04. Candidatas sustanciales de producción aún no definidas requieren revisión específica.
 **Fuente:** [baseline del 2026-11-04](../evaluations/2026-11-04-baseline.md), protocolo [Evaluation](../EVALUATION.md) y pedido del usuario del 2026-11-04.
 
 La primera mejora propuesta es comprobar las capacidades efectivas del cliente antes de consumir una ejecución conductual. Todavía no hay evidencia suficiente para cambiar modelos, roles o contratos de producción.
@@ -12,7 +12,7 @@ La primera mejora propuesta es comprobar las capacidades efectivas del cliente a
 - Conservar EWP, CES, TTP, TKA, MRP, ASEP, instalador, rollback y Chuli Manager.
 - Excluir cambios globales personales, memorias reales, datos productivos, publicación de v0.2 y despliegues.
 - No modificar prompts ni rúbricas para conseguir mejores resultados. Toda corrección futura de fixtures exige nueva huella y declaración de comparabilidad.
-- Las tareas propuestas permanecen PLANNED o BLOCKED hasta aprobar el diseño y autorizar su ejecución. Registro: [tareas](../../odd/tasks/chuli-v0.2-optimizations.md).
+- El usuario aprobó el diseño y autorizó ejecutar las seis OPT. Las dependencias y la evidencia controlan las transiciones; una candidata sustancial de producción requiere revisión específica. Registro: [tareas](../../odd/tasks/chuli-v0.2-optimizations.md).
 
 ## OPT-001 — Preflight de capacidades y procedencia
 

@@ -60,3 +60,6 @@ Las ejecuciones conductuales (Codex Desktop, memoria Engram y modelos) son **NOT
 ## Limitaciones
 
 Los checks de sintaxis no prueban el razonamiento del modelo. El entorno de GitHub Actions no reproduce todas las versiones de Codex Desktop ni prueba su sandbox. Un resultado `PASS` está limitado a la comprobación informada.
+## Preflight conductual
+
+Antes de ampliar una evaluación de agentes, seguí el [preflight de Evaluation](EVALUATION.md#preflight-antes-de-consumir-una-ejecución-conductual). Las pruebas del gate son `python -m unittest discover -s tests -p test_eval_preflight.py`; no consumen modelos. Un READY valida el registro recibido y exige contrastar el piloto real; no certifica aislamiento ni autenticidad.
