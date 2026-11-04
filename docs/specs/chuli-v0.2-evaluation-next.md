@@ -74,3 +74,21 @@ La primera mejora propuesta es comprobar las capacidades efectivas del cliente a
 Elegir una sola mejora después de OPT-002 a OPT-005. Documentar problema reproducible, beneficio esperado, componente, alternativa de no cambiar, riesgo y prueba A/B. No se define ahora una reescritura de MRP ni un cambio de agentes porque no existe evidencia suficiente.
 
 **Aceptación:** propuesta revisada por el usuario, implementación autorizada por separado, criterios críticos sin regresiones y todas las omisiones visibles; Go/Python/instalador/rollback/CI siguen verdes. Publicación y despliegue siguen excluidos.
+
+### Resultado de las seis OPT
+
+La candidata elegida para OPT-006 fue el preflight de OPT-001 ya aprobado: comparación offline sobre los mismos registros, sin cambios de modelos ni nuevas llamadas de benchmark. [Resultados y límites](../evaluations/2026-11-04-opt-execution.md). Las siete ejecuciones nuevas completan la cobertura conductual disponible; las cuatro observaciones anteriores se conservan separadas en el acumulado.
+
+## Hallazgo posterior — Distribución de la plantilla TTP
+
+**Estado:** propuesta nueva pendiente de revisión; no incluida en la autorización de las seis OPT. No se implementó ni se corrigió el tablero del benchmark.
+
+**Problema:** implementación produjo un tablero legible con evidencia, pero no aceptado por `taskboard.py`. El home instalado entrega el validador y carece de la plantilla/protocolo que el agente buscó. Recuperación funcionó con un tablero canónico preexistente. Evidencia: caso `r2-implementation-mxc`, log del validador exit 2 y caso `ttp-recovery-mxc` exit 0.
+
+**Alternativas:** documentar cómo obtener la plantilla, incorporar plantilla y guía como assets propios administrados por el instalador, o convertir tableros manualmente. Se recomienda evaluar assets propios con referencia de uso y validación antes de DONE; convertir la muestra para aprobarla queda excluido.
+
+**Superficie posible:** manifiesto/instalador/rollback, plantilla existente, documentación y guía de uso; cualquier referencia nueva en instrucciones requiere aprobación específica. No cambiar modelos, estados ni esquema de datos de TTP.
+
+**Riesgos:** sobrescribir personalizaciones, crear otro formato o ampliar indebidamente el paquete. Mantener backup/preservación/rollback existentes y usar una sola plantilla canónica.
+
+**Aceptación propuesta:** instalación descartable entrega plantilla y herramienta; modelo encuentra el recurso; tablero generado pasa check con IDs/dependencias/evidencia; no se cierra antes de probar; R0/R1 siguen proporcionales. Comparar una variable —disponibilidad/guía del recurso— con el mismo prompt/fixture/rúbrica, conservar ambos resultados y no atribuir el efecto al modelo. Reversión: quitar solo esos assets/referencias y comprobar rollback en copia sintética.
