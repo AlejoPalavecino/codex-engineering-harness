@@ -12,7 +12,7 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
 
-var version = "0.1.3-dev"
+var version = "0.2.0-dev"
 
 func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")

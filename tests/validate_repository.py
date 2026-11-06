@@ -31,7 +31,7 @@ for required in ("R0", "R1", "R2", "Criticidad", "Human-in-the-Loop", "Engram", 
 
 for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "tests/test_taskboard.py", "VERSION"):
     assert (root / required_path).is_file(), required_path
-assert (root / "VERSION").read_text(encoding="utf-8").strip() == "0.1.3"
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "0.2.0"
 assert "update_plan" in (root / "scripts/toml_config.py").read_text(encoding="utf-8")
 assert "TTP v1.0" in instructions
 for required_path in ("evals/manifest.json", "evals/rubrics/criteria.md", "docs/EVALUATION.md", "internal/eval/catalog.go", "internal/eval/snapshot.go", "internal/eval/run.go", "internal/eval/cli.go", "internal/eval/eval_test.go"):
