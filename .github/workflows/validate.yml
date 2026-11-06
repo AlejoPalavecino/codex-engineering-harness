@@ -51,6 +51,12 @@ jobs:
       - name: Regression tests for TOML, personalization and rollback
         shell: pwsh
         run: ./tests/windows-regression.ps1
+      - name: TTP resources installation, preservation and rollback
+        shell: pwsh
+        run: ./tests/windows-ttp-resources.ps1
+      - name: TTP resources compatibility with Windows PowerShell 5.1
+        shell: powershell
+        run: ./tests/windows-ttp-resources.ps1
 
   chuli-go:
     strategy:

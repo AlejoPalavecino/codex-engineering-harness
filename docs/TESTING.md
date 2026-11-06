@@ -9,6 +9,8 @@ python -m unittest discover -s tests -p 'test_*.py'
 
 GitHub Actions ejecuta validaciones estructurales y tests Python de TOML. Windows realiza smoke y regresiones sobre un CODEX_HOME descartable.
 
+Los recursos TTP tienen contratos portables en `tests/test_ttp_resources.py` e integración en `tests/windows-ttp-resources.ps1`. Este último prueba dry-run, copias/hash/manifiesto, plantilla con validador instalado, reinstalación, personalizaciones y rollback seguro. CI lo ejecuta tanto con PowerShell 7 (`pwsh`) como con Windows PowerShell 5.1 (`powershell`); siempre sobre homes sintéticos.
+
 ### Regresiones específicas de v0.1.2
 
 - P1-1: `[tools.update_plan] # comentario` con `enabled = false` no debe duplicarse ni destruir una preferencia local.

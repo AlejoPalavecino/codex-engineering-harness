@@ -18,6 +18,29 @@ Plan Mode sirve para discutir y aprobar el enfoque; TTP no escribe archivos ni f
 - **R2:** tras aprobación del alcance, arquitectura/diseño aplicables, criterios y autorización de ejecución, crear o actualizar el archivo de tareas **una sola vez por funcionalidad**.
 - **C:** reforzar evidencias y validaciones necesarias; no declarar DONE porque un subagente dice que terminó.
 
+## Recursos disponibles después de instalar
+
+El instalador distribuye las mismas fuentes canónicas del repositorio bajo `CODEX_HOME` (por defecto `~/.codex`):
+
+| Recurso | Ruta instalada |
+| --- | --- |
+| Plantilla | `harness/templates/feature-tasks.md` |
+| Esta guía | `harness/docs/protocols/TTP.md` |
+| Validador | `harness/bin/taskboard.py` |
+
+Leé la [plantilla canónica](../../templates/feature-tasks.md) antes de crear un registro nuevo; su enlace también resuelve desde la guía instalada. No sobrescribas un tablero existente ni cambies Approval a approved sin aprobación y autorización reales. Conservá los encabezados, metadatos y claves de la plantilla en inglés para que el validador pueda leerlos; el contenido puede estar en español.
+
+Desde el proyecto, en PowerShell:
+
+```powershell
+$ttpHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' }
+python (Join-Path $ttpHome 'harness/bin/taskboard.py') check odd/tasks/mi-funcionalidad.md
+```
+
+En otras shells resolvé ese mismo directorio desde `CODEX_HOME` o su valor por defecto. Los comandos `scripts/taskboard.py` de esta guía son para una copia del repositorio del harness; en otro proyecto usá la ruta instalada. Comprobá criterios y pruebas antes de DONE; después validá el tablero antes de anunciar el cierre. Un check exitoso no demuestra que se ejecutaron las pruebas declaradas ni ofrece aislamiento de escritura.
+
+Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
+
 ## Unidad de trabajo
 
 Una tarea debe representar **comportamiento o entregable verificable**, no operaciones como «abrir un archivo», «crear carpeta» o «ejecutar comando». Su contrato contiene:
