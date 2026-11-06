@@ -81,7 +81,7 @@ La candidata elegida para OPT-006 fue el preflight de OPT-001 ya aprobado: compa
 
 ## Hallazgo posterior — Distribución de la plantilla TTP
 
-**Estado:** propuesta nueva pendiente de revisión; no incluida en la autorización de las seis OPT. No se implementó ni se corrigió el tablero del benchmark.
+**Estado:** diseño e implementación autorizados el 2026-11-05, después de las seis OPT. Implementada y verificada como candidata separada; el tablero histórico permanece intacto. [Especificación](ttp-resources.md) y [resultados](../evaluations/2026-11-05-ttp-resources.md).
 
 **Problema:** implementación produjo un tablero legible con evidencia, pero no aceptado por `taskboard.py`. El home instalado entrega el validador y carece de la plantilla/protocolo que el agente buscó. Recuperación funcionó con un tablero canónico preexistente. Evidencia: caso `r2-implementation-mxc`, log del validador exit 2 y caso `ttp-recovery-mxc` exit 0.
 
