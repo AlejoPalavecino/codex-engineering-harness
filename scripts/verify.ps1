@@ -64,7 +64,8 @@ if ($null -eq $python) {
     foreach ($name in @('solution_architect','product_designer','test_engineer','quality_reviewer')) {
         $agentPath = Join-Path $homePath ('agents/' + $name + '.toml')
         if (-not (Test-Path -LiteralPath $agentPath -PathType Leaf)) { continue }
-        & $command @($python.prefix) -c 'import tomllib,sys; tomllib.load(open(sys.argv[1], "rb"))' $agentPath 2>$null
+        # Avoid nested quotes: Windows PowerShell 5.1 rewrites native -c arguments.
+        & $command @($python.prefix) -c 'import tomllib,pathlib,sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_bytes().decode())' $agentPath 2>$null
         if ($LASTEXITCODE -ne 0) {
             Write-Warning ('Agente con TOML inválido: ' + $name)
             $errors++

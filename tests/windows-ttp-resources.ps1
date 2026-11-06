@@ -34,8 +34,16 @@ function Snapshot([string]$directory) {
     return ($entries -join "`n")
 }
 function Run-Script([string]$name, [string]$homePath, [string[]]$options = @(), [bool]$expectSuccess = $true) {
-    $output = & $engine -NoProfile -File (Join-Path $repo ('scripts/' + $name + '.ps1')) -CodexHome $homePath @options 2>&1
-    $exitCode = $LASTEXITCODE
+    $previousPreference = $ErrorActionPreference
+    try {
+        # Windows PowerShell 5.1 wraps redirected native stderr as ErrorRecord.
+        # Capture it before checking the child exit code, including expected failures.
+        $ErrorActionPreference = 'Continue'
+        $output = & $engine -NoProfile -File (Join-Path $repo ('scripts/' + $name + '.ps1')) -CodexHome $homePath @options 2>&1
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousPreference
+    }
     if ($expectSuccess) {
         Assert-That ($exitCode -eq 0) ($name + ' falló: ' + ($output -join "`n"))
     } else {
