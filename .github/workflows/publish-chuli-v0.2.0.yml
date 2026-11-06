@@ -38,11 +38,14 @@ jobs:
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          git fetch origin main
+          git fetch origin main --tags
           test "$(git rev-parse HEAD)" = "$VALIDATED_SHA"
           test "$(git rev-parse origin/main)" = "$VALIDATED_SHA"
           test "$(tr -d '\r\n' < VERSION)" = "0.2.0"
           test -f docs/releases/v0.2.0.md
+          if git show-ref --verify --quiet refs/tags/v0.2.0; then
+            test "$(git rev-parse 'refs/tags/v0.2.0^{commit}')" = "$VALIDATED_SHA"
+          fi
           if gh release view v0.2.0 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "Release v0.2.0 already exists; skipping."
             echo "create=false" >> "$GITHUB_OUTPUT"
@@ -82,8 +85,13 @@ jobs:
           VALIDATED_SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           set -euo pipefail
-          git fetch origin main
+          git fetch origin main --tags
           test "$(git rev-parse origin/main)" = "$VALIDATED_SHA"
+          if ! git show-ref --verify --quiet refs/tags/v0.2.0; then
+            git tag v0.2.0 "$VALIDATED_SHA"
+            git push origin refs/tags/v0.2.0
+          fi
+          test "$(git rev-parse 'refs/tags/v0.2.0^{commit}')" = "$VALIDATED_SHA"
           gh release create v0.2.0 \
             dist/chuli_v0.2.0_windows_amd64.zip \
             dist/chuli_v0.2.0_linux_amd64.tar.gz \
@@ -91,6 +99,7 @@ jobs:
             dist/SHA256SUMS.txt \
             --repo "$GITHUB_REPOSITORY" \
             --target "$VALIDATED_SHA" \
+            --verify-tag \
             --title "Chuli v0.2.0 — Evaluación y recursos TTP" \
             --notes-file docs/releases/v0.2.0.md \
             --latest
