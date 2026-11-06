@@ -41,6 +41,11 @@ jobs:
           git fetch origin main
           test "$(git rev-parse HEAD)" = "$VALIDATED_SHA"
           test "$(git rev-parse origin/main)" = "$VALIDATED_SHA"
+          if [ "$(tr -d '\r\n' < VERSION)" != "0.1.3" ]; then
+            echo "Historical v0.1.3 publisher: another version, skipping."
+            echo "create=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           test "$(tr -d '\r\n' < VERSION)" = "0.1.3"
           test -f docs/releases/v0.1.3.md
           if gh release view v0.1.3 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then

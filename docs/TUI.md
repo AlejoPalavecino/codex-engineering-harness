@@ -1,4 +1,4 @@
-# Chuli Manager — TUI v0.1.3 (MVP)
+# Chuli Manager — TUI v0.2.0
 
 Chuli Manager es una interfaz de terminal en Go. Se ejecuta en Windows Terminal, PowerShell o la terminal integrada de Codex; no es un widget del chat.
 
