@@ -1,0 +1,53 @@
+name: Cambio del harness
+description: Proponer una mejora, corrección o tarea verificable.
+title: "[Cambio] "
+body:
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Tipo de cambio
+      description: Seleccionar un tipo no concede aprobación ni aplica etiquetas.
+      options:
+        - Corrección
+        - Funcionalidad
+        - Documentación
+        - Refactorización
+        - Mantenimiento
+        - Cambio incompatible
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problema y evidencia
+      description: Comportamiento actual, resultado esperado y evidencia sin datos privados.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Alcance y exclusiones
+      description: Qué cambia, qué queda fuera y dependencias con otros issues o PRs.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Criterios de aceptación
+      description: Resultados observables y comprobaciones necesarias para cerrar el cambio.
+    validations:
+      required: true
+  - type: textarea
+    id: risks
+    attributes:
+      label: Riesgos y reversión
+      description: Compatibilidad, permisos, datos afectados y cómo volver al estado anterior.
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: Referencias adicionales
+      description: Especificaciones, pruebas o propuestas relacionadas; sin credenciales ni logs privados.
+    validations:
+      required: false
