@@ -97,6 +97,8 @@ try {
         $items.Add(@{path=('skills/' + $name + '/SKILL.md'); source=('skills/' + $name + '/SKILL.md'); kind='copy'})
     }
     $items.Add(@{path='harness/bin/taskboard.py'; source='scripts/taskboard.py'; kind='copy'})
+    $items.Add(@{path='harness/templates/feature-tasks.md'; source='templates/feature-tasks.md'; kind='copy'})
+    $items.Add(@{path='harness/docs/protocols/TTP.md'; source='docs/protocols/TTP.md'; kind='copy'})
     if ($RemoveLegacyAgents) {
         foreach ($name in @('architect','explorer','reviewer','slice_worker','test_runner')) {
             $items.Add(@{path=('agents/' + $name + '.toml'); source=''; kind='remove'})
@@ -154,7 +156,7 @@ try {
     $changes.Add([ordered]@{path='config.toml';kind='config';action=$configAction;original=$oldConfigHash;source=$candidatePath})
 
     Write-Output ('Codex home: ' + $homePath)
-    Write-Output ('Version candidate: 0.1.2')
+    Write-Output ('Version candidate: ' + $harnessVersion)
     Write-Output ('Python TOML validation: PASS')
     Write-Output ('ReplaceCustomized requested: ' + [bool]$ReplaceCustomized)
     foreach ($entry in $changes) {
