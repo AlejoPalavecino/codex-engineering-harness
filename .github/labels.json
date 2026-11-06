@@ -1,0 +1,11 @@
+{
+  "labels": [
+    {"name": "type:bug", "color": "D73A4A", "description": "Corrección de comportamiento incorrecto"},
+    {"name": "type:feature", "color": "0E8A16", "description": "Nueva funcionalidad"},
+    {"name": "type:docs", "color": "0075CA", "description": "Cambio exclusivamente documental"},
+    {"name": "type:refactor", "color": "5319E7", "description": "Reorganización sin cambio funcional"},
+    {"name": "type:chore", "color": "BFD4F2", "description": "Mantenimiento, pruebas o herramientas"},
+    {"name": "type:breaking-change", "color": "B60205", "description": "Cambio incompatible con contratos vigentes"},
+    {"name": "status:approved", "color": "006B75", "description": "Alcance aprobado explícitamente por una persona autorizada"}
+  ]
+}
