@@ -97,6 +97,8 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
             }
         }
     }
+    # config.toml is tracked separately through managed_config.
+    $managedFiles.Remove('config.toml') | Out-Null
 }
 $python = Get-Python
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-stage-' + [guid]::NewGuid().ToString('N'))
