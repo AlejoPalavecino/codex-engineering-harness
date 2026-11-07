@@ -20,6 +20,17 @@ Los recursos TTP tienen contratos portables en `tests/test_ttp_resources.py` e i
 
 La validación conductual de agentes, modelos y aislamiento permanece en v0.2/v0.3.
 
+### Regresiones específicas de v0.2.1
+
+- I-1: una reinstalación sin cambios conserva el inventario completo de hashes en managed_files aunque files quede vacío.
+- I-2: un manifiesto v0.2.0 con files vacío recupera el baseline histórico de un recurso oficial y lo actualiza; una personalización distinta sigue preservándose.
+- V-1: la ausencia de cualquiera de los 13 recursos obligatorios debe producir código de salida 1 sin modificar CODEX_HOME.
+- R-1: un backup faltante debe bloquear rollback antes de restaurar cualquier archivo.
+- R-2: un manifiesto anterior con JSON inválido debe bloquear rollback antes de restaurar cualquier archivo.
+- M-1: Chuli Manager rechaza ejecutores locales anteriores a v0.2.1 y esquemas de rollback no soportados.
+
+La integración Windows se ejecuta en PowerShell 7 y Windows PowerShell 5.1 sobre homes temporales. Las pruebas Go cubren el gate de compatibilidad independientemente del sistema operativo.
+
 ## Pruebas de Chuli Manager v0.1.3
 
 ```bash

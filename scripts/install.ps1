@@ -52,13 +52,6 @@ function Invoke-Toml {
     }
     return $output
 }
-function Record-Previous([object]$Previous, [string]$Relative) {
-    if ($null -eq $Previous) { return $null }
-    foreach ($record in @($Previous.files)) {
-        if ($record.path -eq $Relative) { return $record }
-    }
-    return $null
-}
 function Is-Within([string]$Root, [string]$Path) {
     $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
     $full = [IO.Path]::GetFullPath($Path)
@@ -73,10 +66,39 @@ if ($harnessVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
 }
 $statePath = Join-Path $homePath 'harness-install/state.json'
 $configPath = Join-Path $homePath 'config.toml'
+$legacyBaselinePath = Join-Path $root 'scripts/legacy-managed-hashes.json'
+if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
+    throw 'Falta scripts/legacy-managed-hashes.json; instalación cancelada antes de modificar Codex.'
+}
+$legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
 $previous = $null
+$managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
     $previous = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
     if ($null -eq $previous.files) { throw 'Manifiesto anterior sin lista de archivos. No se modificó Codex.' }
+    if ($previous.PSObject.Properties.Name -contains 'managed_files' -and $null -ne $previous.managed_files) {
+        foreach ($entry in $previous.managed_files.PSObject.Properties) {
+            if ([string]$entry.Value -match '^[A-Fa-f0-9]{64}$') {
+                $managedFiles[$entry.Name] = [string]$entry.Value
+            }
+        }
+    }
+    foreach ($record in @($previous.files)) {
+        if ($record.path -and $record.path -ne 'config.toml' -and $record.installed_sha256 -and -not $managedFiles.ContainsKey([string]$record.path)) {
+            $managedFiles[[string]$record.path] = [string]$record.installed_sha256
+        }
+    }
+    # Recover official baselines from releases that predate managed_files.
+    foreach ($versionEntry in $legacyBaselines.PSObject.Properties) {
+        if ($versionEntry.Name -ne [string]$previous.version) { continue }
+        foreach ($entry in $versionEntry.Value.PSObject.Properties) {
+            if (-not $managedFiles.ContainsKey($entry.Name)) {
+                $managedFiles[$entry.Name] = [string]$entry.Value
+            }
+        }
+    }
+    # config.toml is tracked separately through managed_config.
+    $managedFiles.Remove('config.toml') | Out-Null
 }
 $python = Get-Python
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-stage-' + [guid]::NewGuid().ToString('N'))
@@ -109,29 +131,37 @@ try {
         $target = Join-Path $homePath $item.path
         $oldHash = Get-Hash $target
         $source = $null
+        $sourceHash = $null
         if ($item.kind -eq 'copy') {
             $source = Join-Path $root $item.source
             if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw ('Falta archivo del repositorio: ' + $item.source) }
             $sourceHash = Get-Hash $source
+            $knownManagedHash = $null
+            if ($managedFiles.ContainsKey([string]$item.path)) {
+                $knownManagedHash = [string]$managedFiles[[string]$item.path]
+            }
             if ($sourceHash -eq $oldHash) {
                 $action = 'UNCHANGED'
             } elseif ($null -eq $oldHash) {
                 $action = 'CREATE'
+            } elseif ($knownManagedHash -eq $oldHash) {
+                $action = 'UPDATE'
+            } elseif ($ReplaceCustomized) {
+                $action = 'REPLACE-APPROVED'
             } else {
-                $oldRecord = Record-Previous $previous $item.path
-                if ($null -ne $oldRecord -and $oldRecord.installed_sha256 -eq $oldHash) {
-                    $action = 'UPDATE'
-                } elseif ($ReplaceCustomized) {
-                    $action = 'REPLACE-APPROVED'
-                } else {
-                    $action = 'PRESERVE-CUSTOMIZED'
-                    $preserved.Add([string]$item.path)
-                }
+                $action = 'PRESERVE-CUSTOMIZED'
+                $preserved.Add([string]$item.path)
+            }
+            if ($action -in @('UNCHANGED','CREATE','UPDATE','REPLACE-APPROVED')) {
+                $managedFiles[[string]$item.path] = $sourceHash
             }
         } else {
             $action = if ($null -ne $oldHash) { 'REMOVE-APPROVED' } else { 'UNCHANGED' }
+            if ($item.kind -eq 'remove') {
+                $managedFiles.Remove([string]$item.path) | Out-Null
+            }
         }
-        $changes.Add([ordered]@{path=[string]$item.path; kind=[string]$item.kind; action=$action; original=$oldHash; source=$source})
+        $changes.Add([ordered]@{path=[string]$item.path; kind=[string]$item.kind; action=$action; original=$oldHash; source=$source; source_hash=$sourceHash})
     }
 
     $inputPath = Join-Path $staging 'original.toml'
@@ -223,10 +253,13 @@ try {
     foreach ($property in $report.tracked.PSObject.Properties) { $tracked[$property.Name] = $property.Value }
     $state = [ordered]@{
         version=$harnessVersion
+        schema_version=2
+        rollback_schema_version=2
         installed_at=(Get-Date).ToString('o')
         backup_dir=$backup
         previous_state_existed=[bool]($null -ne $previous)
         files=@($modified.ToArray())
+        managed_files=$managedFiles
         preserved_customizations=@($preserved.ToArray())
         managed_config=$tracked
     }

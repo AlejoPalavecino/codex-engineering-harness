@@ -82,22 +82,65 @@ func Compare(a, b string) (int, error) {
 	return 0, nil
 }
 
-func (m Manager) Installed() (string, error) {
+type installationState struct {
+	Version               string `json:"version"`
+	SchemaVersion         int    `json:"schema_version"`
+	RollbackSchemaVersion int    `json:"rollback_schema_version"`
+}
+
+func (m Manager) readInstallationState() (installationState, error) {
 	raw, err := os.ReadFile(filepath.Join(m.Home, "harness-install", "state.json"))
 	if errors.Is(err, os.ErrNotExist) {
-		return "", nil
+		return installationState{}, nil
 	}
+	if err != nil {
+		return installationState{}, err
+	}
+	var state installationState
+	if err := json.Unmarshal(raw, &state); err != nil {
+		return installationState{}, fmt.Errorf("state.json inválido: %w", err)
+	}
+	if state.Version == "" {
+		return installationState{}, errors.New("state.json sin versión")
+	}
+	if _, err := Compare(state.Version, state.Version); err != nil {
+		return installationState{}, err
+	}
+	if state.SchemaVersion == 0 {
+		state.SchemaVersion = 1 // v0.2.0 and earlier manifests predate this field.
+	}
+	if state.SchemaVersion < 1 || state.SchemaVersion > 2 {
+		return installationState{}, fmt.Errorf("state schema %d no soportado por este Manager", state.SchemaVersion)
+	}
+	if state.RollbackSchemaVersion == 0 {
+		state.RollbackSchemaVersion = 1 // v0.2.0 and earlier manifests predate this field.
+	}
+	if state.RollbackSchemaVersion < 1 || state.RollbackSchemaVersion > 2 {
+		return installationState{}, fmt.Errorf("rollback schema %d no soportado por este Manager", state.RollbackSchemaVersion)
+	}
+	return state, nil
+}
+
+func (m Manager) Installed() (string, error) {
+	state, err := m.readInstallationState()
 	if err != nil {
 		return "", err
 	}
-	var obj struct{ Version string }
-	if err := json.Unmarshal(raw, &obj); err != nil {
-		return "", fmt.Errorf("state.json inválido: %w", err)
+	return state.Version, nil
+}
+
+func validateRollbackCompatibility(sourceVersion string, schema int) error {
+	cmp, err := Compare(sourceVersion, "0.2.1")
+	if err != nil {
+		return err
 	}
-	if _, err := Compare(obj.Version, obj.Version); err != nil {
-		return "", err
+	if cmp < 0 {
+		return fmt.Errorf("rollback requiere el ejecutor seguro v0.2.1 o posterior; checkout local %s rechazado", sourceVersion)
 	}
-	return obj.Version, nil
+	if schema < 1 || schema > 2 {
+		return fmt.Errorf("rollback schema %d no soportado por este Manager", schema)
+	}
+	return nil
 }
 
 func (m Manager) Latest(ctx context.Context) (Release, error) {
@@ -286,10 +329,11 @@ func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
 		temporary = true
 		v = strings.TrimPrefix(rel.Tag, "v")
 	case "rollback":
-		installed, e := m.Installed()
+		state, e := m.readInstallationState()
 		if e != nil {
 			return Prepared{}, e
 		}
+		installed := state.Version
 		if installed == "" {
 			return Prepared{}, errors.New("no existe instalación registrada")
 		}
@@ -301,7 +345,13 @@ func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
 		if err != nil {
 			return Prepared{}, fmt.Errorf("rollback requiere checkout local con scripts: %w", err)
 		}
-		v, _ = ValidateSource(root)
+		v, err = ValidateSource(root)
+		if err != nil {
+			return Prepared{}, err
+		}
+		if err = validateRollbackCompatibility(v, state.RollbackSchemaVersion); err != nil {
+			return Prepared{}, err
+		}
 	default:
 		return Prepared{}, errors.New("acción no soportada")
 	}

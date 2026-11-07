@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 )
 
@@ -77,6 +78,13 @@ func TestReadInstalled(t *testing.T) {
 	if _, err := m.Installed(); err == nil {
 		t.Fatal("accepted broken manifest")
 	}
+	unsupported := []byte(`{"version":"0.2.1","schema_version":3,"rollback_schema_version":2}`)
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), unsupported, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Installed(); err == nil {
+		t.Fatal("accepted unsupported state schema")
+	}
 }
 func TestLocalSource(t *testing.T) {
 	root := t.TempDir()
@@ -99,6 +107,59 @@ func TestLocalSource(t *testing.T) {
 		t.Fatalf("local %s %v", path, err)
 	}
 }
+
+func TestRollbackCompatibility(t *testing.T) {
+	cases := []struct {
+		source  string
+		schema  int
+		wantErr bool
+	}{
+		{source: "0.1.2", schema: 1, wantErr: true},
+		{source: "0.2.0", schema: 1, wantErr: true},
+		{source: "0.2.1", schema: 1, wantErr: false},
+		{source: "0.2.1", schema: 2, wantErr: false},
+		{source: "0.3.0", schema: 2, wantErr: false},
+		{source: "0.3.0", schema: 3, wantErr: true},
+	}
+	for _, tc := range cases {
+		err := validateRollbackCompatibility(tc.source, tc.schema)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("validateRollbackCompatibility(%q, %d) error = %v; wantErr %v", tc.source, tc.schema, err, tc.wantErr)
+		}
+	}
+}
+
+func TestRollbackRejectsOldCheckoutBeforeRunningPowerShell(t *testing.T) {
+	home := t.TempDir()
+	stateDir := filepath.Join(home, "harness-install")
+	if err := os.MkdirAll(stateDir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	state := []byte(`{"version":"0.2.0","files":[]}`)
+	if err := os.WriteFile(filepath.Join(stateDir, "state.json"), state, 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	source := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(source, "scripts"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"install.ps1", "verify.ps1", "rollback.ps1"} {
+		if err := os.WriteFile(filepath.Join(source, "scripts", name), []byte("# script"), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(source, "VERSION"), []byte("0.1.2\n"), 0600); err != nil {
+		t.Fatal(err)
+	}
+
+	m := Manager{Home: home, Source: source}
+	_, err := m.Prepare(context.Background(), "rollback")
+	if err == nil || !strings.Contains(err.Error(), "rollback requiere el ejecutor seguro v0.2.1") {
+		t.Fatalf("old rollback executor was not rejected before PowerShell: %v", err)
+	}
+}
+
 func TestRejectUnsupportedOS(t *testing.T) {
 	if runtime.GOOS != "windows" {
 		m := Manager{}

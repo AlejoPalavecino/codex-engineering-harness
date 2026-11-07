@@ -26,26 +26,86 @@ function Assert-Within([string]$Root,[string]$Candidate) {
         throw 'Invalid relative path in rollback manifest; no files changed.'
     }
 }
+function Assert-Manifest([object]$Candidate, [string]$Label) {
+    if ($null -eq $Candidate -or $null -eq $Candidate.PSObject.Properties['files'] -or $null -eq $Candidate.files) {
+        throw ($Label + ' manifest is incomplete; rollback stopped before writes.')
+    }
+    if (-not $Candidate.version -or [string]$Candidate.version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+        throw ($Label + ' manifest has an invalid version; rollback stopped before writes.')
+    }
+    $manifestSchema = 1
+    if ($null -ne $Candidate.PSObject.Properties['schema_version']) {
+        $manifestSchema = [int]$Candidate.schema_version
+    }
+    if ($manifestSchema -lt 1 -or $manifestSchema -gt 2) {
+        throw ($Label + ' manifest uses an unsupported state schema; no files changed.')
+    }
+    $rollbackSchema = 1
+    if ($null -ne $Candidate.PSObject.Properties['rollback_schema_version']) {
+        $rollbackSchema = [int]$Candidate.rollback_schema_version
+    }
+    if ($rollbackSchema -lt 1 -or $rollbackSchema -gt 2) {
+        throw ($Label + ' manifest uses an unsupported rollback schema; no files changed.')
+    }
+    $seen = @{}
+    foreach ($item in @($Candidate.files)) {
+        if ($null -eq $item -or -not $item.path) {
+            throw ($Label + ' manifest contains an empty path; no files changed.')
+        }
+        $relative = [string]$item.path
+        if ([IO.Path]::IsPathRooted($relative) -or $relative -match '(^|[\\/])\.\.([\\/]|$)') {
+            throw ($Label + ' manifest contains an unsafe path; no files changed.')
+        }
+        $key = $relative.ToLowerInvariant()
+        if ($seen.ContainsKey($key)) {
+            throw ($Label + ' manifest contains a duplicate path; no files changed.')
+        }
+        $seen[$key] = $true
+        if ($null -eq $item.PSObject.Properties['existed']) {
+            throw ($Label + ' manifest omits the existed flag; no files changed.')
+        }
+        if ($null -ne $item.installed_sha256 -and [string]$item.installed_sha256 -notmatch '^[A-Fa-f0-9]{64}$') {
+            throw ($Label + ' manifest contains an invalid installed hash; no files changed.')
+        }
+        if ($item.existed -and $null -ne $item.backup_sha256 -and [string]$item.backup_sha256 -notmatch '^[A-Fa-f0-9]{64}$') {
+            throw ($Label + ' manifest contains an invalid backup hash; no files changed.')
+        }
+    }
+}
+$repoRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$scriptVersionText = [IO.File]::ReadAllText((Join-Path $repoRoot 'VERSION')).Trim()
+if ($scriptVersionText -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$' -or [version]$scriptVersionText -lt [version]'0.2.1') {
+    throw 'Rollback requiere el ejecutor seguro v0.2.1 o posterior; no se modificó CODEX_HOME.'
+}
 $homePath = if ($CodexHome) { [IO.Path]::GetFullPath($CodexHome) } elseif ($env:CODEX_HOME) { [IO.Path]::GetFullPath($env:CODEX_HOME) } else { Join-Path $HOME '.codex' }
 $statePath = Join-Path $homePath 'harness-install/state.json'
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { throw 'No existe un manifiesto de instalación.' }
 $rawState = [IO.File]::ReadAllText($statePath)
 $state = $rawState | ConvertFrom-Json
-if ($null -eq $state.files -or -not $state.backup_dir) { throw 'Manifiesto incompleto; se rechazó rollback.' }
+Assert-Manifest $state 'Current'
+if ([version]$state.version -lt [version]'0.1.2') {
+    throw 'Rollback automático de instalaciones anteriores a v0.1.2 no está soportado.'
+}
+if (-not $state.backup_dir) { throw 'Manifiesto sin carpeta de backup; se rechazó rollback.' }
 
+$backupRoot = Join-Path $homePath 'backups/harness'
 $backup = [string]$state.backup_dir
-Assert-Within (Join-Path $homePath 'backups/harness') (Join-Path $backup 'fixture')
+Assert-Within $backupRoot (Join-Path $backup 'fixture')
 if (-not (Test-Path -LiteralPath $backup -PathType Container)) { throw 'Falta carpeta de backup; sin modificaciones.' }
 
-# P1-2: validate the previous manifest before restoring ANY targets.
+# Validate the previous manifest completely before restoring ANY targets.
 $previous = Join-Path $backup '_previous_state.json'
 if ($state.previous_state_existed) {
     if (-not (Test-Path -LiteralPath $previous -PathType Leaf)) {
         throw 'Falta _previous_state.json. Rollback cancelado SIN modificar archivos.'
     }
     $previousText = [IO.File]::ReadAllText($previous)
-    $previousState = $previousText | ConvertFrom-Json
-    if ($null -eq $previousState.files) { throw 'Manifiesto anterior inválido; no se realizó rollback.' }
+    try {
+        $previousState = $previousText | ConvertFrom-Json -ErrorAction Stop
+    } catch {
+        throw 'Manifiesto anterior JSON inválido; no se realizó rollback.'
+    }
+    Assert-Manifest $previousState 'Previous'
 }
 
 $restore = New-Object 'System.Collections.Generic.List[object]'
@@ -63,7 +123,7 @@ foreach ($item in @($state.files)) {
         if (-not (Test-Path -LiteralPath $saved -PathType Leaf)) {
             throw ('Falta backup: ' + $item.path + '. Rollback cancelado SIN modificar archivos.')
         }
-        if ($item.PSObject.Properties.Name -contains 'backup_sha256') {
+        if ($item.PSObject.Properties.Name -contains 'backup_sha256' -and $null -ne $item.backup_sha256) {
             if ((Get-Hash $saved) -ne $item.backup_sha256) {
                 throw ('Hash de backup incorrecto: ' + $item.path + '. Sin cambios.')
             }
