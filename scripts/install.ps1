@@ -52,15 +52,6 @@ function Invoke-Toml {
     }
     return $output
 }
-function Get-LegacyManagedHash([object]$Baselines, [string]$Version, [string]$Relative) {
-    foreach ($versionEntry in $Baselines.PSObject.Properties) {
-        if ($versionEntry.Name -ne $Version) { continue }
-        foreach ($entry in $versionEntry.Value.PSObject.Properties) {
-            if ($entry.Name -eq $Relative) { return [string]$entry.Value }
-        }
-    }
-    return $null
-}
 function Is-Within([string]$Root, [string]$Path) {
     $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
     $full = [IO.Path]::GetFullPath($Path)
@@ -262,7 +253,6 @@ try {
         version=$harnessVersion
         schema_version=2
         rollback_schema_version=2
-        rollback_script_sha256=(Get-Hash (Join-Path $root 'scripts/rollback.ps1'))
         installed_at=(Get-Date).ToString('o')
         backup_dir=$backup
         previous_state_existed=[bool]($null -ne $previous)
