@@ -83,7 +83,7 @@ func Compare(a, b string) (int, error) {
 }
 
 type installationState struct {
-	Version              string `json:"version"`
+	Version               string `json:"version"`
 	RollbackSchemaVersion int    `json:"rollback_schema_version"`
 }
 
