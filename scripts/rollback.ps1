@@ -33,11 +33,18 @@ function Assert-Manifest([object]$Candidate, [string]$Label) {
     if (-not $Candidate.version -or [string]$Candidate.version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
         throw ($Label + ' manifest has an invalid version; rollback stopped before writes.')
     }
-    $schema = 1
-    if ($null -ne $Candidate.PSObject.Properties['rollback_schema_version']) {
-        $schema = [int]$Candidate.rollback_schema_version
+    $manifestSchema = 1
+    if ($null -ne $Candidate.PSObject.Properties['schema_version']) {
+        $manifestSchema = [int]$Candidate.schema_version
     }
-    if ($schema -lt 1 -or $schema -gt 2) {
+    if ($manifestSchema -lt 1 -or $manifestSchema -gt 2) {
+        throw ($Label + ' manifest uses an unsupported state schema; no files changed.')
+    }
+    $rollbackSchema = 1
+    if ($null -ne $Candidate.PSObject.Properties['rollback_schema_version']) {
+        $rollbackSchema = [int]$Candidate.rollback_schema_version
+    }
+    if ($rollbackSchema -lt 1 -or $rollbackSchema -gt 2) {
         throw ($Label + ' manifest uses an unsupported rollback schema; no files changed.')
     }
     $seen = @{}
