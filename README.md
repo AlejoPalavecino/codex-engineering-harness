@@ -4,7 +4,7 @@
 
 Chuli es un harness abierto, inicialmente para Codex, que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **Chuli v0.2.1 (candidata de mantenimiento):** corrige la persistencia del inventario de recursos, refuerza la verificación de instalaciones y endurece el preflight de rollback. La release estable publicada continúa siendo v0.2.0 hasta completar esta validación.
+> **Chuli v0.2.1 (candidata de mantenimiento):** corrige la persistencia del inventario de recursos, refuerza la verificación de instalaciones y endurece el preflight de rollback. La release estable publicada continúa siendo v0.2.0 hasta completar esta validación. Ver [nota de la candidata v0.2.1](docs/releases/v0.2.1.md).
 
 ## Chuli Manager — primera TUI
 
