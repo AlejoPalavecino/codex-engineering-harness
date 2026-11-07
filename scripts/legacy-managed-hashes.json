@@ -1,0 +1,30 @@
+{
+  "0.1.3": {
+    "AGENTS.md": "a3423adbb715844297205c7cfd43de7997f2f26a009b295883cfea2d63b970e9",
+    "agents/solution_architect.toml": "d1d66569dc7ce14ad09ec92fa094000a49f54831e67129f0a28a84fce3d4948c",
+    "agents/product_designer.toml": "f32838762aed52e5ab9dd441b5f31defe0fe6490f48ea74afdb51c2c045c40d3",
+    "agents/test_engineer.toml": "6f9b4d63f91d4cb68457c1c83d24d319eca0953c7ac7ec0ffb5cd1ecb8509d0c",
+    "agents/quality_reviewer.toml": "1a07c165cd7208b12563ad4bbcd480e53b331110a2e3d2d624d791be383309dc",
+    "skills/harness-discovery/SKILL.md": "3f29bfeff4343dcb353e52d155d1e1a8535b29a99680d80a94557ee2e2e8e5fa",
+    "skills/harness-architecture/SKILL.md": "878600b43eb5a46f8e0afd9cc997868dc2610f2c25c809cc73a7b8ee947fd544",
+    "skills/harness-ux-ui/SKILL.md": "5506798b689630fb755df9f312cb6e442af0d1722f58bda7a5856b0ac7c3c9aa",
+    "skills/harness-specification/SKILL.md": "a4264e6ba48eaca2d5c95a120c19c54ac5882f5caefc91b13b479749f27ac809",
+    "skills/harness-tdd-qa/SKILL.md": "12873670f42176a8b72cf811fecd997c4446e7358afbeeb38e0704625729c9b3",
+    "harness/bin/taskboard.py": "7642ed84d05260745f4e34d5dd09d33a57c36c5f9fe1b4de9ad7594b2faecf8a"
+  },
+  "0.2.0": {
+    "AGENTS.md": "bf29d88b675271702d777ae48e99e323cccb2a8b8106a2f8537e079703aebabf",
+    "agents/solution_architect.toml": "d1d66569dc7ce14ad09ec92fa094000a49f54831e67129f0a28a84fce3d4948c",
+    "agents/product_designer.toml": "f32838762aed52e5ab9dd441b5f31defe0fe6490f48ea74afdb51c2c045c40d3",
+    "agents/test_engineer.toml": "6f9b4d63f91d4cb68457c1c83d24d319eca0953c7ac7ec0ffb5cd1ecb8509d0c",
+    "agents/quality_reviewer.toml": "1a07c165cd7208b12563ad4bbcd480e53b331110a2e3d2d624d791be383309dc",
+    "skills/harness-discovery/SKILL.md": "3f29bfeff4343dcb353e52d155d1e1a8535b29a99680d80a94557ee2e2e8e5fa",
+    "skills/harness-architecture/SKILL.md": "878600b43eb5a46f8e0afd9cc997868dc2610f2c25c809cc73a7b8ee947fd544",
+    "skills/harness-ux-ui/SKILL.md": "5506798b689630fb755df9f312cb6e442af0d1722f58bda7a5856b0ac7c3c9aa",
+    "skills/harness-specification/SKILL.md": "018effae57e32d7d485c9ea97fee93e806ac00279112f3cc372308ae78b5de54",
+    "skills/harness-tdd-qa/SKILL.md": "12873670f42176a8b72cf811fecd997c4446e7358afbeeb38e0704625729c9b3",
+    "harness/bin/taskboard.py": "7642ed84d05260745f4e34d5dd09d33a57c36c5f9fe1b4de9ad7594b2faecf8a",
+    "harness/templates/feature-tasks.md": "5e205b95eae15f45470e2102fcdf9abab2ecfe61423c77e819cade8eb81696f8",
+    "harness/docs/protocols/TTP.md": "7e3de718053c75f3eadff2775365f2172ce5960051aa7649a5beaace1fbc4854"
+  }
+}
