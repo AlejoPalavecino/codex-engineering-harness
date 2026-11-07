@@ -78,6 +78,13 @@ func TestReadInstalled(t *testing.T) {
 	if _, err := m.Installed(); err == nil {
 		t.Fatal("accepted broken manifest")
 	}
+	unsupported := []byte(`{"version":"0.2.1","schema_version":3,"rollback_schema_version":2}`)
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), unsupported, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Installed(); err == nil {
+		t.Fatal("accepted unsupported state schema")
+	}
 }
 func TestLocalSource(t *testing.T) {
 	root := t.TempDir()
