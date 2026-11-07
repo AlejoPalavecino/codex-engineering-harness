@@ -103,8 +103,8 @@ func TestLocalSource(t *testing.T) {
 
 func TestRollbackCompatibility(t *testing.T) {
 	cases := []struct {
-		source string
-		schema int
+		source  string
+		schema  int
 		wantErr bool
 	}{
 		{source: "0.1.2", schema: 1, wantErr: true},
