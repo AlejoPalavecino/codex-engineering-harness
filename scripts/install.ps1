@@ -76,7 +76,7 @@ $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
     $previous = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
     if ($null -eq $previous.files) { throw 'Manifiesto anterior sin lista de archivos. No se modificó Codex.' }
-    if ($null -ne $previous.managed_files) {
+    if ($previous.PSObject.Properties.Name -contains 'managed_files' -and $null -ne $previous.managed_files) {
         foreach ($entry in $previous.managed_files.PSObject.Properties) {
             if ([string]$entry.Value -match '^[A-Fa-f0-9]{64}$') {
                 $managedFiles[$entry.Name] = [string]$entry.Value
@@ -84,7 +84,7 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
         }
     }
     foreach ($record in @($previous.files)) {
-        if ($record.path -and $record.installed_sha256 -and -not $managedFiles.ContainsKey([string]$record.path)) {
+        if ($record.path -and $record.path -ne 'config.toml' -and $record.installed_sha256 -and -not $managedFiles.ContainsKey([string]$record.path)) {
             $managedFiles[[string]$record.path] = [string]$record.installed_sha256
         }
     }
