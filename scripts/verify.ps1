@@ -18,7 +18,7 @@ function Get-LegacyManagedHash([object]$Baselines, [string]$Version, [string]$Re
     return $null
 }
 function Get-ExpectedManagedHash([object]$State, [object]$Baselines, [string]$Relative) {
-    if ($null -ne $State.managed_files) {
+    if ($State.PSObject.Properties.Name -contains 'managed_files' -and $null -ne $State.managed_files) {
         foreach ($entry in $State.managed_files.PSObject.Properties) {
             if ($entry.Name -eq $Relative) { return [string]$entry.Value }
         }
