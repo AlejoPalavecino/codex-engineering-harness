@@ -1,4 +1,3 @@
-<!-- Exact v0.2.0 installed-resource fixture; preserve bytes for legacy SHA-256 migration tests. -->
 ---
 name: harness-specification
 description: "Convertir alcance y diseño aprobados en especificaciones verificables y tareas recuperables. Aplicar a trabajo EWP R2 cuando un diff y contexto breve no alcanzan."
