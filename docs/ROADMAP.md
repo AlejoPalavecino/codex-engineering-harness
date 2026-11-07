@@ -22,15 +22,23 @@
 - CI compilando y probando Go en Windows, Linux y macOS; instalación sobre Codex habilitada solo en Windows.
 - Binarios oficiales para Windows, Linux y macOS con archivo SHA-256; autoactualización segura y adaptadores Antigravity quedan para próximas versiones.
 
-## v0.2 — Evaluación y optimización medida (en desarrollo)
-- **PR #5 — Evaluation Foundation:** 11 escenarios reproducibles, rúbricas, snapshots SHA-256, registros de observación, reportes comparativos y pruebas propias. Baseline de código: tag v0.1.3 sin modificar agentes.
-- **Ejecución baseline en Codex Desktop:** guardar prompts, modelo efectivamente observado y métricas solo si están disponibles; no inventar consumo.
-- **PR #6 — Optimización respaldada:** corregir defectos conductuales reproducibles y comparar contra el baseline, manteniendo EWP/TTP/CES.
-- No atribuir a CI pruebas de razonamiento que no se ejecutaron; aislamiento efectivo queda para v0.3.
+## v0.2 — Evaluación y optimización medida (publicada)
+- **v0.2.0:** 11 escenarios reproducibles, rúbricas, snapshots SHA-256, registros de observación, reportes comparativos, preflight offline y recursos TTP canónicos instalados.
+- Baseline de código: tag v0.1.3 sin modificar agentes. La evidencia conductual publicada corresponde a Codex CLI en Windows y no certifica Codex Desktop ni aislamiento efectivo.
+- No atribuir a CI pruebas de razonamiento que no se ejecutaron; el aislamiento efectivo queda para v0.3.
+
+## v0.2.1 — Mantenimiento y confiabilidad (candidata)
+- Preservar el inventario completo de recursos administrados entre reinstalaciones y migrar manifiestos v0.1.3/v0.2.0 que quedaron sin inventario.
+- Verificar los 13 recursos obligatorios y fallar con código distinto de cero cuando falte alguno.
+- Rechazar rollback con ejecutores antiguos, manifiestos corruptos, rutas inseguras, esquemas desconocidos o backups incompletos antes de escribir.
+- Repetir regresiones en Windows PowerShell 5.1 y PowerShell 7; no sumar agentes, MCP ni cambios conductuales.
 
 ## v0.3 — Aislamiento efectivo
-- Ejecuciones separadas, permisos por ruta, pruebas protegidas y verificador de solo lectura real.
-- Tests de seguridad que intenten violar restricciones.
+- Separar ejecución y superficies de escritura por tarea; permisos efectivos por ruta, no instrucciones declarativas.
+- Proteger pruebas y criterios de aceptación fuera del alcance de escritura del implementador.
+- Añadir un verificador independiente y de solo lectura, con evidencia de proceso y diff.
+- Tests adversariales de escritura no autorizada, traversal/symlinks, subprocessos, red y alteración de pruebas.
+- No declarar aislamiento real hasta demostrar que las restricciones sobreviven a intentos de evasión y a procesos hijos.
 
 ## v0.4 — Mantenimiento
 - Actualizaciones incrementales idempotentes y migraciones entre versiones.

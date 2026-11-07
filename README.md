@@ -4,11 +4,11 @@
 
 Chuli es un harness abierto, inicialmente para Codex, que combina análisis de requisitos, arquitectura agnóstica, diseño UX/UI, TDD, revisión independiente y memoria persistente, **sin montar una fábrica de agentes para cambiar un botón**.
 
-> **Chuli v0.2.0:** evaluación reproducible, preflight de permisos y recursos TTP canónicos instalados junto al validador. Se conservan el Manager TUI, las rutas heredadas y los modelos existentes.
+> **Chuli v0.2.1 (candidata de mantenimiento):** corrige la persistencia del inventario de recursos, refuerza la verificación de instalaciones y endurece el preflight de rollback. La release estable publicada continúa siendo v0.2.0 hasta completar esta validación. Ver [nota de la candidata v0.2.1](docs/releases/v0.2.1.md).
 
 ## Chuli Manager — primera TUI
 
-**Ejecutables oficiales:** disponibles en [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), junto con `SHA256SUMS.txt`. En Windows, descargá el ZIP `chuli_v0.2.0_windows_amd64.zip`, extraé `chuli.exe` y ejecutalo desde PowerShell. El ejecutable no requiere Go; la instalación de Codex sigue necesitando PowerShell y Python 3.11+.
+**Ejecutables oficiales:** disponibles en [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), junto con `SHA256SUMS.txt`. La release estable actual es `v0.2.0`: en Windows, descargá `chuli_v0.2.0_windows_amd64.zip`, extraé `chuli.exe` y ejecutalo desde PowerShell. La candidata `v0.2.1` todavía no reemplaza esos artefactos. El ejecutable no requiere Go; la instalación de Codex sigue necesitando PowerShell y Python 3.11+.
 
 Interfaz en Go y Bubble Tea para consultar el estado de Codex, preparar instalaciones y actualizaciones, revisar cambios y confirmar su aplicación, diagnosticar y realizar rollback. **Ningún cambio se aplica al iniciar la TUI.**
 
@@ -21,9 +21,9 @@ go build -o chuli.exe ./cmd/chuli
 .\chuli.exe --source .
 ```
 
-El instalador sigue siendo el de la v0.1.2, incluida su protección de personalizaciones. Ver [guía Chuli Manager](docs/TUI.md). La autoactualización del propio ejecutable y otros proveedores llegarán en versiones posteriores.
+El instalador conserva la validación TOML y la protección de personalizaciones de v0.1.2. La candidata v0.2.1 agrega un inventario persistente de hashes administrados, migración de manifiestos v0.1.3/v0.2.0, verificación bloqueante de los 13 recursos obligatorios y rollback compatible con esquemas explícitos. El Manager rechaza checkouts anteriores a v0.2.1 para ejecutar rollback. Ver [guía Chuli Manager](docs/TUI.md). La autoactualización del propio ejecutable y otros proveedores llegarán en versiones posteriores.
 
-## Chuli Evaluation Foundation — próxima v0.2
+## Chuli Evaluation Foundation — v0.2
 
 La v0.2.0 incluye **11 escenarios reproducibles**, rúbricas críticas, snapshots SHA-256, reportes comparativos y preflight offline de permisos/probes. Los reportes conservan `v0.1.3` como referencia histórica inmutable; no es la versión instalada actual. Las observaciones reales corresponden a Codex CLI en Windows y no certifican Codex Desktop. Ver [notas y límites de v0.2.0](docs/releases/v0.2.0.md) y [evidencia TTP](docs/evaluations/2026-11-05-ttp-resources.md).
 
@@ -35,7 +35,7 @@ go run ./cmd/chuli eval fingerprint
 go run ./cmd/chuli eval report ruta/a/ejecucion.json
 ```
 
-[Metodología y límites de Chuli Evaluation Protocol](docs/EVALUATION.md). Esta función es código de desarrollo de la v0.2, no una afirmación de que la v0.2 esté publicada.
+[Metodología y límites de Chuli Evaluation Protocol](docs/EVALUATION.md). La v0.2.0 está publicada. La candidata v0.2.1 se limita a corregir instalación, verificación y rollback; no modifica el catálogo de evaluación ni afirma nuevas pruebas conductuales.
 
 ## Filosofía
 
@@ -89,7 +89,7 @@ cd codex-engineering-harness
 .\scripts\verify.ps1
 ```
 
-El instalador habilita `[tools.update_plan] enabled = true` salvo `-SkipTaskProgress` o que exista una preferencia personalizada distinta. La actualización valida el TOML original y candidato antes de escribir, muestra las rutas afectadas y **preserva personalizaciones salvo reemplazo explícito** (`-ReplaceCustomized`). Esta opción no garantiza que Codex Desktop muestre una tarjeta visual en todas las versiones. También instala el validador opcional `harness/bin/taskboard.py` (su uso requiere Python 3.11+), la plantilla canónica `harness/templates/feature-tasks.md` y la guía `harness/docs/protocols/TTP.md`; los tres usan manifiesto, backup y rollback. Las instrucciones instaladas indican cómo generar y validar el tablero antes del cierre de un R2. **No ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Los recursos personalizados con los mismos nombres se conservan salvo reemplazo explícito. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
+El instalador habilita `[tools.update_plan] enabled = true` salvo `-SkipTaskProgress` o que exista una preferencia personalizada distinta. La actualización valida el TOML original y candidato antes de escribir, muestra las rutas afectadas y **preserva personalizaciones salvo reemplazo explícito** (`-ReplaceCustomized`). Esta opción no garantiza que Codex Desktop muestre una tarjeta visual en todas las versiones. También instala el validador opcional `harness/bin/taskboard.py` (su uso requiere Python 3.11+), la plantilla canónica `harness/templates/feature-tasks.md` y la guía `harness/docs/protocols/TTP.md`; los tres usan manifiesto, backup y rollback. El manifiesto conserva `managed_files` incluso en reinstalaciones sin cambios y puede recuperar los hashes oficiales de v0.1.3/v0.2.0 cuando el inventario anterior quedó vacío. `verify.ps1` comprueba los 13 recursos obligatorios y devuelve error si falta alguno. El rollback valida el manifiesto anterior y todos los backups antes de escribir; requiere el ejecutor v0.2.1 o posterior. Las instrucciones instaladas indican cómo generar y validar el tablero antes del cierre de un R2. **No ejecuta descargas de terceros**, no elimina otros agentes, no toca las memorias de Engram ni desinstala skills existentes. Los recursos personalizados con los mismos nombres se conservan salvo reemplazo explícito. Los MCP se configuran por separado: ver [herramientas y memoria](docs/protocols/TKA.md).
 
 **Revertir la última instalación:**
 

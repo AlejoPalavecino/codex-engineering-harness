@@ -1,4 +1,4 @@
-# Chuli Manager — TUI v0.2.0
+# Chuli Manager — TUI v0.2.1 (candidata de mantenimiento)
 
 Chuli Manager es una interfaz de terminal en Go. Se ejecuta en Windows Terminal, PowerShell o la terminal integrada de Codex; no es un widget del chat.
 
@@ -19,7 +19,7 @@ La release oficial incluye binarios para Windows x64, Linux x64 y macOS arm64, a
 - **Instalar o actualizar desde la última release estable:** consulta GitHub Releases del repositorio oficial. Rechaza prereleases, versiones iguales/inferiores y versiones anteriores a v0.1.2, cuyo instalador tenía fallos conocidos. Descarga el tag exacto en un directorio temporal, sin modificar el checkout original.
 - **Instalar desde checkout local:** ejecuta `install.ps1` sin `-Apply`; muestra cambios y solo escribe tras confirmación `S/Y`.
 - **Diagnóstico:** ejecuta `verify.ps1` del checkout local. No verifica modelos ejecutados ni aislamiento real.
-- **Rollback:** utiliza el script existente del checkout local, con dry-run y confirmación. Impide revertir automáticamente instalaciones v0.1.1 que tenían un fallo de rollback conocido.
+- **Rollback:** utiliza el script del checkout local solo si es v0.2.1 o posterior y declara un esquema compatible. Valida el manifiesto anterior y todos los backups antes de escribir; rechaza checkouts antiguos y esquemas no soportados.
 - **Acerca de:** presenta identidad y protocolos.
 
 Las teclas `↑/↓` o `j/k` navegan; `Enter` selecciona; `S/Y` confirma; `N/Esc` cancela; `Q` sale. Durante una operación de escritura no se permite cerrar la TUI mediante estas teclas para evitar abandono de procesos.
@@ -37,10 +37,10 @@ La bandera `--source` debe preceder al subcomando. Si no se indica se utiliza el
 ## Seguridad y límites
 
 1. Nunca se aplica automáticamente una actualización. Se muestra el plan y se solicita aprobación.
-2. El programa reutiliza los scripts de instalación, verificación y rollback de v0.1.2. No sustituye sus controles de backup y preservación.
+2. El programa reutiliza los scripts de instalación, verificación y rollback del checkout validado. Desde v0.2.1, el Manager bloquea ejecutores antiguos para rollback y el script comprueba su versión mínima y el esquema del manifiesto.
 3. Por defecto no ofrece `-ReplaceCustomized`: las personalizaciones se conservan conforme al instalador. Para forzar un reemplazo hay que revisarlo manualmente.
 4. Obtener una release requiere Internet y Git. Se cotejan el tag y el archivo `VERSION`, pero **esta primera versión no verifica firmas criptográficas de la release**. Los artefactos oficiales firmados y su comprobación quedan antes de un mecanismo de actualización sin supervisión.
-5. Diagnóstico y rollback requieren un checkout local válido. Las instalaciones v0.1.1 se recuperan manualmente desde el backup por el fallo conocido de su script.
+5. Diagnóstico y rollback requieren un checkout local válido. Para rollback, el checkout debe ser v0.2.1 o posterior. Las instalaciones v0.1.1 se recuperan manualmente desde el backup por el fallo conocido de su script.
 6. La opción remota consulta la última release estable. Los instaladores anteriores a v0.1.2 se rechazan por sus defectos conocidos.
 7. El Manager todavía no autoactualiza su propio binario, no soporta Antigravity y no instala en macOS/Linux.
 

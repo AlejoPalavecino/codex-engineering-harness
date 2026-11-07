@@ -59,9 +59,13 @@ function Assert-Installed([string]$homePath) {
     foreach ($resource in $resources) {
         $actual = Hash (Join-Path $homePath $resource.target)
         Assert-That ($actual -eq (Hash (Join-Path $repo $resource.source))) ('Copia no exacta: ' + $resource.target)
-        $records = @($state.files | Where-Object { $_.path -eq $resource.target })
-        Assert-That ($records.Count -eq 1) ('Recurso no administrado una única vez: ' + $resource.target)
-        Assert-That ($records[0].installed_sha256 -eq $actual) ('Hash no registrado: ' + $resource.target)
+        $managedHash = $null
+        if ($null -ne $state.managed_files) {
+            foreach ($entry in $state.managed_files.PSObject.Properties) {
+                if ($entry.Name -eq $resource.target) { $managedHash = [string]$entry.Value }
+            }
+        }
+        Assert-That ($managedHash -eq $actual) ('Hash no registrado en managed_files: ' + $resource.target)
     }
 }
 function Case([string]$name, [scriptblock]$body) {
@@ -125,6 +129,12 @@ try {
         Assert-Installed $homePath
         $firstStateHash = Hash (Join-Path $homePath 'harness-install/state.json')
         $null = Run-Script 'install' $homePath @('-Apply')
+        Assert-Installed $homePath
+        $stateAfterRepeat = Read-State $homePath
+        Assert-That (@($stateAfterRepeat.files).Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
+        $managedCount = 0
+        foreach ($entry in $stateAfterRepeat.managed_files.PSObject.Properties) { $managedCount++ }
+        Assert-That ($managedCount -eq 13) ('La reinstalación perdió el inventario de archivos administrados; encontrados: ' + $managedCount)
         foreach ($resource in $resources) {
             Assert-That ((Hash (Join-Path $homePath $resource.target)) -eq (Hash (Join-Path $repo $resource.source))) ('Reinstalación cambió ' + $resource.target)
         }
@@ -136,6 +146,61 @@ try {
         foreach ($resource in $resources) {
             Assert-That (-not (Test-Path -LiteralPath (Join-Path $homePath $resource.target))) ('Segundo rollback no retiró ' + $resource.target)
         }
+    }
+    Case 'legacy-empty-inventory-upgrade' {
+        param($homePath)
+        $resource = @{source='skills/harness-specification/SKILL.md'; target='skills/harness-specification/SKILL.md'}
+        $target = Join-Path $homePath $resource.target
+        $fixture = Join-Path $repo 'tests/fixtures/legacy-v0.2.0-harness-specification.md'
+        $legacyText = [IO.File]::ReadAllText($fixture).Replace("`r`n", "`n")
+        Write-Fixture $target $legacyText
+        $legacyHash = Hash $target
+        $baselines = Get-Content -LiteralPath (Join-Path $repo 'scripts/legacy-managed-hashes.json') -Raw | ConvertFrom-Json
+        Assert-That ($legacyHash -eq $baselines.'0.2.0'.'skills/harness-specification/SKILL.md') 'Fixture legacy no coincide con la huella oficial v0.2.0.'
+        Write-Fixture (Join-Path $homePath 'harness-install/state.json') '{"version":"0.2.0","files":[],"previous_state_existed":false}'
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $sourceHash = Hash (Join-Path $repo $resource.source)
+        Assert-That ((Hash $target) -eq $sourceHash) 'El archivo oficial v0.2.0 fue preservado como si fuera una personalización.'
+        $state = Read-State $homePath
+        Assert-That ($state.managed_files.'skills/harness-specification/SKILL.md' -eq $sourceHash) 'No se recuperó el baseline administrado durante la migración.'
+        Assert-That (-not ($state.preserved_customizations -contains $resource.target)) 'El archivo oficial se clasificó como personalización.'
+        $null = Run-Script 'verify' $homePath
+    }
+    Case 'verify-rejects-missing-required-resource' {
+        param($homePath)
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $target = Join-Path $homePath 'harness/bin/taskboard.py'
+        Remove-Item -LiteralPath $target -Force
+        $before = Snapshot $homePath
+        $null = Run-Script 'verify' $homePath @() $false
+        Assert-That ((Snapshot $homePath) -eq $before) 'La verificación modificó el home al detectar un recurso faltante.'
+    }
+    Case 'rollback-preflight-rejects-missing-backup' {
+        param($homePath)
+        foreach ($resource in $resources[0..1]) {
+            Write-Fixture (Join-Path $homePath $resource.target) ('original: ' + $resource.target)
+        }
+        $null = Run-Script 'install' $homePath @('-Apply', '-ReplaceCustomized')
+        $state = Read-State $homePath
+        $record = @($state.files | Where-Object { $_.path -eq $resources[1].target })[0]
+        Assert-That ([bool]$record.existed) 'El caso no generó un backup de un archivo previo.'
+        $missingBackup = Join-Path $state.backup_dir $resources[1].target
+        Remove-Item -LiteralPath $missingBackup -Force
+        $before = Snapshot $homePath
+        $null = Run-Script 'rollback' $homePath @('-Apply') $false
+        Assert-That ((Snapshot $homePath) -eq $before) 'Rollback modificó archivos antes de detectar el backup faltante.'
+    }
+    Case 'rollback-preflight-rejects-corrupt-previous-manifest' {
+        param($homePath)
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $state = Read-State $homePath
+        Assert-That ([bool]$state.previous_state_existed) 'El caso no generó un manifiesto anterior.'
+        $previous = Join-Path $state.backup_dir '_previous_state.json'
+        Write-Fixture $previous '{invalid json'
+        $before = Snapshot $homePath
+        $null = Run-Script 'rollback' $homePath @('-Apply') $false
+        Assert-That ((Snapshot $homePath) -eq $before) 'Rollback modificó archivos con un manifiesto anterior corrupto.'
     }
     Case 'preserve-customized' {
         param($homePath)

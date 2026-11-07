@@ -12,6 +12,7 @@ description: "Convertir alcance y diseño aprobados en especificaciones verifica
 5. Planificar tareas pequeñas que puedan implementarse, verificar y retomar.
 6. Incluir riesgos, supuestos y decisiones pendientes; no inventar detalles bloqueantes.
 7. Crear documentos de ODD/ADR/UML únicamente cuando aporten continuidad y comprensión.
+8. En mantenimiento del harness, especificar migraciones entre versiones, integridad del manifiesto y condiciones de rollback antes de dar por segura una actualización.
 
 No convertir un cambio R1 trivial en una especificación extensa.
 
