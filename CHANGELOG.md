@@ -1,17 +1,24 @@
 # Changelog
 
-## [Unreleased] — v0.2 (Evaluation Foundation / PR #5)
+## [Unreleased] — v0.2.1 (maintenance candidate)
+
+### Fixed
+- Conserva un inventario completo de hashes administrados aunque una reinstalación no modifique archivos.
+- Recupera los baselines oficiales de instalaciones v0.1.3 y v0.2.0 cuyos manifiestos quedaron vacíos por la regresión de reinstalación.
+- verify.ps1 comprueba la presencia de los 13 recursos obligatorios y devuelve código distinto de cero si falta alguno.
+- El rollback valida versión del ejecutor, esquema del manifiesto, rutas, duplicados y JSON anterior antes de modificar archivos.
+- Chuli Manager rechaza checkouts anteriores a v0.2.1 para ejecutar rollback y no delega la recuperación a scripts conocidos como inseguros.
 
 ### Added
-- Evaluation Protocol v1.0 con 11 escenarios sintéticos R0/R1/R2/C, UX/UI, TDD, TTP, Engram y MRP; baseline anclado a v0.1.3.
-- Biblioteca Go de catálogo/rúbricas, huella reproducible, snapshots SHA-256 y reportes comparativos derivados de observaciones por criterio.
-- Comandos `chuli eval check|list|fingerprint|snapshot|diff|assert-unchanged|report`.
-- Tests de unidades Go, fixtures Python y documentación de ejecución manual segura.
+- managed_files, schema_version y rollback_schema_version en el estado de instalación.
+- Baselines SHA-256 históricos y pruebas de migración desde manifiestos v0.1.3/v0.2.0.
+- Regresiones Windows para reinstalación, recursos obligatorios ausentes, backups faltantes y manifiestos anteriores corruptos.
+- Criterios de compatibilidad de rollback en las pruebas Go del Manager.
 
-### Limitations
-- El evaluador no ejecuta Codex, no valida modelos efectivos por sí solo ni certifica permisos/sandbox.
-- Las métricas de tokens/modelos solo se aceptan con fuente declarada; no hay baseline conductual todavía.
-- Esta PR no cambia ni reemplaza MRP, agentes, skills funcionales o TTP.
+### Validation scope
+- CI valida estructura, pruebas Python/Go, instalador y rollback en Windows PowerShell 5.1 y PowerShell 7.
+- Los baselines históricos son una migración acotada a v0.1.3 y v0.2.0; futuras versiones deben agregar sus propios hashes antes de retirar archivos del estado.
+- La candidata no publica binarios ni declara soporte de instalación/rollback fuera de Windows.
 
 ## [0.1.3] — 2026-11-03
 
