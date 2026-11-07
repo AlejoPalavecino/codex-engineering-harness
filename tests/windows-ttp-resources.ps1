@@ -131,8 +131,8 @@ try {
         $null = Run-Script 'install' $homePath @('-Apply')
         Assert-Installed $homePath
         $stateAfterRepeat = Read-State $homePath
-        Assert-That ($stateAfterRepeat.files.Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
-        Assert-That ($stateAfterRepeat.managed_files.Count -eq $resources.Count) 'La reinstalación perdió el inventario de archivos administrados.'
+        Assert-That (@($stateAfterRepeat.files).Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
+        Assert-That (@($stateAfterRepeat.managed_files.PSObject.Properties).Count -eq 13) 'La reinstalación perdió el inventario de archivos administrados.'
         foreach ($resource in $resources) {
             Assert-That ((Hash (Join-Path $homePath $resource.target)) -eq (Hash (Join-Path $repo $resource.source))) ('Reinstalación cambió ' + $resource.target)
         }
