@@ -132,7 +132,9 @@ try {
         Assert-Installed $homePath
         $stateAfterRepeat = Read-State $homePath
         Assert-That (@($stateAfterRepeat.files).Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
-        Assert-That (@($stateAfterRepeat.managed_files.PSObject.Properties).Count -eq 13) 'La reinstalación perdió el inventario de archivos administrados.'
+        $managedCount = 0
+        foreach ($entry in $stateAfterRepeat.managed_files.PSObject.Properties) { $managedCount++ }
+        Assert-That ($managedCount -eq 13) ('La reinstalación perdió el inventario de archivos administrados; encontrados: ' + $managedCount)
         foreach ($resource in $resources) {
             Assert-That ((Hash (Join-Path $homePath $resource.target)) -eq (Hash (Join-Path $repo $resource.source))) ('Reinstalación cambió ' + $resource.target)
         }
@@ -150,7 +152,8 @@ try {
         $resource = @{source='skills/harness-specification/SKILL.md'; target='skills/harness-specification/SKILL.md'}
         $target = Join-Path $homePath $resource.target
         $fixture = Join-Path $repo 'tests/fixtures/legacy-v0.2.0-harness-specification.md'
-        Write-Fixture $target ([IO.File]::ReadAllText($fixture))
+        $legacyText = [IO.File]::ReadAllText($fixture).Replace("`r`n", "`n")
+        Write-Fixture $target $legacyText
         $legacyHash = Hash $target
         $baselines = Get-Content -LiteralPath (Join-Path $repo 'scripts/legacy-managed-hashes.json') -Raw | ConvertFrom-Json
         Assert-That ($legacyHash -eq $baselines.'0.2.0'.'skills/harness-specification/SKILL.md') 'Fixture legacy no coincide con la huella oficial v0.2.0.'
