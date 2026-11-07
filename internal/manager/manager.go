@@ -84,6 +84,7 @@ func Compare(a, b string) (int, error) {
 
 type installationState struct {
 	Version               string `json:"version"`
+	SchemaVersion         int    `json:"schema_version"`
 	RollbackSchemaVersion int    `json:"rollback_schema_version"`
 }
 
@@ -105,8 +106,17 @@ func (m Manager) readInstallationState() (installationState, error) {
 	if _, err := Compare(state.Version, state.Version); err != nil {
 		return installationState{}, err
 	}
+	if state.SchemaVersion == 0 {
+		state.SchemaVersion = 1 // v0.2.0 and earlier manifests predate this field.
+	}
+	if state.SchemaVersion < 1 || state.SchemaVersion > 2 {
+		return installationState{}, fmt.Errorf("state schema %d no soportado por este Manager", state.SchemaVersion)
+	}
 	if state.RollbackSchemaVersion == 0 {
 		state.RollbackSchemaVersion = 1 // v0.2.0 and earlier manifests predate this field.
+	}
+	if state.RollbackSchemaVersion < 1 || state.RollbackSchemaVersion > 2 {
+		return installationState{}, fmt.Errorf("rollback schema %d no soportado por este Manager", state.RollbackSchemaVersion)
 	}
 	return state, nil
 }
