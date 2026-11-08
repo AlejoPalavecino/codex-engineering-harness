@@ -28,6 +28,8 @@ Requieren aprobación: alcance, stack principal, arquitectura importante, modelo
 
 No imponer documentos en R1. La etapa R2 se documenta cuando no pueda recuperarse desde el diff y las decisiones. La prueba crítica fallida impide declarar `VERIFIED`. La autorización pendiente impide avanzar; un modelo no puede aprobar en nombre del usuario.
 
+La selección de pruebas, unidades y cortes de revisión se detalla en [ODD](ODD.md).
+
 ## Recuperación y cambios
 
 Si cambia alcance o contrato, reabrir únicamente lo afectado. Estado posible: DRAFT, NEEDS_APPROVAL, READY_TO_BUILD, IMPLEMENTING, VERIFYING, READY_FOR_DELIVERY, BLOCKED. Los estados son conceptuales: esta versión no incluye motor formal que los imponga.

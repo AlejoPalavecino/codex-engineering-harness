@@ -1,12 +1,13 @@
 {
-  "description": "Inventario orientativo. No es un archivo de configuración directamente cargado por Codex.",
+  "description": "Inventario orientativo para Chuli. Configurá cada proveedor sólo en el cliente y proyecto autorizados. Este JSON no se carga automáticamente en Codex.",
   "integrations": [
     {
       "name": "engram",
       "kind": "mcp",
       "purpose": "Memoria persistente por proyecto",
       "install": "Manual desde proveedor",
-      "required": false
+      "required": false,
+      "scope": "Proyecto seleccionado explícitamente; evita datos personales y secretos."
     },
     {
       "name": "context7",

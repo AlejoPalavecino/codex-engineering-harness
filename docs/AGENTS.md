@@ -1,29 +1,23 @@
-# Catálogo de roles y contratos
+# Roles y contratos del perfil Codex
 
-El harness tiene **siete roles conceptuales**, que no tienen por qué ejecutarse todos.
+El agente principal lee el bloque de Chuli en el `AGENTS.md` del perfil. Puede trabajar en línea y delegar en seis roles declarados en TOML. Codex determina qué roles y modelos están efectivamente disponibles en la sesión.
 
-| Rol | Implementación | Resultado |
-| --- | --- | --- |
-| Engineering Orchestrator | Agente principal + `config/AGENTS.md` | Selecciona ruta EWP, consulta al humano, delega y valida |
-| Explorer | Nativo `explorer` (si disponible) | Referencias precisas a código, evidencia sin escritura |
-| Implementation Worker | Nativo `worker` (si disponible) | Implementación acotada de lo aprobado |
-| Solution Architect | `agents/solution_architect.toml` | Alternativas, trade-offs, riesgos y decisiones humanas |
-| Product Designer | `agents/product_designer.toml` | Flujos, interfaces, estados y dirección visual |
-| Test Engineer | `agents/test_engineer.toml` | Pruebas vinculadas a criterios de aceptación |
-| Quality Reviewer | `agents/quality_reviewer.toml` | Hallazgos verificables y resultado independiente |
+| Rol | Modelo declarado | Esfuerzo | Resultado |
+| --- | --- | --- | --- |
+| Orquestador | Perfil elegido por el usuario | Según sesión | Enrutamiento EWP, autoridad, continuidad y cierre |
+| [chuli_explorer](../agents/chuli_explorer.toml) | gpt-6-luna | medium | Mapa de código y contratos con referencias; solicita sandbox de lectura |
+| [chuli_worker](../agents/chuli_worker.toml) | gpt-6.1-sol | medium | Unidad autorizada con regresiones, verificación y reversión acotada |
+| [solution_architect](../agents/solution_architect.toml) | gpt-6.1-sol | high | Alternativas, restricciones y decisiones pendientes |
+| [product_designer](../agents/product_designer.toml) | gpt-6.1-terra | medium | Flujos, estados, identidad y accesibilidad |
+| [test_engineer](../agents/test_engineer.toml) | gpt-6.1-sol | medium | Pruebas vinculadas con aceptación y riesgo |
+| [quality_reviewer](../agents/quality_reviewer.toml) | gpt-6.1-sol | high | Revisión de un candidato fijo con evidencia independiente |
 
-## Contrato mínimo de delegación
+## Contrato de una delegación
 
-Toda delegación indica: objetivo; referencias de contexto; alcance autorizado; herramientas necesarias; superficies de escritura; restricciones; salida esperada; criterios de aceptación; evidencia y condiciones de parada.
+Indicá objetivo, tarea, criterios, rutas de contexto y skills concretas, herramientas requeridas, superficie de escritura, restricciones, evidencia y condición de parada. El orquestador conserva la conversación de producto y escribe el tablero. Si el cliente carece de delegación, puede hacer trabajo autorizado en línea y dejar pendiente lo que requiera independencia.
 
-Delegar por exploración extensa, especialidad diferenciada, paralelismo sin conflictos o verificación de riesgo. No delegar cambios triviales. Evitar dos escritores sobre los mismos archivos. **Los permisos declarados en TOML no restringen por sí solos el sistema operativo.**
+No cambies los nombres de los dos roles `chuli_*` por `explorer` o `worker` nativos. Esos alias pueden corresponder a otros modelos o no existir. Los archivos de rol expresan los valores pedidos. Para afirmar que el cliente los honró hay que observar una sesión.
 
-## Skills
+## Procedimientos
 
-- `harness-discovery`: alcance, actores, procesos y permisos.
-- `harness-architecture`: elección fundamentada de solución y stack.
-- `harness-ux-ui`: flujos, experiencia, identidad visual y accesibilidad.
-- `harness-specification`: criterios de aceptación, contratos y plan.
-- `harness-tdd-qa`: test-first y pruebas según riesgo.
-
-Para incorporar habilidades externas se requiere respetar su licencia y evitar duplicación.
+El [catálogo de skills](protocols/SKILLS.md) identifica las cinco nativas y las 18 importadas, su runtime y requisitos. El [protocolo ODD](protocols/ODD.md) describe cómo combinar las decisiones del orquestador, TDD y la revisión según riesgo.

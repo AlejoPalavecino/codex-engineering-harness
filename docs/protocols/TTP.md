@@ -1,4 +1,4 @@
-# TTP v1.0 — Task Tracking Protocol (Codex Harness v0.1.1)
+# TTP v1.0 — Task Tracking Protocol de Chuli
 
 TTP conecta las decisiones y especificaciones aprobadas con **tareas pequeñas, verificables y recuperables**. Permite seguir el avance en Codex Desktop o CLI, sin crear un nuevo agente, MCP ni tablero paralelo.
 
@@ -39,7 +39,7 @@ python (Join-Path $ttpHome 'harness/bin/taskboard.py') check odd/tasks/mi-funcio
 
 En otras shells resolvé ese mismo directorio desde `CODEX_HOME` o su valor por defecto. Los comandos `scripts/taskboard.py` de esta guía son para una copia del repositorio del harness; en otro proyecto usá la ruta instalada. Comprobá criterios y pruebas antes de DONE; después validá el tablero antes de anunciar el cierre. Un check exitoso no demuestra que se ejecutaron las pruebas declaradas ni ofrece aislamiento de escritura.
 
-Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. Después de instalar o actualizar Chuli, ejecutá `scripts/verify.ps1` desde el checkout del harness: el verificador comprueba la presencia de los 13 recursos obligatorios y devuelve un error si falta alguno. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
+Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. Después de instalar o actualizar Chuli, ejecutá `scripts/verify.ps1` desde el checkout del harness: el verificador comprueba la presencia de los recursos obligatorios del paquete y devuelve un error si falta alguno. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
 
 ## Unidad de trabajo
 
@@ -102,7 +102,7 @@ El instalador coloca también una copia en `~/.codex/harness/bin/taskboard.py`. 
 
 El registro de tareas debe vivir **en el repositorio del proyecto**, no en la carpeta global del harness. No versionar secretos ni datos de clientes.
 
-## No objetivos de v0.1.1
+## Límites del protocolo
 
 - No implementar panel custom dentro de la app cerrada de Codex.
 - No crear un nuevo MCP, servidor, base de datos o agente administrador.

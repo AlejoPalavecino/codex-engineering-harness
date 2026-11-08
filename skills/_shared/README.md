@@ -12,4 +12,4 @@ This directory contains ordinary Markdown references for Organic Driven Developm
 - `research-lifecycle.md`: optional, evidence-backed research.
 - `review-ledger-contract.md` and `review-ledger-contract-pi.md`: runtime-specific native RDD review contracts.
 
-Install and sync deploy every embedded reference to each compatibility skill root. They remove only the obsolete `_shared/SKILL.md` marker; they do not delete user-authored files.
+The Chuli installer includes these resources in its managed inventory. Select the relevant reference on demand.
