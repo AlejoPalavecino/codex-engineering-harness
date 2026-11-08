@@ -1,66 +1,102 @@
-name: Publish approved release
+name: Publish validated Chuli profile
 
 on:
+  workflow_run:
+    workflows: ["Validate harness"]
+    types: [completed]
+    branches: [main]
   workflow_dispatch:
     inputs:
+      validation_run:
+        description: "Successful Validate harness push run on main"
+        type: string
+        required: true
       version:
-        description: "Release version (e.g. 0.1.2)"
-        required: true
+        description: "Approved release version without v"
         type: string
-      commit_sha:
-        description: "Exact reviewed and approved main commit SHA"
         required: true
-        type: string
 
 permissions:
-  contents: write
   actions: read
+  contents: write
 
 concurrency:
-  group: codex-harness-manual-release
+  group: chuli-stable-release
   cancel-in-progress: false
 
 jobs:
-  publish:
+  release:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
-      - name: Check out approved branch
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-      - name: Require exact approved SHA and successful CI
-        shell: bash
+      - name: Verify workflow identity and the exact current main
+        id: approval
         env:
           GH_TOKEN: ${{ github.token }}
-          APPROVED_SHA: ${{ inputs.commit_sha }}
-          APPROVED_VERSION: ${{ inputs.version }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.validation_run }}
+          # One-time automatic publication requested for v1.0.0.
+          VERSION_APPROVED: ${{ inputs.version || '1.0.0' }}
         run: |
           set -euo pipefail
-          git fetch origin main
-          current=$(git rev-parse origin/main)
-          requested=$(git rev-parse "$APPROVED_SHA^{commit}")
-          if [[ "$requested" != "$current" ]]; then
-            echo "Approved SHA is not current main. Refusing publication."
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$VERSION_APPROVED" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
+          echo "$run" | jq -e --arg repo "$GITHUB_REPOSITORY" '.path == ".github/workflows/validate.yml" and .event == "push" and .head_branch == "main" and .conclusion == "success" and .head_repository.full_name == $repo'
+          sha=$(jq -r .head_sha <<< "$run")
+          head=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
+          [[ "$head" == "$sha" ]]
+          version=$(gh api "repos/$GITHUB_REPOSITORY/contents/VERSION?ref=$sha" --jq .content | base64 -d | tr -d '\r\n')
+          if [[ "$version" != "$VERSION_APPROVED" ]]; then
+            [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]] && exit 0
             exit 1
           fi
-          version=$(tr -d '\r\n' < VERSION)
-          if [[ "$APPROVED_VERSION" != "$version" ]]; then
-            echo "Approval version does not match VERSION."
-            exit 1
+          if gh release view "v$version" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exit 0; fi
+          echo "publish=true" >> "$GITHUB_OUTPUT"
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        if: steps.approval.outputs.publish == 'true'
+        with:
+          ref: ${{ steps.approval.outputs.sha }}
+          fetch-depth: 0
+      - uses: actions/download-artifact@v4
+        if: steps.approval.outputs.publish == 'true'
+        with:
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id || inputs.validation_run }}
+          pattern: release-*
+          path: dist
+          merge-multiple: true
+      - name: Verify files, tag and publish
+        if: steps.approval.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.approval.outputs.version }}
+          SHA: ${{ steps.approval.outputs.sha }}
+        run: |
+          set -euo pipefail
+          git fetch origin main --tags
+          [[ "$(git rev-parse origin/main)" == "$SHA" ]]
+          files=("chuli-profile-v${VERSION}.zip" "chuli_v${VERSION}_windows_amd64.zip" "chuli_v${VERSION}_linux_amd64.tar.gz" "chuli_v${VERSION}_darwin_arm64.tar.gz")
+          (
+            cd dist
+            [[ "$(find . -type f | wc -l)" -eq 4 ]]
+            for name in "${files[@]}"; do test -s "$name"; done
+            unzip -tq "${files[0]}"
+            [[ "$(unzip -p "${files[0]}" VERSION | tr -d '\r\n')" == "$VERSION" ]]
+            [[ "$(unzip -Z1 "${files[1]}")" == "chuli.exe" ]]
+            for name in "${files[@]:2}"; do [[ "$(tar -tzf "$name")" == "chuli" ]]; done
+            sha256sum "${files[@]}" > SHA256SUMS.txt
+            sha256sum -c SHA256SUMS.txt
+          )
+          if ! git show-ref --verify --quiet "refs/tags/v$VERSION"; then
+            git tag "v$VERSION" "$SHA"
+            git push origin "refs/tags/v$VERSION"
           fi
-          matches=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$requested&per_page=50" \
-            --jq '[.workflow_runs[] | select(.name == "Validate harness" and .head_branch == "main" and .conclusion == "success")] | length')
-          if [[ "$matches" == "0" ]]; then
-            echo "No successful Validate harness run for the reviewed main SHA."
-            exit 1
-          fi
-          if gh release view "v$version" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "Release already exists."
-            exit 1
-          fi
-          gh release create "v$version" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$requested" \
-            --title "Chuli v$version" \
-            --notes-file "docs/releases/v$version.md"
+          [[ "$(git rev-parse "refs/tags/v$VERSION^{commit}")" == "$SHA" ]]
+          gh release create "v$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --target "$SHA" --verify-tag \
+            --title "Chuli v$VERSION · Perfil personal para Codex" --notes-file "docs/releases/v$VERSION.md" --latest
