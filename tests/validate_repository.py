@@ -6,9 +6,17 @@ import re
 import tomllib
 
 root = Path(__file__).resolve().parents[1]
-roles = {"solution_architect", "product_designer", "test_engineer", "quality_reviewer"}
+roles = {"solution_architect", "product_designer", "test_engineer", "quality_reviewer", "chuli_worker", "chuli_explorer"}
 skills = {"harness-discovery", "harness-architecture", "harness-ux-ui",
           "harness-specification", "harness-tdd-qa"}
+
+skills.update({"branch-pr", "chained-pr", "cognitive-doc-design", "comment-writer",
+               "gentle-ai-bench", "go-testing", "hermes-ephemeral-delegation", "issue-creation",
+               "judgment-day", "rdd-defect-workflow", "skill-creator", "skill-improver",
+               "skill-registry", "systemic-issue-triage", "work-unit-commits",
+               "gentle-ai-collab-perfect", "issue-root-resolution", "rdd-advisory-transport"})
+assert {p.stem for p in (root / "agents").glob("*.toml")} == roles
+assert {p.parent.name for p in (root / "skills").glob("*/SKILL.md")} == skills
 
 for role in roles:
     path = root / "agents" / f"{role}.toml"
@@ -33,7 +41,7 @@ for required in ("R0", "R1", "R2", "Criticidad", "Human-in-the-Loop", "Engram", 
 
 for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json", "tests/test_taskboard.py", "VERSION"):
     assert (root / required_path).is_file(), required_path
-assert (root / "VERSION").read_text(encoding="utf-8").strip() == "0.2.1"
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "1.0.0"
 
 legacy_hashes = json.loads((root / "scripts/legacy-managed-hashes.json").read_text(encoding="utf-8"))
 assert set(legacy_hashes) == {"0.1.3", "0.2.0"}
@@ -59,7 +67,7 @@ for path in root.rglob("*"):
     if not path.is_file() or ".git" in path.parts:
         continue
     relative = path.relative_to(root).as_posix().lower()
-    assert not relative.endswith(("/auth.json", "/config.toml", ".sqlite3"))
+    assert path.name.lower() not in {"auth.json", "config.toml"} and not relative.endswith(".sqlite3")
     assert "/.engram/" not in "/" + relative
     if path.suffix.lower() not in (".md", ".toml", ".ps1", ".json", ".yml", ".py"):
         continue

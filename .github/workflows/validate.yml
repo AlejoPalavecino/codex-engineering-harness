@@ -5,6 +5,10 @@ on:
     branches: [main, "feat/**"]
   pull_request:
 
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -20,8 +24,16 @@ jobs:
         run: python tests/validate_repository.py
       - name: Validate TTP task-state transitions
         run: python -m unittest discover -s tests -p 'test_*.py'
-      - name: Validate v0.2 TTP task plan
-        run: python scripts/taskboard.py check odd/tasks/chuli-v0.2-evaluation-foundation.md
+      - name: Validate all project task boards
+        run: |
+          for board in odd/tasks/*.md; do python scripts/taskboard.py check "$board"; done
+      - name: Package portable Codex profile
+        run: python scripts/package_release.py profile dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-profile
+          path: dist/chuli-profile-*.zip
+          if-no-files-found: error
       - name: Check synthetic Python fixture tests
         shell: bash
         run: |
@@ -69,6 +81,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version: "1.26"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Check pinned Go dependencies
         run: go mod tidy -diff
       - name: Check Go source formatting
@@ -79,31 +94,33 @@ jobs:
             echo "$dirty"
             exit 1
           fi
+      - name: Vet Go packages
+        run: go vet ./...
       - name: Test Chuli
         run: go test ./...
       - name: Validate evaluation catalog from CLI
         run: go run ./cmd/chuli eval check
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Check Python fixtures on every platform
         shell: bash
         run: |
           (cd evals/fixtures/loans && PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v)
           (cd evals/fixtures/importer && PYTHONDONTWRITEBYTECODE=1 python -m unittest discover -s tests -v)
-      - name: Build Chuli TUI
+      - name: Build, run and package native Chuli Manager
         shell: bash
         run: |
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            go build -o chuli.exe ./cmd/chuli
-          else
-            go build -o chuli ./cmd/chuli
-          fi
+          set -euo pipefail
+          version=$(tr -d '\r\n' < VERSION)
+          goos=$(go env GOOS)
+          goarch=$(go env GOARCH)
+          binary=chuli
+          if [[ "$goos" == "windows" ]]; then binary=chuli.exe; fi
+          CGO_ENABLED=0 go build -trimpath -buildvcs=false -ldflags="-X main.version=$version" -o "$binary" ./cmd/chuli
+          "./$binary" version | grep -F "$version"
+          "./$binary" --source . eval check
+          python scripts/package_release.py manager dist --binary "$binary" --goos "$goos" --goarch "$goarch"
       - uses: actions/upload-artifact@v4
         with:
-          name: chuli-${{ runner.os }}-${{ runner.arch }}
-          path: |
-            chuli
-            chuli.exe
+          name: release-manager-${{ runner.os }}
+          path: dist/chuli_v*
           if-no-files-found: error
           retention-days: 14
