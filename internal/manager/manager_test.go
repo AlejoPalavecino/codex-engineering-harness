@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 )
@@ -33,28 +32,37 @@ func TestCompare(t *testing.T) {
 		}
 	}
 }
-func TestReleaseJSON(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("User-Agent") == "" {
-			t.Error("missing User-Agent")
-		}
-		_, _ = w.Write([]byte(`{"tag_name":"v0.1.3","draft":false,"prerelease":false}`))
-	}))
-	defer server.Close()
-	m := Manager{Client: server.Client(), LatestURL: server.URL}
-	rel, err := m.Latest(context.Background())
-	if err != nil || rel.Tag != "v0.1.3" {
-		t.Fatalf("latest %+v %v", rel, err)
-	}
+
+type httpFunc func(*http.Request) (*http.Response, error)
+
+func (f httpFunc) RoundTrip(r *http.Request) (*http.Response, error) { return f(r) }
+
+func testClient(h http.HandlerFunc) *http.Client {
+	return &http.Client{Transport: httpFunc(func(r *http.Request) (*http.Response, error) {
+		w := httptest.NewRecorder()
+		h(w, r)
+		return w.Result(), nil
+	})}
 }
-func TestRejectPrerelease(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"tag_name":"v0.1.3","prerelease":true}`))
-	}))
-	defer server.Close()
-	m := Manager{Client: server.Client(), LatestURL: server.URL}
-	if _, err := m.Latest(context.Background()); err == nil {
-		t.Fatal("accepted prerelease")
+
+func TestLatestValidatesMetadata(t *testing.T) {
+	for _, tc := range []struct {
+		json  string
+		valid bool
+	}{
+		{`{"tag_name":"v1.0.0"}`, true}, {`{"tag_name":"v1.0.0","draft":true}`, false},
+		{`{"tag_name":"v1.0.0","prerelease":true}`, false}, {`{"tag_name":"../../main"}`, false},
+	} {
+		m := Manager{Client: testClient(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.String() != githubAPI || r.Header.Get("User-Agent") == "" {
+				t.Fatal("unexpected request", r.URL)
+			}
+			_, _ = w.Write([]byte(tc.json))
+		})}
+		_, err := m.Latest(t.Context())
+		if (err == nil) != tc.valid {
+			t.Errorf("Latest(%s): %v", tc.json, err)
+		}
 	}
 }
 func TestReadInstalled(t *testing.T) {
@@ -160,11 +168,46 @@ func TestRollbackRejectsOldCheckoutBeforeRunningPowerShell(t *testing.T) {
 	}
 }
 
-func TestRejectUnsupportedOS(t *testing.T) {
-	if runtime.GOOS != "windows" {
-		m := Manager{}
-		if _, err := m.Script(context.Background(), ".", "install.ps1", true); err == nil {
-			t.Fatal("PowerShell should not run")
-		}
+func TestNeverExecutesImplicitCheckout(t *testing.T) {
+	dir, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Chdir(dir)
+	m := Manager{Home: t.TempDir(), cacheDir: t.TempDir()}
+	if _, err := m.Local(); err == nil {
+		t.Fatal("implicit checkout accepted")
+	}
+	if _, err := m.Doctor(t.Context()); err == nil {
+		t.Fatal("implicit diagnostics accepted")
+	}
+}
+
+func TestProfileReportsRecordedInventory(t *testing.T) {
+	m := Manager{Home: t.TempDir()}
+	dir := filepath.Join(m.Home, "harness-install")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), []byte(`{"version":"1.0.0","managed_files":{"skills/example/SKILL.md":"hash","skills/_shared/extra.md":"hash","agents/review.toml":"hash"},"managed_config":{"model":"private-model","model_reasoning_effort":"medium","secret":"sensitive"}}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	s, err := m.Profile()
+	if err != nil || !strings.Contains(s, "private-model") || !strings.Contains(s, "Skills registradas (1)\nexample") || !strings.Contains(s, "Agentes registrados (1)\nreview") || strings.Contains(s, "sensitive") {
+		t.Fatalf("profile: %q, %v", s, err)
+	}
+}
+
+func TestApplyRejectsChangedInstallation(t *testing.T) {
+	m := Manager{Home: t.TempDir()}
+	dir := filepath.Join(m.Home, "harness-install")
+	if err := os.Mkdir(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "state.json"), []byte(`{"version":"1.0.0"}`), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Apply(t.Context(), Prepared{Action: "install"}); err == nil || !strings.Contains(err.Error(), "cambió") {
+		t.Fatal(err)
 	}
 }
