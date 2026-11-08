@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -187,7 +188,7 @@ func TestOfficialProfileLifecycle(t *testing.T) {
 	})
 	do := func(action, want string) {
 		t.Helper()
-		p, e := m.Prepare(t.Context(), action)
+		p, e := m.Prepare(t.Context(), action, false)
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -213,8 +214,43 @@ func TestOfficialProfileLifecycle(t *testing.T) {
 		}
 	}
 	do("latest", "1.0.0")
-	if _, err := m.Prepare(t.Context(), "latest"); err == nil {
+	if _, err := m.Prepare(t.Context(), "latest", false); err == nil {
 		t.Fatal("accepted same release")
+	}
+	// Gentle may have been added after Chuli was installed. The same official
+	// version may reconcile that conflict only after a new opt-in preview.
+	path := filepath.Join(m.Home, "AGENTS.md")
+	original, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	conflicted := append(bytes.Clone(original), []byte("\n<!-- gentle-ai:orchestrator -->\nGentle routes here.\n<!-- /gentle-ai:orchestrator -->\n")...)
+	if err := os.WriteFile(path, conflicted, 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := m.Prepare(t.Context(), "latest", false); !errors.Is(err, ErrGentleConflict) {
+		t.Fatalf("expected an adoptable conflict: %v", err)
+	}
+	adoption, err := m.Prepare(t.Context(), "latest", true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer adoption.Cleanup()
+	if b, e := os.ReadFile(path); e != nil || !bytes.Equal(b, conflicted) {
+		t.Fatal("adoption preview changed instructions")
+	}
+	if log, e := m.Apply(t.Context(), adoption); e != nil {
+		t.Fatalf("adoption apply: %v\n%s", e, log)
+	}
+	if b, e := os.ReadFile(path); e != nil || bytes.Contains(b, []byte("<!-- gentle-ai:orchestrator -->")) {
+		t.Fatal("routing was not adopted")
+	}
+	do("rollback", "1.0.0")
+	if b, e := os.ReadFile(path); e != nil || !bytes.Equal(b, conflicted) {
+		t.Fatal("rollback did not restore Gentle")
+	}
+	if err := os.WriteFile(path, original, 0600); err != nil {
+		t.Fatal(err)
 	}
 	latest = "v1.0.1"
 	do("latest", "1.0.1")
