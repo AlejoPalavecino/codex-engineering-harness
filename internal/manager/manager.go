@@ -3,6 +3,7 @@ package manager
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,23 +14,23 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
-	"time"
 )
 
 const Repository = "AlejoPalavecino/codex-engineering-harness"
-const remoteURL = "https://github.com/" + Repository + ".git"
+const releaseBase = "https://github.com/" + Repository + "/releases/download/"
 const githubAPI = "https://api.github.com/repos/" + Repository + "/releases/latest"
 
 var releaseTag = regexp.MustCompile("^v[0-9]+\\.[0-9]+\\.[0-9]+$")
 var version = regexp.MustCompile("^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
 
 type Manager struct {
-	Home      string
-	Source    string
-	Client    *http.Client
-	LatestURL string // test injection only; never exposed through CLI
+	Home     string
+	Source   string
+	Client   *http.Client
+	cacheDir string // resolved by New; private user configuration, outside the working directory
 }
 
 type Release struct {
@@ -43,6 +44,8 @@ type Prepared struct {
 	Version   string
 	Action    string
 	Preview   string
+	archive   *profileArchive
+	stateID   [sha256.Size]byte
 }
 
 func New(source string) (Manager, error) {
@@ -54,11 +57,27 @@ func New(source string) (Manager, error) {
 		}
 		home = filepath.Join(user, ".codex")
 	}
+	if !filepath.IsAbs(home) {
+		return Manager{}, errors.New("CODEX_HOME debe ser una ruta absoluta")
+	}
 	full, err := filepath.Abs(home)
 	if err != nil {
 		return Manager{}, err
 	}
-	return Manager{Home: full, Source: source}, nil
+	config, err := os.UserConfigDir()
+	if err != nil {
+		return Manager{}, err
+	}
+	if !filepath.IsAbs(config) {
+		return Manager{}, errors.New("el directorio de configuración debe ser absoluto")
+	}
+	if source != "" {
+		source, err = filepath.Abs(source)
+		if err != nil {
+			return Manager{}, err
+		}
+	}
+	return Manager{Home: full, Source: source, cacheDir: filepath.Join(config, "chuli", "profiles")}, nil
 }
 
 func Compare(a, b string) (int, error) {
@@ -83,16 +102,32 @@ func Compare(a, b string) (int, error) {
 }
 
 type installationState struct {
-	Version               string `json:"version"`
-	SchemaVersion         int    `json:"schema_version"`
-	RollbackSchemaVersion int    `json:"rollback_schema_version"`
+	id                    [sha256.Size]byte
+	Version               string                     `json:"version"`
+	ManagedFiles          map[string]string          `json:"managed_files"`
+	ManagedConfig         map[string]json.RawMessage `json:"managed_config"`
+	SchemaVersion         int                        `json:"schema_version"`
+	RollbackSchemaVersion int                        `json:"rollback_schema_version"`
 }
 
 func (m Manager) readInstallationState() (installationState, error) {
-	raw, err := os.ReadFile(filepath.Join(m.Home, "harness-install", "state.json"))
+	path := filepath.Join(m.Home, "harness-install", "state.json")
+	info, err := os.Lstat(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return installationState{}, nil
 	}
+	if err != nil {
+		return installationState{}, err
+	}
+	if !info.Mode().IsRegular() {
+		return installationState{}, errors.New("state.json debe ser un archivo regular")
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return installationState{}, err
+	}
+	defer f.Close()
+	raw, err := bounded(f, maxEntry)
 	if err != nil {
 		return installationState{}, err
 	}
@@ -118,6 +153,7 @@ func (m Manager) readInstallationState() (installationState, error) {
 	if state.RollbackSchemaVersion < 1 || state.RollbackSchemaVersion > 2 {
 		return installationState{}, fmt.Errorf("rollback schema %d no soportado por este Manager", state.RollbackSchemaVersion)
 	}
+	state.id = sha256.Sum256(raw)
 	return state, nil
 }
 
@@ -127,6 +163,44 @@ func (m Manager) Installed() (string, error) {
 		return "", err
 	}
 	return state.Version, nil
+}
+
+// Profile describes the inventory recorded by the installer. It does not load
+// arbitrary user configuration or inspect an active Codex session.
+func (m Manager) Profile() (string, error) {
+	state, err := m.readInstallationState()
+	if err != nil {
+		return "", err
+	}
+	if state.Version == "" {
+		return "Perfil Chuli para Codex: sin instalar", nil
+	}
+	lines := []string{"Perfil Chuli para Codex " + state.Version, "Datos del manifiesto de instalación"}
+	for _, item := range []struct{ key, label string }{{"model", "Modelo registrado"}, {"model_reasoning_effort", "Esfuerzo registrado"}} {
+		var value string
+		if raw := state.ManagedConfig[item.key]; raw != nil && json.Unmarshal(raw, &value) == nil && component.MatchString(value) && len(value) <= 100 {
+			lines = append(lines, item.label+": "+value)
+		}
+	}
+	if state.ManagedFiles != nil {
+		var skills, agents []string
+		for path := range state.ManagedFiles {
+			parts := strings.Split(path, "/")
+			if len(parts) == 3 && parts[0] == "skills" && parts[2] == "SKILL.md" && component.MatchString(parts[1]) {
+				skills = append(skills, parts[1])
+			}
+			if len(parts) == 2 && parts[0] == "agents" && strings.HasSuffix(parts[1], ".toml") && component.MatchString(parts[1]) {
+				agents = append(agents, strings.TrimSuffix(parts[1], ".toml"))
+			}
+		}
+		sort.Strings(agents)
+		sort.Strings(skills)
+		lines = append(lines, fmt.Sprintf("Agentes registrados (%d)", len(agents)))
+		lines = append(lines, agents...)
+		lines = append(lines, fmt.Sprintf("Skills registradas (%d)", len(skills)))
+		lines = append(lines, skills...)
+	}
+	return strings.Join(lines, "\n"), nil
 }
 
 func validateRollbackCompatibility(sourceVersion string, schema int) error {
@@ -144,21 +218,13 @@ func validateRollbackCompatibility(sourceVersion string, schema int) error {
 }
 
 func (m Manager) Latest(ctx context.Context) (Release, error) {
-	url := m.LatestURL
-	if url == "" {
-		url = githubAPI
-	}
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", githubAPI, nil)
 	if err != nil {
 		return Release{}, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "Chuli-Manager")
-	client := m.Client
-	if client == nil {
-		client = &http.Client{Timeout: 15 * time.Second}
-	}
-	resp, err := client.Do(req)
+	resp, err := m.httpClient().Do(req)
 	if err != nil {
 		return Release{}, err
 	}
@@ -183,8 +249,12 @@ func (m Manager) Latest(ctx context.Context) (Release, error) {
 
 func ValidateSource(root string) (string, error) {
 	for _, file := range []string{"scripts/install.ps1", "scripts/verify.ps1", "scripts/rollback.ps1", "VERSION"} {
-		if _, err := os.Stat(filepath.Join(root, filepath.FromSlash(file))); err != nil {
+		info, err := os.Stat(filepath.Join(root, filepath.FromSlash(file)))
+		if err != nil {
 			return "", fmt.Errorf("fuente incompleta (%s): %w", file, err)
+		}
+		if !info.Mode().IsRegular() {
+			return "", fmt.Errorf("archivo inválido: %s", file)
 		}
 	}
 	raw, err := os.ReadFile(filepath.Join(root, "VERSION"))
@@ -201,7 +271,7 @@ func ValidateSource(root string) (string, error) {
 func (m Manager) Local() (string, error) {
 	root := m.Source
 	if root == "" {
-		root, _ = os.Getwd()
+		return "", errors.New("indicá un checkout de confianza con --source RUTA")
 	}
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -213,42 +283,17 @@ func (m Manager) Local() (string, error) {
 	return abs, nil
 }
 
-func (m Manager) Download(ctx context.Context, tag string) (string, error) {
-	if !releaseTag.MatchString(tag) {
-		return "", errors.New("tag inválido")
-	}
-	if _, err := exec.LookPath("git"); err != nil {
-		return "", errors.New("Git no está disponible en PATH")
-	}
-	root, err := os.MkdirTemp("", "chuli-release-")
-	if err != nil {
-		return "", err
-	}
-	cmd := exec.CommandContext(ctx, "git", "clone", "--quiet", "--depth", "1", "--branch", tag, "--single-branch", remoteURL, root)
-	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		os.RemoveAll(root)
-		return "", fmt.Errorf("falló descarga de release: %w (%s)", err, trunc(output))
-	}
-	v, err := ValidateSource(root)
-	if err != nil || "v"+v != tag {
-		os.RemoveAll(root)
-		return "", fmt.Errorf("paquete distinto al tag %s: %v", tag, err)
-	}
-	return root, nil
-}
-
 func shell() (string, error) {
-	if runtime.GOOS != "windows" {
-		return "", errors.New("instalación disponible en Windows; otros sistemas todavía no validados")
+	names := []string{"pwsh"}
+	if runtime.GOOS == "windows" {
+		names = append(names, "powershell.exe")
 	}
-	for _, name := range []string{"pwsh", "powershell.exe"} {
+	for _, name := range names {
 		if path, err := exec.LookPath(name); err == nil {
 			return path, nil
 		}
 	}
-	return "", errors.New("se requiere PowerShell")
+	return "", errors.New("se requiere PowerShell 7 (pwsh) o Windows PowerShell 5.1")
 }
 
 func trunc(b []byte) string {
@@ -277,6 +322,8 @@ func (m Manager) Script(ctx context.Context, root, file string, apply bool) (str
 		args = append(args, "-Apply")
 	}
 	cmd := exec.CommandContext(ctx, psh, args...)
+	cmd.Dir = root
+	cmd.Env = append(os.Environ(), "CODEX_HOME="+m.Home)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return trunc(output), fmt.Errorf("%s falló: %w", file, err)
@@ -284,97 +331,147 @@ func (m Manager) Script(ctx context.Context, root, file string, apply bool) (str
 	return trunc(output), nil
 }
 
-func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
-	var root string
-	var temporary bool
-	var v string
-	var err error
-	switch action {
-	case "local":
-		root, err = m.Local()
+// executor selects the explicitly trusted checkout or the verified archive of the
+// installed profile. A legacy installation has no saved archive.
+func (m Manager) executor(installed string) (Prepared, error) {
+	if m.Source != "" {
+		root, err := m.Local()
 		if err != nil {
 			return Prepared{}, err
 		}
-		v, _ = ValidateSource(root)
-		cmp, _ := Compare(v, "v0.1.2")
-		if cmp < 0 {
-			return Prepared{}, errors.New("checkout local anterior a v0.1.2; instalador rechazado por riesgos conocidos")
+		v, err := ValidateSource(root)
+		return Prepared{Root: root, Version: v}, err
+	}
+	if installed == "" {
+		return Prepared{}, errors.New("no existe instalación registrada")
+	}
+	a, err := m.cached("v" + strings.TrimPrefix(installed, "v"))
+	if errors.Is(err, os.ErrNotExist) {
+		return Prepared{}, fmt.Errorf("perfil %s sin paquete local; para instalaciones anteriores usá --source RUTA con un checkout de confianza", installed)
+	}
+	if err != nil {
+		return Prepared{}, err
+	}
+	return a.unpack()
+}
+
+func (m Manager) Doctor(ctx context.Context) (string, error) {
+	v, err := m.Installed()
+	if err != nil {
+		return "", err
+	}
+	p, err := m.executor(v)
+	if err != nil {
+		return "", err
+	}
+	defer p.Cleanup()
+	return m.Script(ctx, p.Root, "verify.ps1", false)
+}
+
+func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
+	state, err := m.readInstallationState()
+	if err != nil {
+		return Prepared{}, err
+	}
+	var p Prepared
+	script := "install.ps1"
+	switch action {
+	case "local":
+		if m.Source == "" {
+			return Prepared{}, errors.New("instalación local requiere --source RUTA")
 		}
+		p, err = m.executor("")
 	case "latest":
 		rel, e := m.Latest(ctx)
 		if e != nil {
 			return Prepared{}, e
 		}
-		installed, e := m.Installed()
-		if e != nil {
-			return Prepared{}, e
-		}
-		if installed != "" {
-			cmp, e := Compare(rel.Tag, installed)
+		if state.Version != "" {
+			cmp, e := Compare(rel.Tag, state.Version)
 			if e != nil {
 				return Prepared{}, e
 			}
 			if cmp <= 0 {
-				return Prepared{}, fmt.Errorf("sin actualización: instalada %s; última release %s", installed, rel.Tag)
+				return Prepared{}, fmt.Errorf("sin actualización: instalada %s, última release %s", state.Version, rel.Tag)
 			}
 		}
-		cmp, _ := Compare(rel.Tag, "v0.1.2")
-		if cmp < 0 {
-			return Prepared{}, errors.New("la última release es anterior a v0.1.2 y su instalador presenta riesgos conocidos")
-		}
-		root, err = m.Download(ctx, rel.Tag)
-		if err != nil {
-			return Prepared{}, err
-		}
-		temporary = true
-		v = strings.TrimPrefix(rel.Tag, "v")
-	case "rollback":
-		state, e := m.readInstallationState()
+		a, e := m.download(ctx, rel.Tag)
 		if e != nil {
 			return Prepared{}, e
 		}
-		installed := state.Version
-		if installed == "" {
+		p, err = a.unpack()
+	case "rollback":
+		if state.Version == "" {
 			return Prepared{}, errors.New("no existe instalación registrada")
 		}
-		cmp, _ := Compare(installed, "v0.1.2")
+		cmp, _ := Compare(state.Version, "0.1.2")
 		if cmp < 0 {
-			return Prepared{}, errors.New("rollback de v0.1.1 bloqueado por fallo conocido; recuperar manualmente")
+			return Prepared{}, errors.New("rollback de esta versión bloqueado por fallo conocido; recuperá el respaldo manualmente")
 		}
-		root, err = m.Local()
-		if err != nil {
-			return Prepared{}, fmt.Errorf("rollback requiere checkout local con scripts: %w", err)
-		}
-		v, err = ValidateSource(root)
-		if err != nil {
-			return Prepared{}, err
-		}
-		if err = validateRollbackCompatibility(v, state.RollbackSchemaVersion); err != nil {
-			return Prepared{}, err
-		}
+		p, err = m.executor(state.Version)
+		script = "rollback.ps1"
 	default:
 		return Prepared{}, errors.New("acción no soportada")
 	}
-	script := "install.ps1"
-	operation := "install"
-	if action == "rollback" {
-		script = "rollback.ps1"
-		operation = "rollback"
-	}
-	preview, err := m.Script(ctx, root, script, false)
 	if err != nil {
-		if temporary {
-			os.RemoveAll(root)
-		}
-		return Prepared{}, fmt.Errorf("preflight rechazado: %w\n%s", err, preview)
+		return Prepared{}, err
 	}
-	return Prepared{root, temporary, v, operation, preview}, nil
+	p.stateID = state.id
+	p.Action = "install"
+	if action == "rollback" {
+		p.Action = "rollback"
+		err = validateRollbackCompatibility(p.Version, state.RollbackSchemaVersion)
+	} else {
+		cmp, e := Compare(p.Version, "0.2.1")
+		if e != nil {
+			err = e
+		} else if cmp < 0 {
+			err = errors.New("instalador anterior a v0.2.1 rechazado por riesgos conocidos")
+		}
+		if state.Version != "" && err == nil {
+			cmp, err = Compare(p.Version, state.Version)
+			if err == nil && cmp < 0 {
+				err = errors.New("versión anterior a la instalada; utilizá rollback")
+			}
+		}
+	}
+	if err == nil {
+		p.Preview, err = m.Script(ctx, p.Root, script, false)
+	}
+	if err != nil {
+		p.Cleanup()
+		return Prepared{}, fmt.Errorf("preflight rechazado: %w\n%s", err, p.Preview)
+	}
+	return p, nil
 }
 
 func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
+	current, err := m.readInstallationState()
+	if err != nil {
+		return "", err
+	}
+	if p.stateID != current.id {
+		return "", errors.New("la instalación cambió desde la revisión previa; revisá nuevamente el plan")
+	}
 	file := "install.ps1"
 	if p.Action == "rollback" {
 		file = "rollback.ps1"
+	} else if p.Action != "install" {
+		return "", errors.New("acción no soportada")
+	}
+	if p.archive != nil {
+		if p.Action == "install" {
+			if err := m.remember(p.archive); err != nil {
+				return "", fmt.Errorf("no se pudo guardar el paquete para recuperación: %w", err)
+			}
+		}
+		// Never execute an extracted file left over from the preview.
+		fresh, err := p.archive.unpack()
+		if err != nil {
+			return "", err
+		}
+		defer fresh.Cleanup()
+		p.Root = fresh.Root
 	}
 	log, err := m.Script(ctx, p.Root, file, true)
 	if err != nil {
