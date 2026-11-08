@@ -18,6 +18,8 @@ Cuando Codex muestre dos entradas con el nombre `skill-creator`, la edición imp
 
 Revisá el plan si ya tenés agentes, skills del mismo nombre, un modelo elegido o un orquestador global de otro proveedor. El instalador conserva recursos personalizados y distingue el inventario administrado del registro de la operación que permite revertirla. El contenido ajeno en el archivo de instrucciones requiere convivencia explícita. Las credenciales y las memorias personales quedan fuera del paquete.
 
+Si ya tenés Gentle AI en ese mismo perfil, la acción normal se detiene al detectar su orquestador. Elegí en la TUI la opción de adoptar Chuli y revisá la nueva vista previa. Se respaldan los bloques Gentle de orquestación y routing; otros bloques separados, como persona o memoria, permanecen en el archivo. El programa rechaza marcas ambiguas o incompletas. En la CLI, previsualizá con `chuli install --adopt-gentle-routing` y añadí `--apply` únicamente después de revisar el resultado. La decisión afecta ese perfil de Codex. Tu instalación Gentle en Pi tiene su propio directorio.
+
 Para actualizar, volvés a abrir la TUI. Para comprobar o revertir, usá las acciones de diagnóstico y rollback. Si el destino cambió después de instalar, consultá el diagnóstico antes de revertir. La reversión se aplica a la última operación registrada y conserva evidencia en el directorio de respaldos del perfil.
 
 ## Desarrollo desde fuentes
