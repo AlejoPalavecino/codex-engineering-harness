@@ -1,54 +1,25 @@
-# Instalación y actualización de Chuli (antes Codex Engineering Harness)
+# Instalar y actualizar el perfil
 
-La TUI Go es opcional. El instalador PowerShell conserva compatibilidad con todas las instalaciones actuales. Ver [Chuli Manager](TUI.md).
+## Requisitos y destino
 
-## Requisitos
+Instalá Codex CLI o la app de escritorio con Codex local, Python 3.11 o posterior y PowerShell. En Windows se admite PowerShell 7 o Windows PowerShell 5.1. En Linux y macOS se usa `pwsh`. La release distribuye el Manager para Windows x64, Linux x64 y macOS ARM64. Para la instalación desde la release basta con el ejecutable de Chuli y estos requisitos.
 
-- Codex CLI/Desktop instalado y funcionando.
-- Windows PowerShell 5.1+ o PowerShell 7.
-- **Python 3.11+ requerido para instalar y actualizar**: se utiliza `tomllib` para validar el TOML completo antes de escribir. Si no está disponible, el instalador rechaza el cambio.
-- Los modelos sugeridos son opcionales y pueden no estar disponibles en todas las cuentas.
-- Engram, GitHub MCP, Context7, Exa y Ego(lite) son integraciones opcionales con instalación separada.
-- El checklist nativo requiere que `update_plan` exista realmente en la versión/cliente de Codex; habilitarlo no garantiza un widget en la app.
+El perfil se instala bajo `CODEX_HOME`, con `~/.codex` como valor habitual. En Windows suele corresponder a `%USERPROFILE%\.codex`. Las reglas del proyecto y los permisos efectivos que administre el cliente también aplican a la sesión.
 
-## Procedimiento
+## Primera instalación
 
-1. Clonar el repositorio y revisar `scripts/install.ps1`.
-2. Ejecutar sin `-Apply` para ver las acciones por archivo y las personalizaciones que serán conservadas.
-3. Ejecutar `scripts/install.ps1 -Apply`; opcionalmente `-ConfigureModels` establece Sol. Para **sobrescribir una personalización detectada**, primero revisar los cambios y después usar `-Apply -ReplaceCustomized` de forma explícita.
-4. Ejecutar `scripts/verify.ps1`; reiniciar Codex Desktop y abrir una sesión nueva.
-5. Probar los escenarios descritos en [TESTING.md](TESTING.md).
+Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v1.0.0.zip` en esta versión.
 
-`CODEX_HOME` prevalece sobre el directorio por defecto `~/.codex`. No se requieren permisos administrativos ni cambios globales de la política de ejecución de PowerShell.
+Reiniciá el cliente o abrí una sesión nueva. En el selector de skills buscá `harness-tdd-qa`, `cognitive-doc-design` y `judgment-day`. Podés pedir al orquestador que delegue una exploración a `chuli_explorer` y mirar el agente usado. La disponibilidad de un modelo depende del cliente y la cuenta. El chat web o móvil no lee la carpeta local del equipo.
 
-El instalador gestiona **solo** `config/AGENTS.md`, cuatro agentes TOML, cinco skills propias, los tres recursos TTP y entradas `[agents.*]` / `[tools.update_plan]` del TOML. Para preservar un ajuste de progreso desactivado expresamente, usar `-SkipTaskProgress`. No borra otros agentes, skills, hooks, plugins ni memoria. Guarda copia local previa y registra la última instalación en `harness-install/state.json`.
+## Personalizaciones y recuperación
 
-Desde v0.2.1, el manifiesto separa los archivos que necesitan backup para rollback (`files`) del inventario completo de recursos administrados (`managed_files`). Por eso, una reinstalación sin cambios ya no pierde los hashes que permiten reconocer archivos oficiales en la siguiente actualización. El estado también declara `schema_version` y `rollback_schema_version`.
+Cuando Codex muestre dos entradas con el nombre `skill-creator`, la edición importada de Gentle AI está en `CODEX_HOME/skills/skill-creator/SKILL.md`. Podés indicar esa ruta en el pedido para distinguirla de la skill interna de Codex.
 
-### Migración de instalaciones anteriores
+Revisá el plan si ya tenés agentes, skills del mismo nombre, un modelo elegido o un orquestador global de otro proveedor. El instalador conserva recursos personalizados y distingue el inventario administrado del registro de la operación que permite revertirla. El contenido ajeno en el archivo de instrucciones requiere convivencia explícita. Las credenciales y las memorias personales quedan fuera del paquete.
 
-Si el manifiesto de una instalación v0.1.3 o v0.2.0 quedó con `files: []` por la regresión de reinstalación, v0.2.1 compara los archivos actuales con baselines SHA-256 históricos incluidos en `scripts/legacy-managed-hashes.json`. Los archivos que coinciden con el contenido oficial anterior se actualizan normalmente; los que no coinciden se siguen tratando como personalizaciones y se preservan salvo que se autorice `-ReplaceCustomized`. Los baselines históricos solo cubren v0.1.3 y v0.2.0; cualquier release futura que necesite migración debe agregar su propio mapa antes de cambiar o retirar recursos.
+Para actualizar, volvés a abrir la TUI. Para comprobar o revertir, usá las acciones de diagnóstico y rollback. Si el destino cambió después de instalar, consultá el diagnóstico antes de revertir. La reversión se aplica a la última operación registrada y conserva evidencia en el directorio de respaldos del perfil.
 
-**Advertencia:** los scripts son candidatos hasta que se apruebe la release. Probar en un `CODEX_HOME` temporal antes de modificar un entorno importante. Cuando una estructura TOML existente no puede actualizarse de manera conservadora, se aborta antes de escribir; no se hace una sustitución aproximada.
+## Desarrollo desde fuentes
 
-## Reversión
-
-```powershell
-.\scripts\rollback.ps1 -Apply
-```
-
-El rollback **valida la totalidad de los backups, sus hashes disponibles, las rutas y el JSON del manifiesto anterior antes de tocar los archivos**. Rechaza esquemas desconocidos, rutas inseguras, entradas duplicadas y respaldos incompletos sin realizar restauraciones parciales. El ejecutor debe provenir de v0.2.1 o posterior; los checkouts antiguos se rechazan para impedir que una versión conocida como insegura controle la recuperación. Mantiene los respaldos para recuperación manual. Ante un error imprevisto de escritura, intenta compensar y declara explícitamente cualquier fallo de recuperación.
-
-## Verificación de recursos (v0.2.1)
-
-`scripts/verify.ps1` comprueba que existan los 13 recursos obligatorios (instrucciones globales, cuatro agentes, cinco skills y tres recursos TTP). La ausencia de cualquiera incrementa el contador de errores y termina con código de salida distinto de cero. Las diferencias de hash se informan como deriva o personalización; no se sobrescriben durante la verificación. La verificación no certifica modelos ejecutados, MCP remoto ni aislamiento real.
-
-## Seguimiento de tareas (v0.1.1)
-
-Al ejecutar R2 desde Codex, fuera de Plan Mode, el orquestador puede actualizar `update_plan` y mostrar hitos en la interfaz que admita esa herramienta. Las tareas detalladas residen en `odd/tasks/<feature>.md` del proyecto. Copiá la plantilla de `templates/feature-tasks.md` y consultá `docs/protocols/TTP.md`. Con Python 3.11+, podés comprobar ese archivo con `python ~/.codex/harness/bin/taskboard.py check <archivo>` (ajustá la ruta en Windows).
-
-La app y el CLI no necesariamente comparten el mismo panel de progreso; si el widget no aparece, usá el documento y pedile a Codex un resumen del estado persistente. No exige Python para que el agente mantenga el archivo.
-
-## MCP
-
-No se descargan MCP automáticamente ni se alteran secretos. Revisar `config/mcp.example.json` para las herramientas recomendadas y configurarlas de manera separada según la documentación de su proveedor.
+Desde un checkout revisado podés ejecutar `./scripts/install.ps1` para ver el plan y agregar `-Apply` para aplicarlo. Usá `-CodexHome RUTA` para trabajar sobre una carpeta temporal. `-ConfigureModels` expresa la intención de sustituir valores de modelo ya configurados. `-ReplaceCustomized` es una opción explícita que requiere revisar primero los archivos afectados. El instalador no necesita credenciales ni añade proveedores MCP automáticamente.

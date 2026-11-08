@@ -1,18 +1,13 @@
 # Seguridad
 
-## Reportar vulnerabilidades
+## Reportes
 
-No publiques secretos, exploits activos ni datos personales en issues públicas. Para fallos con impacto real, contactá al mantenedor mediante el mecanismo privado de reporte de vulnerabilidades de GitHub si está habilitado. De lo contrario, abrí un issue **sin detalles explotables** solicitando un canal privado.
+Usá el canal privado de vulnerabilidades de GitHub si está habilitado. En su defecto, abrí un issue solicitando un canal privado. Conservá los secretos, memorias, perfiles reales de Codex y datos de clientes fuera del repositorio.
 
-## Límites conocidos
+## Límites de confianza
 
-- Los subagentes nativos pueden compartir permisos, filesystem y MCP con el proceso principal. Instrucciones como «no escribas» **no garantizan aislamiento**.
-- Los MCP pueden realizar acciones externas no cubiertas por el sandbox de filesystem.
-- El instalador v0.1.2 requiere Python 3.11+ para validar TOML, preserva personalizaciones por defecto y muestra el plan de cambios. Para reemplazarlas se exige `-ReplaceCustomized` explícito, además de `-Apply`.
-- El rollback v0.1.2 comprueba todos los backups y el manifiesto previo antes de restaurar. No borra las memorias Engram.
-- Los perfiles ASEP estrictos necesitan una implementación y prueba de aislamiento separadas; **no están garantizados en v0.1**.
-- Los identificadores de modelos pueden no estar disponibles en todas las cuentas/versiones; comprobar el modelo ejecutado.
+El Manager obtiene los paquetes de publicación de este repositorio por HTTPS y contrasta su SHA-256 con el manifiesto de la release. Una suma emitida por el mismo origen comprueba integridad de transporte y caché. La autenticidad sigue dependiendo de GitHub y de quienes tienen permiso de publicación. Usá un checkout local únicamente cuando conozcas su procedencia.
 
-## Seguridad al contribuir
+El instalador hace una vista previa, preserva personalizaciones, verifica recursos y registra las operaciones reversibles. Diagnóstico y rollback rechazan recursos incompatibles o respaldos dañados. Las skills de terceros son instrucciones y recursos de procedencia revisable. Algunas precisan herramientas o permisos adicionales, detallados en el catálogo.
 
-No añadir configuraciones privadas, archivos de clientes, prompts con datos sensibles, datos de salud, sesiones de navegador, tokens, `.env`, copias de `auth.json`, bases SQLite de Engram ni backups. Usar datos ficticios.
+Los subagentes pueden heredar el sandbox, los MCP y las autorizaciones del proceso principal. Para una tarea crítica configurá controles efectivos en el cliente y verificá sus límites. El perfil da instrucciones de trabajo al agente. La separación de tareas y la revisión de un diff no constituyen aislamiento del sistema operativo.
