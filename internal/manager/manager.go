@@ -23,6 +23,9 @@ const Repository = "AlejoPalavecino/codex-engineering-harness"
 const releaseBase = "https://github.com/" + Repository + "/releases/download/"
 const githubAPI = "https://api.github.com/repos/" + Repository + "/releases/latest"
 
+// ErrGentleConflict identifies a recognized, safely adoptable routing block.
+var ErrGentleConflict = errors.New("se detectó un orquestador de Gentle que puede respaldarse")
+
 var releaseTag = regexp.MustCompile("^v[0-9]+\\.[0-9]+\\.[0-9]+$")
 var version = regexp.MustCompile("^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
 
@@ -39,13 +42,14 @@ type Release struct {
 }
 
 type Prepared struct {
-	Root      string
-	Temporary bool
-	Version   string
-	Action    string
-	Preview   string
-	archive   *profileArchive
-	stateID   [sha256.Size]byte
+	Root               string
+	Temporary          bool
+	Version            string
+	Action             string
+	Preview            string
+	archive            *profileArchive
+	stateID            [sha256.Size]byte
+	adoptGentleRouting bool
 }
 
 func New(source string) (Manager, error) {
@@ -303,7 +307,9 @@ func trunc(b []byte) string {
 	return string(b)
 }
 
-func (m Manager) Script(ctx context.Context, root, file string, apply bool) (string, error) {
+type scriptOptions struct{ apply, adoptGentleRouting bool }
+
+func (m Manager) script(ctx context.Context, root, file string, opts scriptOptions) (string, error) {
 	if file != "install.ps1" && file != "rollback.ps1" && file != "verify.ps1" {
 		return "", errors.New("script no permitido")
 	}
@@ -315,7 +321,13 @@ func (m Manager) Script(ctx context.Context, root, file string, apply bool) (str
 		return "", err
 	}
 	args := []string{"-NoProfile", "-NonInteractive", "-File", filepath.Join(root, "scripts", file), "-CodexHome", m.Home}
-	if apply {
+	if opts.adoptGentleRouting {
+		if file != "install.ps1" {
+			return "", errors.New("la adopción solo se permite durante instalación o actualización")
+		}
+		args = append(args, "-AdoptGentleRouting")
+	}
+	if opts.apply {
 		if file == "verify.ps1" {
 			return "", errors.New("verificador de solo lectura")
 		}
@@ -365,15 +377,16 @@ func (m Manager) Doctor(ctx context.Context) (string, error) {
 		return "", err
 	}
 	defer p.Cleanup()
-	return m.Script(ctx, p.Root, "verify.ps1", false)
+	return m.script(ctx, p.Root, "verify.ps1", scriptOptions{})
 }
 
-func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
+func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting bool) (Prepared, error) {
 	state, err := m.readInstallationState()
 	if err != nil {
 		return Prepared{}, err
 	}
 	var p Prepared
+	var sameVersion bool
 	script := "install.ps1"
 	switch action {
 	case "local":
@@ -391,16 +404,26 @@ func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
 			if e != nil {
 				return Prepared{}, e
 			}
-			if cmp <= 0 {
+			sameVersion = cmp == 0
+			if cmp < 0 {
 				return Prepared{}, fmt.Errorf("sin actualización: instalada %s, última release %s", state.Version, rel.Tag)
 			}
 		}
-		a, e := m.download(ctx, rel.Tag)
+		var a *profileArchive
+		if sameVersion {
+			a, e = m.cached(rel.Tag)
+		}
+		if !sameVersion || errors.Is(e, os.ErrNotExist) {
+			a, e = m.download(ctx, rel.Tag)
+		}
 		if e != nil {
 			return Prepared{}, e
 		}
 		p, err = a.unpack()
 	case "rollback":
+		if adoptGentleRouting {
+			return Prepared{}, errors.New("rollback no admite adopción de Gentle")
+		}
 		if state.Version == "" {
 			return Prepared{}, errors.New("no existe instalación registrada")
 		}
@@ -435,8 +458,24 @@ func (m Manager) Prepare(ctx context.Context, action string) (Prepared, error) {
 			}
 		}
 	}
+	p.adoptGentleRouting = adoptGentleRouting
+	if err == nil && sameVersion {
+		// An unchanged release may be reapplied only to reconcile a recognized
+		// conflict. Ask the installer, which owns the exact marker grammar.
+		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{})
+		switch {
+		case err == nil:
+			p.Cleanup()
+			return Prepared{}, fmt.Errorf("sin actualización: la versión %s ya está instalada", p.Version)
+		case adoptGentleRouting && strings.Contains(p.Preview, "CHULI_GENTLE_CONFLICT"):
+			err = nil
+		}
+	}
 	if err == nil {
-		p.Preview, err = m.Script(ctx, p.Root, script, false)
+		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{adoptGentleRouting: adoptGentleRouting})
+	}
+	if err != nil && p.Action == "install" && !adoptGentleRouting && strings.Contains(p.Preview, "CHULI_GENTLE_CONFLICT") {
+		err = fmt.Errorf("%w: %w", ErrGentleConflict, err)
 	}
 	if err != nil {
 		p.Cleanup()
@@ -473,12 +512,12 @@ func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
 		defer fresh.Cleanup()
 		p.Root = fresh.Root
 	}
-	log, err := m.Script(ctx, p.Root, file, true)
+	log, err := m.script(ctx, p.Root, file, scriptOptions{apply: true, adoptGentleRouting: p.adoptGentleRouting})
 	if err != nil {
 		return log, err
 	}
 	if p.Action == "install" {
-		out, e := m.Script(ctx, p.Root, "verify.ps1", false)
+		out, e := m.script(ctx, p.Root, "verify.ps1", scriptOptions{})
 		log += "\n--- Verificación ---\n" + out
 		if e != nil {
 			return log, fmt.Errorf("instalado pero verificación fallida: %w", e)

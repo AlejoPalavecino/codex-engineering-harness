@@ -20,7 +20,7 @@ func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")
 	showVersion := flag.Bool("version", false, "Mostrar versión del gestor")
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--source RUTA] [tui|install|update|status|doctor|rollback|version|eval]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo.")
+		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--source RUTA] [tui|install|update|status|doctor|rollback|version|eval]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo. install y update admiten --adopt-gentle-routing para respaldar el routing de Gentle y usar Chuli.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -72,9 +72,18 @@ func fail(err error) {
 }
 
 func manage(m manager.Manager, args []string, out io.Writer) error {
-	apply := len(args) == 2 && args[1] == "--apply"
-	if len(args) > 1 && !apply {
-		return errors.New("se admite únicamente --apply después del subcomando")
+	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flags.SetOutput(out)
+	apply := flags.Bool("apply", false, "Aplicar el plan")
+	adopt := flags.Bool("adopt-gentle-routing", false, "Respaldar el enrutamiento reconocido de Gentle y usar Chuli")
+	if err := flags.Parse(args[1:]); err != nil {
+		return err
+	}
+	if flags.NArg() != 0 {
+		return errors.New("argumento inesperado")
+	}
+	if *adopt && args[0] == "rollback" {
+		return errors.New("rollback no admite --adopt-gentle-routing")
 	}
 	action := args[0]
 	if action != "rollback" {
@@ -85,13 +94,16 @@ func manage(m manager.Manager, args []string, out io.Writer) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
-	p, err := m.Prepare(ctx, action)
+	p, err := m.Prepare(ctx, action, *adopt)
+	if errors.Is(err, manager.ErrGentleConflict) {
+		return fmt.Errorf("%w\nRevisá el plan de adopción con %s --adopt-gentle-routing.", err, args[0])
+	}
 	if err != nil {
 		return err
 	}
 	defer p.Cleanup()
 	fmt.Fprintln(out, p.Preview)
-	if !apply {
+	if !*apply {
 		return nil
 	}
 	log, err := m.Apply(context.Background(), p)

@@ -162,7 +162,7 @@ func TestRollbackRejectsOldCheckoutBeforeRunningPowerShell(t *testing.T) {
 	}
 
 	m := Manager{Home: home, Source: source}
-	_, err := m.Prepare(context.Background(), "rollback")
+	_, err := m.Prepare(context.Background(), "rollback", false)
 	if err == nil || !strings.Contains(err.Error(), "rollback requiere el ejecutor seguro v0.2.1") {
 		t.Fatalf("old rollback executor was not rejected before PowerShell: %v", err)
 	}

@@ -3,6 +3,7 @@ package tui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,11 +15,12 @@ import (
 )
 
 const (
-	home    = "home"
-	busy    = "busy"
-	preview = "preview"
-	result  = "result"
-	about   = "about"
+	home     = "home"
+	busy     = "busy"
+	preview  = "preview"
+	conflict = "conflict"
+	result   = "result"
+	about    = "about"
 )
 
 var (
@@ -47,6 +49,7 @@ type model struct {
 	cursor         int
 	screen         string
 	title          string
+	action         string
 	prepared       manager.Prepared
 	log            string
 	fault          string
@@ -69,7 +72,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
 	case tea.KeyPressMsg:
-		key := msg.String()
+		key := strings.ToLower(msg.String())
 		if m.screen == busy {
 			return m, nil
 		} // Do not detach a mutating process.
@@ -85,7 +88,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.log = ""
 			return m, nil
 		}
-		if m.screen == preview || m.screen == result {
+		if m.screen == preview || m.screen == result || m.screen == conflict {
 			switch key {
 			case "down", "j", "pgdown", "up", "k", "pgup":
 				step := 1
@@ -114,6 +117,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				choice := options[m.cursor]
 				m.offset = 0
 				m.title = choice.label
+				m.action = choice.action
 				m.fault = ""
 				m.log = ""
 				if choice.action == "about" {
@@ -127,8 +131,14 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				if choice.action == "doctor" {
 					return m, diagnoseCmd(m.mgr)
 				}
-				return m, prepareCmd(m.mgr, choice.action)
+				return m, prepareCmd(m.mgr, choice.action, false)
 			}
+		} else if m.screen == conflict && key == "a" {
+			m.screen = busy
+			m.title = "Usar Chuli como orquestador y respaldar Gentle"
+			m.log, m.fault = "", ""
+			m.offset = 0
+			return m, prepareCmd(m.mgr, m.action, true)
 		} else if m.screen == preview {
 			switch key {
 			case "y", "s":
@@ -146,6 +156,9 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case preparedMsg:
 		if msg.err != nil {
 			m.screen = result
+			if errors.Is(msg.err, manager.ErrGentleConflict) {
+				m.screen = conflict
+			}
 			m.fault = msg.err.Error()
 			return m, nil
 		}
@@ -173,11 +186,11 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func prepareCmd(m manager.Manager, action string) tea.Cmd {
+func prepareCmd(m manager.Manager, action string, adoptGentleRouting bool) tea.Cmd {
 	return func() tea.Msg {
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 		defer cancel()
-		plan, err := m.Prepare(ctx, action)
+		plan, err := m.Prepare(ctx, action, adoptGentleRouting)
 		return preparedMsg{plan, err}
 	}
 }
@@ -253,6 +266,12 @@ func (m model) View() tea.View {
 		b.WriteString("Revisá los cambios antes de confirmar.\n\n")
 		b.WriteString(m.page() + "\n\n")
 		b.WriteString(good.Render("S / Y confirmar") + "    " + muted.Render("N cancelar · Esc volver") + "\n")
+	case conflict:
+		b.WriteString(heading.Render("Gentle controla el enrutamiento de este perfil") + "\n\n")
+		b.WriteString("A · Usar Chuli como orquestador y respaldar Gentle\n")
+		b.WriteString("Primero verás el plan. La confirmación se solicita después.\n")
+		b.WriteString(muted.Render("Esc volver · q salir") + "\n\n")
+		b.WriteString(m.page())
 	case result:
 		if m.fault != "" {
 			b.WriteString(bad.Render("No se completó la operación") + "\n\n")
