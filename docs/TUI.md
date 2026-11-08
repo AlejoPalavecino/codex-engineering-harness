@@ -1,49 +1,17 @@
-# Chuli Manager — TUI v0.2.1 (candidata de mantenimiento)
+# Chuli Manager 1.0
 
-Chuli Manager es una interfaz de terminal en Go. Se ejecuta en Windows Terminal, PowerShell o la terminal integrada de Codex; no es un widget del chat.
+El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paquete del repositorio oficial, muestra el plan y espera confirmación para instalarlo. Una actualización del perfil puede incorporar skills, recursos o modelos. Para cambiar de versión del ejecutable descargá el nuevo Manager.
 
-## Ejecutar desde un checkout
+| Operación | Uso |
+| --- | --- |
+| Ver la versión del Manager | `chuli version` |
+| Ver el destino, modelo registrado e inventario de agentes y skills | `chuli status` |
+| Previsualizar / aplicar instalación | `chuli install` / `chuli install --apply` |
+| Previsualizar / aplicar actualización | `chuli update` / `chuli update --apply` |
+| Comprobar la instalación | `chuli doctor` |
+| Revisar / confirmar la reversión | `chuli rollback` / `chuli rollback --apply` |
+| Usar un checkout de confianza para desarrollo o recuperación | `chuli --source RUTA doctor` |
 
-Para compilar: Go 1.26+, Git y Windows PowerShell. Para instalar el harness: también Python 3.11+ (el parser TOML seguro de v0.1.2). Los binarios compilados no necesitan que el usuario final instale Go.
+La distribución oficial conserva una copia verificable del paquete para diagnóstico y recuperación. Para una instalación histórica que todavía carece de ese paquete, especificá un checkout compatible con `--source`. El indicador de versión del perfil y la versión del Manager se refieren a productos instalables distintos.
 
-```powershell
-go run ./cmd/chuli --source .
-go build -o chuli.exe ./cmd/chuli
-.\chuli.exe --source .
-```
-
-La release oficial incluye binarios para Windows x64, Linux x64 y macOS arm64, además de `SHA256SUMS.txt`. En Windows, descargá el ZIP desde [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases), extraé `chuli.exe` y ejecutalo desde PowerShell. No hace falta tener Go instalado. La **instalación/rollback solo están habilitados en Windows** por ahora.
-
-## Menú principal
-
-- **Instalar o actualizar desde la última release estable:** consulta GitHub Releases del repositorio oficial. Rechaza prereleases, versiones iguales/inferiores y versiones anteriores a v0.1.2, cuyo instalador tenía fallos conocidos. Descarga el tag exacto en un directorio temporal, sin modificar el checkout original.
-- **Instalar desde checkout local:** ejecuta `install.ps1` sin `-Apply`; muestra cambios y solo escribe tras confirmación `S/Y`.
-- **Diagnóstico:** ejecuta `verify.ps1` del checkout local. No verifica modelos ejecutados ni aislamiento real.
-- **Rollback:** utiliza el script del checkout local solo si es v0.2.1 o posterior y declara un esquema compatible. Valida el manifiesto anterior y todos los backups antes de escribir; rechaza checkouts antiguos y esquemas no soportados.
-- **Acerca de:** presenta identidad y protocolos.
-
-Las teclas `↑/↓` o `j/k` navegan; `Enter` selecciona; `S/Y` confirma; `N/Esc` cancela; `Q` sale. Durante una operación de escritura no se permite cerrar la TUI mediante estas teclas para evitar abandono de procesos.
-
-## Comandos adicionales
-
-```powershell
-.\chuli.exe version
-.\chuli.exe status
-.\chuli.exe --source . doctor
-```
-
-La bandera `--source` debe preceder al subcomando. Si no se indica se utiliza el directorio actual como candidato a checkout.
-
-## Seguridad y límites
-
-1. Nunca se aplica automáticamente una actualización. Se muestra el plan y se solicita aprobación.
-2. El programa reutiliza los scripts de instalación, verificación y rollback del checkout validado. Desde v0.2.1, el Manager bloquea ejecutores antiguos para rollback y el script comprueba su versión mínima y el esquema del manifiesto.
-3. Por defecto no ofrece `-ReplaceCustomized`: las personalizaciones se conservan conforme al instalador. Para forzar un reemplazo hay que revisarlo manualmente.
-4. Obtener una release requiere Internet y Git. Se cotejan el tag y el archivo `VERSION`, pero **esta primera versión no verifica firmas criptográficas de la release**. Los artefactos oficiales firmados y su comprobación quedan antes de un mecanismo de actualización sin supervisión.
-5. Diagnóstico y rollback requieren un checkout local válido. Para rollback, el checkout debe ser v0.2.1 o posterior. Las instalaciones v0.1.1 se recuperan manualmente desde el backup por el fallo conocido de su script.
-6. La opción remota consulta la última release estable. Los instaladores anteriores a v0.1.2 se rechazan por sus defectos conocidos.
-7. El Manager todavía no autoactualiza su propio binario, no soporta Antigravity y no instala en macOS/Linux.
-
-## Próximos pasos
-
-Firmas verificables para ejecutables/releases, recuperación independiente del checkout, actualizaciones del Manager, adaptadores específicos y soporte en otros sistemas.
+El evaluador continúa disponible en el checkout con `chuli --source RUTA eval check`. Los snapshots y comparaciones locales se describen en [Evaluación](EVALUATION.md).
