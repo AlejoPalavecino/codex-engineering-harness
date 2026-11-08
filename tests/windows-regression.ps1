@@ -32,7 +32,9 @@ try {
     Assert-That ($config.Contains('enabled = false')) 'Explicit local override was lost.'
     & python -c 'import tomllib,sys; tomllib.load(open(sys.argv[1],"rb"))' $configFile
     Assert-That ($LASTEXITCODE -eq 0) 'Candidate TOML invalid.'
-    Assert-That ((Hash $agentFile) -eq $originalAgentHash) 'P1-3: update overwrote customized AGENTS.'
+    $merged = [IO.File]::ReadAllText($agentFile)
+    Assert-That ($merged.Contains('CES argentino personalizado') -and $merged.Contains('<!-- chuli:orchestrator -->')) 'Managed instructions must preserve personal AGENTS content.'
+    $firstAgentHash = Hash $agentFile
 
     # Valid unrelated config changes must be accepted.
     [IO.File]::AppendAllText($configFile, '[custom]' + $nl + "owner = 'fixture'" + $nl)
@@ -66,7 +68,7 @@ try {
     Assert-That ((Hash $statePath) -eq $stateBefore) 'Rollback changed state before preflight completed.'
     [IO.File]::WriteAllText($previousFile,$previousContents)
     & $rollback -CodexHome $homePath -Apply
-    Assert-That ((Hash $agentFile) -eq $originalAgentHash) 'Rollback failed to restore customization.'
+    Assert-That ((Hash $agentFile) -eq $firstAgentHash) 'Rollback failed to restore previous instructions.'
 
     # Invalid TOML must fail validation even if file hash is accepted.
     $invalid = '[tools.update_plan]' + $nl + 'enabled = true' + $nl +

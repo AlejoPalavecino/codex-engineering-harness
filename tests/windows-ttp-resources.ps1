@@ -134,7 +134,10 @@ try {
         Assert-That (@($stateAfterRepeat.files).Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
         $managedCount = 0
         foreach ($entry in $stateAfterRepeat.managed_files.PSObject.Properties) { $managedCount++ }
-        Assert-That ($managedCount -eq 13) ('La reinstalación perdió el inventario de archivos administrados; encontrados: ' + $managedCount)
+        $expectedCount = 4 + @(Get-ChildItem (Join-Path $repo 'skills') -File -Recurse -Force).Count +
+            @(Get-ChildItem (Join-Path $repo 'agents/*.toml') -File).Count +
+            @(Get-ChildItem (Join-Path $repo 'docs/protocols') -File -Recurse).Count
+        Assert-That ($managedCount -eq $expectedCount) ('La reinstalación perdió el inventario de archivos administrados; encontrados: ' + $managedCount)
         foreach ($resource in $resources) {
             Assert-That ((Hash (Join-Path $homePath $resource.target)) -eq (Hash (Join-Path $repo $resource.source))) ('Reinstalación cambió ' + $resource.target)
         }
@@ -252,6 +255,34 @@ try {
             $null = Run-Script 'rollback' $isolatedHome @('-Apply') $false
             Assert-That ((Snapshot $isolatedHome) -eq $before) ('Rollback parcial al detectar deriva en ' + $resource.target)
         }
+    }
+    Case 'preserve-personal-instructions-added-after-install' {
+        param($homePath)
+        $instructions = Join-Path $homePath 'AGENTS.md'
+        Write-Fixture $instructions "antes`r`n"
+        $null = Run-Script 'install' $homePath @('-Apply')
+        [IO.File]::AppendAllText($instructions, 'después')
+        $null = Run-Script 'verify' $homePath
+        $null = Run-Script 'rollback' $homePath @('-Apply')
+        Assert-That ([IO.File]::ReadAllText($instructions) -eq "antes`r`ndespués") 'Rollback perdió texto personal fuera del bloque Chuli.'
+    }
+    Case 'gentle-routing-refused' {
+        param($homePath)
+        Write-Fixture (Join-Path $homePath 'AGENTS.md') '<!-- gentle-ai:agent-routing -->'
+        $before = Snapshot $homePath
+        $message = Run-Script 'install' $homePath @('-Apply','-ReplaceCustomized') $false
+        Assert-That ($message.Contains('Gentle AI') -and $message.Contains('AGENTS.md')) 'Conflicto sin origen identificable.'
+        Assert-That ((Snapshot $homePath) -eq $before) 'La instalación escribió sobre un orquestador ajeno.'
+    }
+    Case 'tampered-skill-reference-fails-verification' {
+        param($homePath)
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $target = Join-Path $homePath 'skills/skill-creator/references/skill-style-guide.md'
+        [IO.File]::AppendAllText($target,'edited')
+        $null = Run-Script 'verify' $homePath @() $false
+        $null = Run-Script 'install' $homePath @('-Apply')
+        $null = Run-Script 'verify' $homePath
+        Assert-That ([IO.File]::ReadAllText($target).EndsWith('edited')) 'La actualización perdió una referencia personalizada.'
     }
     if ($failures.Count -gt 0) { throw ('TTP RESOURCE TESTS FAILED: ' + ($failures -join '; ')) }
     $global:LASTEXITCODE = 0
