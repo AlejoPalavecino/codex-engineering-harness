@@ -1,6 +1,13 @@
 # Changelog
 
-## [Unreleased] — v0.2.1 (maintenance candidate)
+## [1.0.0] — Perfil personal para Codex
+
+- Manager orientado a instalar y mantener el perfil del usuario. El paquete del perfil y los binarios publicados provienen del CI del commit etiquetado.
+- Orquestación ODD/TDD, seis especialistas y 23 skills con inventario, atribución y referencias instalables.
+- Actualización del perfil, conservación del contexto personal y recuperación desde el paquete oficial.
+- La [trayectoria](docs/ROADMAP.md) registra la sustitución del diseño de runtime separado.
+
+## [0.2.1] — Mantenimiento integrado en main, incluido en 1.0.0
 
 ### Fixed
 - Conserva un inventario completo de hashes administrados aunque una reinstalación no modifique archivos.
