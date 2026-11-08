@@ -19,6 +19,8 @@ Para proponer y aprobar cambios, seguí el [flujo de issues y PRs](docs/ISSUE_WO
 
 ## Criterios de aceptación
 
+Las adaptaciones de Gentle AI deben indicar el commit de origen, la licencia aplicable y las dependencias del runtime en [el inventario de terceros](THIRD_PARTY_NOTICES.md). Incluí archivos auxiliares en el paquete y verificá que Codex descubra la skill desde un perfil temporal.
+
 Una nueva skill debe resolver una necesidad distinta. Un nuevo agente necesita justificar el costo de delegación. Una nueva dependencia o MCP debe ser opcional salvo necesidad técnica demostrada. La compatibilidad de modelos y mecanismos de permiso debe probarse, no suponerse.
 
 ## Idioma
