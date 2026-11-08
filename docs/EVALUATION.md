@@ -1,6 +1,6 @@
 # Chuli Evaluation Protocol v1.0 — Foundation (v0.2 / PR #5)
 
-**Estado:** fundación de evaluación, no un benchmark ejecutado.  
+**Estado del documento:** metodología histórica de la fundación v0.2. El catálogo conserva su huella y su baseline. Para Chuli 1.0, las pruebas de instalación, descubrimiento y distribución se documentan en [Pruebas](TESTING.md).
 **Baseline inmutable:** [v0.1.3](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v0.1.3), commit `68b756bd5e39539b4e277bb490321f8c06870755`.
 
 ## Objetivo y límites
