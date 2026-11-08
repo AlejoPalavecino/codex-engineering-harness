@@ -24,9 +24,11 @@ function Invoke-ProfilePython {
     return $output
 }
 
-function Get-ProfileInventory($Runtime, [string]$Action, [string]$ProfileHome) {
+function Get-ProfileInventory($Runtime, [string]$Action, [string]$ProfileHome, [switch]$AdoptGentleRouting) {
     $tool = Join-Path $PSScriptRoot 'profile_resources.py'
-    $json = Invoke-ProfilePython $Runtime @($tool,$Action,'--home',$ProfileHome)
+    $arguments = @($tool,$Action,'--home',$ProfileHome)
+    if ($AdoptGentleRouting) { $arguments += '--adopt-gentle-routing' }
+    $json = Invoke-ProfilePython $Runtime $arguments
     return ($json | ConvertFrom-Json)
 }
 

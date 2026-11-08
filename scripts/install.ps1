@@ -14,6 +14,7 @@ param(
     [switch]$RemoveLegacyAgents,
     [switch]$SkipTaskProgress,
     [switch]$ReplaceCustomized,
+    [switch]$AdoptGentleRouting,
     [string]$CodexHome
 )
 Set-StrictMode -Version Latest
@@ -44,7 +45,7 @@ if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
 }
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
 $python = Get-Python
-$inventory = Get-ProfileInventory $python 'install' $homePath
+$inventory = Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting
 $previous = $null
 $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
@@ -88,6 +89,7 @@ try {
     $instructionsPath = Join-Path $staging 'AGENTS.md'
     $instructionArgs = @((Join-Path $PSScriptRoot 'profile_resources.py'), 'instructions', '--home', $homePath, '--output', $instructionsPath)
     if ($ReplaceCustomized) { $instructionArgs += '--replace' }
+    if ($AdoptGentleRouting) { $instructionArgs += '--adopt-gentle-routing' }
     $instructions = (Invoke-ProfilePython $python $instructionArgs) | ConvertFrom-Json
     foreach ($entry in $inventory.PSObject.Properties) {
         $items.Add(@{path=$entry.Name; source=[string]$entry.Value; kind='copy'})
@@ -112,7 +114,7 @@ try {
             if ($managedFiles.ContainsKey([string]$item.path)) {
                 $knownManagedHash = [string]$managedFiles[[string]$item.path]
             }
-            if ($item.path -eq 'AGENTS.md' -and $instructions.preserved) {
+            if ($item.path -eq 'AGENTS.md' -and $instructions.preserved -and @($instructions.adopted_gentle).Count -eq 0) {
                 $preserved.Add('AGENTS.md (customized Chuli block)')
                 $action = 'PRESERVE-CUSTOMIZED'
             } elseif ($sourceHash -eq $oldHash -and ($knownManagedHash -or $item.path -eq 'AGENTS.md' -or $ReplaceCustomized)) {
@@ -165,6 +167,9 @@ try {
 
     Write-Output ('Codex home: ' + $homePath)
     Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath 'AGENTS.md'))
+    if (@($instructions.adopted_gentle).Count -gt 0) {
+        Write-Output ('Gentle AI -> Chuli: ' + ($instructions.adopted_gentle -join ', ') + ' in AGENTS.md. Original included in backup on apply.')
+    }
     Write-Output ('Version candidate: ' + $harnessVersion)
     Write-Output ('Python TOML validation: PASS')
     Write-Output ('ReplaceCustomized requested: ' + [bool]$ReplaceCustomized)
@@ -244,6 +249,7 @@ try {
         backup_dir=$backup
         previous_state_existed=[bool]($null -ne $previous)
         previous_state_sha256=(Get-Hash (Join-Path $backup '_previous_state.json'))
+        adopted_gentle=@($instructions.adopted_gentle)
         orchestrator_sha256=$instructions.orchestrator_sha256
         orchestrator_baseline_sha256=$instructions.baseline_sha256
         files=@($modified.ToArray())

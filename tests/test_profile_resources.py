@@ -37,6 +37,43 @@ class ProfileTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "AGENTS.override.md"):
             profile.preflight(self.home, "install")
 
+    def test_only_complete_upstream_gentle_ownership_is_adopted(self):
+        def pair(section, body):
+            return f"<!-- gentle-ai:{section} -->\r\n{body}\r\n<!-- /gentle-ai:{section} -->\r\n".encode()
+        orchestrator = pair("orchestrator", "previous orchestration")
+        authorization = pair("remote-authorization", "nested upstream contract").decode().rstrip()
+        routing = pair("agent-routing", "dispatch\r\n" + authorization)
+        persona = pair("persona", "speak naturally")
+        memory = pair("engram-protocol", "MCP settings")
+        before = b"My rules\r\n" + persona
+        middle = "Vale, café\r\n".encode()
+        after = memory + b"# my ending"
+        original = profile.BOM + before + orchestrator + middle + routing + after
+        (self.home / "AGENTS.md").write_bytes(original)
+        with self.assertRaisesRegex(ValueError, "CHULI_GENTLE_CONFLICT"):
+            profile.preflight(self.home, "install")
+        profile.preflight(self.home, "install", True)
+        report = profile.prepare_instructions(self.home, self.output, False, True)
+        self.assertEqual(report["adopted_gentle"], ["orchestrator", "agent-routing"])
+        output = self.output.read_bytes()
+        self.assertEqual(output[:output.index(profile.BEGIN)], profile.BOM + before + middle + after + b"\n")
+        self.assertEqual((self.home / "AGENTS.md").read_bytes(), original)
+
+    def test_refuses_unpaired_nested_and_ambiguous_gentle_markers(self):
+        op = b"<!-- gentle-ai:orchestrator -->\n"
+        cl = b"<!-- /gentle-ai:orchestrator -->\n"
+        foreign = b"<!-- gentle-ai:persona -->\n"
+        foreign_end = b"<!-- /gentle-ai:persona -->\n"
+        cases = (op, cl, cl + op, op + op + cl + cl, op + cl + op + cl,
+                 op + foreign + b"please preserve\n" + foreign_end + cl,
+                 foreign + op + cl + foreign_end, b"inline " + op + cl,
+                 op + b"clipped <!-- gentle-ai:agent-routing\n" + cl,
+                 profile.BEGIN + b"\n" + op + cl + profile.END + b"\n",
+                 b"```html\n" + op + cl + b"```\n")
+        for data in cases:
+            with self.subTest(data=data), self.assertRaisesRegex(ValueError, "CHULI_GENTLE_AMBIGUOUS"):
+                profile.gentle_sections(data, self.home / "AGENTS.md", True)
+
     def test_incomplete_or_duplicate_blocks_are_rejected(self):
         for data in (profile.END, profile.BEGIN, profile.END + b"\n" + profile.BEGIN,
                      profile.BEGIN + b"\n" + profile.BEGIN + b"\n" + profile.END):

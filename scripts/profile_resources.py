@@ -13,7 +13,10 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 BEGIN = b"<!-- chuli:orchestrator -->"
 END = b"<!-- /chuli:orchestrator -->"
-GENTLE = re.compile(rb"<!--\s*/?gentle-ai:(orchestrator|sdd-orchestrator|agent-routing)\s*-->", re.I)
+GENTLE_ROUTING = {b"orchestrator", b"sdd-orchestrator", b"agent-routing"}
+GENTLE_HINT = re.compile(rb"<!--\s*/?\s*gentle-ai\s*:\s*(?:sdd-orchestrator|orchestrator|agent-routing)\b", re.I)
+GENTLE_LINE = re.compile(rb"<!-- (/?)gentle-ai:([a-z0-9-]+) -->")
+FENCE = re.compile(rb"^ {0,3}(`{3,}|~{3,})(.*)$")
 BOM = b"\xef\xbb\xbf"
 LEGACY_AGENTS = {f"agents/{name}.toml" for name in
                  ("architect", "explorer", "reviewer", "slice_worker", "test_runner")}
@@ -87,7 +90,7 @@ def inventory(root: Path) -> dict[str, str]:
     return dict(sorted(result.items()))
 
 
-def preflight(home: Path, action: str) -> dict[str, str]:
+def preflight(home: Path, action: str, adopt_gentle: bool = False) -> dict[str, str]:
     if not home.is_absolute() or ".." in home.parts or home == home.parent:
         raise ValueError("Expected an absolute profile directory below the filesystem root")
     if home == ROOT or home.is_relative_to(ROOT) or ROOT.is_relative_to(home):
@@ -105,7 +108,7 @@ def preflight(home: Path, action: str) -> dict[str, str]:
         instructions = home / "AGENTS.md"
         if instructions.is_file():
             content = instructions.read_bytes()
-            check_gentle(content, instructions)
+            gentle_sections(content.removeprefix(BOM), instructions, adopt_gentle and action == "install")
             if action == "verify" and not block_span(content.removeprefix(BOM)):
                 raise ValueError(f"No Chuli orchestrator block in {instructions}. Run the v1 installer to migrate.")
     state_path = home / "harness-install/state.json"
@@ -176,19 +179,66 @@ def block_span(data: bytes) -> tuple[int, int] | None:
     return match.span()
 
 
-def check_gentle(data: bytes, path: Path) -> None:
-    match = GENTLE.search(data)
-    if match:
-        origin = match[1].decode()
-        raise ValueError(f"Active Gentle AI instructions ({origin}) in {path}. Choose a separate Chuli profile or remove the Gentle routing block first.")
+def gentle_sections(data: bytes, path: Path, adopt: bool) -> list[tuple[int, int, bytes]]:
+    """Find complete upstream sections in their original byte positions; reject ambiguity."""
+    if not GENTLE_HINT.search(data):
+        return []
+
+    def ambiguous() -> None:
+        raise ValueError(f"CHULI_GENTLE_AMBIGUOUS: incomplete, nested or ambiguous Gentle AI markers in {path}. Review the delimiters before installing.")
+
+    spans = []
+    stack = []
+    fence = b""
+    offset = 0
+    for raw in data.splitlines(keepends=True):
+        line = raw.rstrip(b"\r\n")
+        marker = GENTLE_LINE.fullmatch(line)
+        if fence:
+            if GENTLE_HINT.search(line):
+                ambiguous()  # A marker example in a code fence is not an ownership boundary.
+            if line.strip().startswith(fence) and not line.strip().strip(fence[:1]):
+                fence = b""
+        elif match := FENCE.match(line):
+            fence = match[1]
+        elif marker:
+            closing, section = marker.groups()
+            if not closing:
+                # Gentle AI deliberately nests its authorization contract inside agent-routing.
+                if stack and (section in GENTLE_ROUTING or stack[0][0] in GENTLE_ROUTING):
+                    if not (len(stack) == 1 and stack[0][0] == b"agent-routing" and section == b"remote-authorization"):
+                        ambiguous()
+                stack.append((section, offset))
+            else:
+                if not stack or stack[-1][0] != section:
+                    ambiguous()
+                _, start = stack.pop()
+                if section in GENTLE_ROUTING:
+                    spans.append((start, offset + len(raw), section))
+        elif re.search(rb"<!--\s*/?\s*gentle-ai\s*:", line, re.I):
+            ambiguous()
+        offset += len(raw)
+    if (stack or not spans or len(GENTLE_HINT.findall(data)) != 2 * len(spans)
+            or len(spans) != len({section for _, _, section in spans})):
+        ambiguous()
+    chuli = block_span(data)
+    if chuli and any(start < chuli[1] and chuli[0] < end for start, end, _ in spans):
+        ambiguous()
+    if not adopt:
+        names = ", ".join(section.decode() for _, _, section in spans)
+        raise ValueError(f"CHULI_GENTLE_CONFLICT: Active Gentle AI instructions ({names}) in {path}. Preview with -AdoptGentleRouting or choose a separate Chuli profile.")
+    return spans
 
 
-def prepare_instructions(home: Path, output: Path, replace: bool) -> dict:
+def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: bool = False) -> dict:
     path = home / "AGENTS.md"
     raw = path.read_bytes() if path.is_file() else b""
     raw.decode("utf-8-sig")  # Preserve all surrounding bytes, including the BOM and CRLF.
     prefix = BOM if raw.startswith(BOM) else b""
     data = raw[len(prefix):]
+    sections = gentle_sections(data, path, adopt_gentle)
+    for start, end, _ in reversed(sections):
+        data = data[:start] + data[end:]
     source = (ROOT / "config/AGENTS.md").read_bytes().decode("utf-8-sig").replace("\r\n", "\n").encode().rstrip(b"\n")
     if BEGIN in source or END in source:
         raise ValueError("config/AGENTS.md must contain only the managed body")
@@ -219,7 +269,7 @@ def prepare_instructions(home: Path, output: Path, replace: bool) -> dict:
             merged = data + separator + block
     output.write_bytes(prefix + merged)
     return {"orchestrator_sha256": digest(block), "baseline_sha256": canonical_hash,
-            "preserved": preserved}
+            "preserved": preserved, "adopted_gentle": [section.decode() for _, _, section in sections]}
 
 
 def undo_instructions(home: Path, output: Path) -> None:
@@ -228,10 +278,25 @@ def undo_instructions(home: Path, output: Path) -> None:
     current = (home / "AGENTS.md").read_bytes()
     bom = BOM if current.startswith(BOM) else b""
     data = current[len(bom):]
+    original = Path(state["backup_dir"]) / "AGENTS.md"
+    if state.get("adopted_gentle"):
+        # The install appends Chuli after any surviving personal sections. Content added
+        # after that exact installed prefix can be kept independently of the old layout.
+        record = next(r for r in state["files"] if r["path"] == "AGENTS.md")
+        try:
+            span = block_span(data)
+        except ValueError:
+            span = None
+        if span and digest(bom + data[:span[1]]) == record["installed_sha256"].lower():
+            prior = original.read_bytes()
+            trailing = data[span[1]:]
+            separator = b"\n" if prior and trailing and not prior.endswith(b"\n") else b""
+            output.write_bytes(prior + separator + trailing)
+            return
+        raise ValueError(f"CHULI_GENTLE_ROLLBACK_CONFLICT: AGENTS.md changed since adoption. Restore the installed layout or compare your edits with the original backup at {original}. Rollback stopped.")
     span = block_span(data)
     if not span or digest(data[span[0]:span[1]]) != state.get("orchestrator_sha256"):
         raise ValueError("Managed orchestrator edited after installation; rollback stopped")
-    original = Path(state["backup_dir"]) / "AGENTS.md"
     existed = next(record["existed"] for record in state["files"] if record["path"] == "AGENTS.md")
     previous = original.read_bytes().removeprefix(BOM) if existed else b""
     old_span = block_span(previous)
@@ -253,14 +318,15 @@ def main() -> None:
     parser.add_argument("--home", type=Path, required=True)
     parser.add_argument("--output", type=Path)
     parser.add_argument("--replace", action="store_true")
+    parser.add_argument("--adopt-gentle-routing", action="store_true")
     args = parser.parse_args()
     if args.action == "instructions":
-        result = prepare_instructions(args.home, args.output, args.replace)
+        result = prepare_instructions(args.home, args.output, args.replace, args.adopt_gentle_routing)
     elif args.action == "undo-instructions":
         undo_instructions(args.home, args.output)
         return
     else:
-        result = preflight(args.home, args.action)
+        result = preflight(args.home, args.action, args.adopt_gentle_routing)
     print(json.dumps(result, ensure_ascii=True))
 
 
