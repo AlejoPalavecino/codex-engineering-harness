@@ -28,37 +28,9 @@ function Save-Text([string]$Path, [string]$Value) {
     New-Item -ItemType Directory -Force -Path $parent | Out-Null
     [IO.File]::WriteAllText($Path, $Value, (New-Object System.Text.UTF8Encoding($false)))
 }
-function Get-Python {
-    foreach ($candidate in @('python', 'py')) {
-        if (-not (Get-Command $candidate -ErrorAction SilentlyContinue)) { continue }
-        $prefix = @()
-        if ($candidate -eq 'py') { $prefix = @('-3.11') }
-        try {
-            & $candidate @prefix -c 'import tomllib; import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>$null
-            if ($LASTEXITCODE -eq 0) {
-                return @{ command = $candidate; prefix = @($prefix) }
-            }
-        } catch { }
-    }
-    throw 'Python 3.11+ requerido para validar TOML antes de modificar Codex. No se realizaron cambios.'
-}
-function Invoke-Toml {
-    param($Runtime, [string[]]$Arguments)
-    $command = [string]$Runtime.command
-    $allArgs = @($Runtime.prefix) + $Arguments
-    $output = & $command @allArgs 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        throw ('TOML preflight failed: ' + (($output | Out-String).Trim()))
-    }
-    return $output
-}
-function Is-Within([string]$Root, [string]$Path) {
-    $rootFull = [IO.Path]::GetFullPath($Root).TrimEnd('\','/') + [IO.Path]::DirectorySeparatorChar
-    $full = [IO.Path]::GetFullPath($Path)
-    return $full.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)
-}
 
-$homePath = if ($CodexHome) { [IO.Path]::GetFullPath($CodexHome) } elseif ($env:CODEX_HOME) { [IO.Path]::GetFullPath($env:CODEX_HOME) } else { Join-Path $HOME '.codex' }
+. (Join-Path $PSScriptRoot 'profile.ps1')
+$homePath = Resolve-ProfileHome $CodexHome
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $harnessVersion = [IO.File]::ReadAllText((Join-Path $root 'VERSION')).Trim()
 if ($harnessVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
@@ -71,10 +43,12 @@ if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
     throw 'Falta scripts/legacy-managed-hashes.json; instalación cancelada antes de modificar Codex.'
 }
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
+$python = Get-Python
+$inventory = Get-ProfileInventory $python 'install' $homePath
 $previous = $null
 $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
-    $previous = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+    $previous = Get-Content -LiteralPath $statePath -Encoding UTF8 -Raw | ConvertFrom-Json
     if ($null -eq $previous.files) { throw 'Manifiesto anterior sin lista de archivos. No se modificó Codex.' }
     if ($previous.PSObject.Properties.Name -contains 'managed_files' -and $null -ne $previous.managed_files) {
         foreach ($entry in $previous.managed_files.PSObject.Properties) {
@@ -100,8 +74,8 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
     # config.toml is tracked separately through managed_config.
     $managedFiles.Remove('config.toml') | Out-Null
 }
-$python = Get-Python
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-stage-' + [guid]::NewGuid().ToString('N'))
+$preservedFiles = @{}
 $changes = New-Object 'System.Collections.Generic.List[object]'
 $preserved = New-Object 'System.Collections.Generic.List[string]'
 $modified = New-Object 'System.Collections.Generic.List[object]'
@@ -109,18 +83,15 @@ $applied = $false
 $backup = $null
 
 try {
-    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+    New-PrivateDirectory $python $staging
     $items = New-Object 'System.Collections.Generic.List[object]'
-    $items.Add(@{path='AGENTS.md'; source='config/AGENTS.md'; kind='copy'})
-    foreach ($name in @('solution_architect','product_designer','test_engineer','quality_reviewer')) {
-        $items.Add(@{path=('agents/' + $name + '.toml'); source=('agents/' + $name + '.toml'); kind='copy'})
+    $instructionsPath = Join-Path $staging 'AGENTS.md'
+    $instructionArgs = @((Join-Path $PSScriptRoot 'profile_resources.py'), 'instructions', '--home', $homePath, '--output', $instructionsPath)
+    if ($ReplaceCustomized) { $instructionArgs += '--replace' }
+    $instructions = (Invoke-ProfilePython $python $instructionArgs) | ConvertFrom-Json
+    foreach ($entry in $inventory.PSObject.Properties) {
+        $items.Add(@{path=$entry.Name; source=[string]$entry.Value; kind='copy'})
     }
-    foreach ($name in @('harness-discovery','harness-architecture','harness-ux-ui','harness-specification','harness-tdd-qa')) {
-        $items.Add(@{path=('skills/' + $name + '/SKILL.md'); source=('skills/' + $name + '/SKILL.md'); kind='copy'})
-    }
-    $items.Add(@{path='harness/bin/taskboard.py'; source='scripts/taskboard.py'; kind='copy'})
-    $items.Add(@{path='harness/templates/feature-tasks.md'; source='templates/feature-tasks.md'; kind='copy'})
-    $items.Add(@{path='harness/docs/protocols/TTP.md'; source='docs/protocols/TTP.md'; kind='copy'})
     if ($RemoveLegacyAgents) {
         foreach ($name in @('architect','explorer','reviewer','slice_worker','test_runner')) {
             $items.Add(@{path=('agents/' + $name + '.toml'); source=''; kind='remove'})
@@ -135,22 +106,29 @@ try {
         if ($item.kind -eq 'copy') {
             $source = Join-Path $root $item.source
             if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw ('Falta archivo del repositorio: ' + $item.source) }
+            if ($item.path -eq 'AGENTS.md') { $source = $instructionsPath }
             $sourceHash = Get-Hash $source
             $knownManagedHash = $null
             if ($managedFiles.ContainsKey([string]$item.path)) {
                 $knownManagedHash = [string]$managedFiles[[string]$item.path]
             }
-            if ($sourceHash -eq $oldHash) {
+            if ($item.path -eq 'AGENTS.md' -and $instructions.preserved) {
+                $preserved.Add('AGENTS.md (customized Chuli block)')
+                $action = 'PRESERVE-CUSTOMIZED'
+            } elseif ($sourceHash -eq $oldHash -and ($knownManagedHash -or $item.path -eq 'AGENTS.md' -or $ReplaceCustomized)) {
                 $action = 'UNCHANGED'
             } elseif ($null -eq $oldHash) {
                 $action = 'CREATE'
-            } elseif ($knownManagedHash -eq $oldHash) {
+            } elseif ($item.path -eq 'AGENTS.md' -or $knownManagedHash -eq $oldHash) {
                 $action = 'UPDATE'
             } elseif ($ReplaceCustomized) {
                 $action = 'REPLACE-APPROVED'
             } else {
                 $action = 'PRESERVE-CUSTOMIZED'
                 $preserved.Add([string]$item.path)
+            }
+            if ($action -eq 'PRESERVE-CUSTOMIZED') {
+                $preservedFiles[[string]$item.path] = $oldHash
             }
             if ($action -in @('UNCHANGED','CREATE','UPDATE','REPLACE-APPROVED')) {
                 $managedFiles[[string]$item.path] = $sourceHash
@@ -177,7 +155,7 @@ try {
     if ($ConfigureModels) { $args += '--configure-models' }
     if ($SkipTaskProgress) { $args += '--skip-task-progress' }
     if ($ReplaceCustomized) { $args += '--replace-managed' }
-    $reportOutput = Invoke-Toml $python $args
+    $reportOutput = Invoke-ProfilePython $python $args
     $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
     foreach ($key in @($report.preserved)) { $preserved.Add(('config.toml -> ' + $key)) }
     $oldConfigHash = Get-Hash $configPath
@@ -186,6 +164,7 @@ try {
     $changes.Add([ordered]@{path='config.toml';kind='config';action=$configAction;original=$oldConfigHash;source=$candidatePath})
 
     Write-Output ('Codex home: ' + $homePath)
+    Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath 'AGENTS.md'))
     Write-Output ('Version candidate: ' + $harnessVersion)
     Write-Output ('Python TOML validation: PASS')
     Write-Output ('ReplaceCustomized requested: ' + [bool]$ReplaceCustomized)
@@ -204,7 +183,7 @@ try {
 
     $id = (Get-Date -Format 'yyyyMMdd-HHmmss') + '-' + [guid]::NewGuid().ToString('N').Substring(0,8)
     $backup = Join-Path $homePath ('backups/harness/' + $id)
-    New-Item -ItemType Directory -Path $backup -Force | Out-Null
+    New-PrivateDirectory $python $backup
     if ($null -ne $previous) {
         Copy-Item -LiteralPath $statePath -Destination (Join-Path $backup '_previous_state.json')
     }
@@ -240,7 +219,13 @@ try {
         if ($entry.kind -eq 'remove') {
             if (Test-Path -LiteralPath $target) { Remove-Item -LiteralPath $target -Force }
         } else {
-            Save-Text $target ([IO.File]::ReadAllText($entry.source))
+            New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
+            if ([IO.File]::Exists($target)) {
+                # In-place write preserves the user's existing permissions.
+                [IO.File]::WriteAllBytes($target, [IO.File]::ReadAllBytes($entry.source))
+            } else {
+                [IO.File]::Copy($entry.source, $target)
+            }
         }
         foreach ($record in $modified) {
             if ($record.path -eq $entry.path) {
@@ -258,15 +243,19 @@ try {
         installed_at=(Get-Date).ToString('o')
         backup_dir=$backup
         previous_state_existed=[bool]($null -ne $previous)
+        previous_state_sha256=(Get-Hash (Join-Path $backup '_previous_state.json'))
+        orchestrator_sha256=$instructions.orchestrator_sha256
+        orchestrator_baseline_sha256=$instructions.baseline_sha256
         files=@($modified.ToArray())
         managed_files=$managedFiles
+        preserved_files=$preservedFiles
         preserved_customizations=@($preserved.ToArray())
         managed_config=$tracked
     }
     Save-Text $statePath (ConvertTo-Json -InputObject $state -Depth 12)
     Write-Output 'INSTALACION OK. Respaldo creado y configuración validada.'
     Write-Output ('Backup: ' + $backup)
-    Write-Output 'Ejecutá scripts/verify.ps1 y reiniciá Codex Desktop.'
+    Write-Output 'Ejecutá chuli doctor y abrí una sesión de Codex con este perfil.'
 } catch {
     $errorText = $_.Exception.Message
     $recoveryErrors = New-Object 'System.Collections.Generic.List[string]'

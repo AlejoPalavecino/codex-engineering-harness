@@ -42,7 +42,19 @@ class SafeTomlTests(unittest.TestCase):
         parsed = tomllib.loads(updated)
         self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
         self.assertEqual(parsed["agents"]["solution_architect"]["description"],
-                         "Evalua arquitectura, stacks y decisiones tecnicas")
+                         tomllib.loads((ROOT / "agents/solution_architect.toml").read_text())["description"])
+
+    def test_new_profile_uses_defaults_but_individual_overrides_survive(self):
+        current, report = mod.prepare('model = "personal"\n')
+        parsed = tomllib.loads(current)
+        self.assertEqual(parsed["model"], "personal")
+        self.assertIn("model", report["preserved"])
+        self.assertEqual(parsed["model_reasoning_effort"], "medium")
+        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
+        self.assertEqual(set(parsed["agents"]) - {"default_subagent_model"},
+                         {p.stem for p in (ROOT / "agents").glob("*.toml")})
+        new, _ = mod.prepare("")
+        self.assertEqual(tomllib.loads(new)["model"], "gpt-6.1-sol")
 
     def test_models_only_on_explicit_flag(self):
         source = 'model = "another-model"\n'
