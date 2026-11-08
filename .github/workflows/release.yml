@@ -77,6 +77,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.approval.outputs.version }}
           SHA: ${{ steps.approval.outputs.sha }}
+          RUN_ID: ${{ github.event.workflow_run.id || inputs.validation_run }}
         run: |
           set -euo pipefail
           git fetch origin main --tags
@@ -98,5 +99,9 @@ jobs:
             git push origin "refs/tags/v$VERSION"
           fi
           [[ "$(git rev-parse "refs/tags/v$VERSION^{commit}")" == "$SHA" ]]
+          notes="$RUNNER_TEMP/chuli-release.md"
+          cp "docs/releases/v$VERSION.md" "$notes"
+          echo >> "$notes"
+          echo "Commit [$SHA](https://github.com/$GITHUB_REPOSITORY/commit/$SHA) · [CI de los artefactos](https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID)" >> "$notes"
           gh release create "v$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --target "$SHA" --verify-tag \
-            --title "Chuli v$VERSION · Perfil personal para Codex" --notes-file "docs/releases/v$VERSION.md" --latest
+            --title "Chuli v$VERSION · Perfil personal para Codex" --notes-file "$notes" --latest
