@@ -268,11 +268,52 @@ try {
     }
     Case 'gentle-routing-refused' {
         param($homePath)
-        Write-Fixture (Join-Path $homePath 'AGENTS.md') '<!-- gentle-ai:agent-routing -->'
+        Write-Fixture (Join-Path $homePath 'AGENTS.md') "<!-- gentle-ai:agent-routing -->`nroute`n<!-- /gentle-ai:agent-routing -->"
         $before = Snapshot $homePath
         $message = Run-Script 'install' $homePath @('-Apply','-ReplaceCustomized') $false
-        Assert-That ($message.Contains('Gentle AI') -and $message.Contains('AGENTS.md')) 'Conflicto sin origen identificable.'
+        Assert-That ($message.Contains('CHULI_GENTLE_CONFLICT') -and $message.Contains('AGENTS.md')) 'Conflicto sin origen identificable.'
         Assert-That ((Snapshot $homePath) -eq $before) 'La instalación escribió sobre un orquestador ajeno.'
+    }
+    Case 'explicit-gentle-adoption-and-rollback' {
+        param($homePath)
+        $target = Join-Path $homePath 'AGENTS.md'
+        $source = "my rules`r`n<!-- gentle-ai:persona -->`r`nmy persona`r`n<!-- /gentle-ai:persona -->`r`n" +
+            "<!-- gentle-ai:sdd-orchestrator -->`r`nlegacy rules`r`n<!-- /gentle-ai:sdd-orchestrator -->`r`n" +
+            "personal middle`r`n<!-- gentle-ai:agent-routing -->`r`n" +
+            "<!-- gentle-ai:remote-authorization -->`r`nowned child`r`n<!-- /gentle-ai:remote-authorization -->`r`n" +
+            "<!-- /gentle-ai:agent-routing -->`r`n<!-- gentle-ai:engram-protocol -->`r`nMCP`r`n<!-- /gentle-ai:engram-protocol -->`r`n"
+        Write-Fixture $target $source
+        $original = Hash $target
+        $before = Snapshot $homePath
+        $plan = Run-Script 'install' $homePath @('-AdoptGentleRouting')
+        Assert-That ($plan.Contains('sdd-orchestrator, agent-routing') -and (Snapshot $homePath) -eq $before) 'La vista previa no fue segura o no detalló las secciones.'
+        $null = Run-Script 'install' $homePath @('-AdoptGentleRouting','-Apply')
+        $null = Run-Script 'verify' $homePath
+        $state = Read-State $homePath
+        Assert-That ((Hash (Join-Path $state.backup_dir 'AGENTS.md')) -eq $original) 'No se respaldó el original exacto.'
+        $installed = [IO.File]::ReadAllText($target)
+        foreach ($text in @('personal middle','gentle-ai:persona','gentle-ai:engram-protocol','chuli:orchestrator')) {
+            Assert-That ($installed.Contains($text)) ('Documento perdido: ' + $text)
+        }
+        Assert-That (-not $installed.Contains('gentle-ai:agent-routing') -and -not $installed.Contains('gentle-ai:sdd-orchestrator')) 'Orquestador Gentle aún activo.'
+        [IO.File]::WriteAllText($target, $installed.Replace('personal middle','changed inside previous layout'))
+        $snapshot = Snapshot $homePath
+        $message = Run-Script 'rollback' $homePath @('-Apply') $false
+        Assert-That ($message.Contains('CHULI_GENTLE_ROLLBACK_CONFLICT') -and (Snapshot $homePath) -eq $snapshot) 'Rollback ambiguo escribió o no devolvió diagnóstico.'
+        [IO.File]::WriteAllText($target,$installed)
+        $null = Run-Script 'rollback' $homePath @('-Apply')
+        Assert-That ((Hash $target) -eq $original) 'Rollback no restauró los bytes de Gentle.'
+        $null = Run-Script 'install' $homePath @('-AdoptGentleRouting','-Apply')
+        [IO.File]::AppendAllText($target, 'personal post-install note')
+        $null = Run-Script 'rollback' $homePath @('-Apply')
+        Assert-That ([IO.File]::ReadAllText($target) -eq ($source + 'personal post-install note')) 'Rollback perdió la nota inequívoca agregada al final.'
+    }
+    Case 'malformed-gentle-not-adopted' {
+        param($homePath)
+        Write-Fixture (Join-Path $homePath 'AGENTS.md') '<!-- gentle-ai:orchestrator -->'
+        $snapshot = Snapshot $homePath
+        $message = Run-Script 'install' $homePath @('-AdoptGentleRouting','-Apply') $false
+        Assert-That ($message.Contains('CHULI_GENTLE_AMBIGUOUS') -and (Snapshot $homePath) -eq $snapshot) 'Se adoptó un bloque ambiguo.'
     }
     Case 'tampered-skill-reference-fails-verification' {
         param($homePath)
