@@ -77,7 +77,10 @@ $scriptVersionText = [IO.File]::ReadAllText((Join-Path $repoRoot 'VERSION')).Tri
 if ($scriptVersionText -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$' -or [version]$scriptVersionText -lt [version]'0.2.1') {
     throw 'Rollback requiere el ejecutor seguro v0.2.1 o posterior; no se modificó CODEX_HOME.'
 }
-$homePath = if ($CodexHome) { [IO.Path]::GetFullPath($CodexHome) } elseif ($env:CODEX_HOME) { [IO.Path]::GetFullPath($env:CODEX_HOME) } else { Join-Path $HOME '.codex' }
+. (Join-Path $PSScriptRoot 'profile.ps1')
+$homePath = Resolve-ProfileHome $CodexHome
+$python = Get-Python
+$null = Get-ProfileInventory $python 'rollback' $homePath
 $statePath = Join-Path $homePath 'harness-install/state.json'
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { throw 'No existe un manifiesto de instalación.' }
 $rawState = [IO.File]::ReadAllText($statePath)
@@ -114,7 +117,9 @@ foreach ($item in @($state.files)) {
     $target = Join-Path $homePath ([string]$item.path)
     Assert-Within $homePath $target
     $currentHash = Get-Hash $target
-    if ($currentHash -ne $item.installed_sha256) {
+    $mergeInstructions = $item.path -eq 'AGENTS.md' -and $currentHash -ne $item.installed_sha256 -and
+        $null -ne $currentHash -and $null -ne $state.PSObject.Properties['orchestrator_sha256']
+    if (-not $mergeInstructions -and $currentHash -ne $item.installed_sha256) {
         throw ('Archivo administrado modificado o ausente: ' + $item.path + '. Sin cambios.')
     }
     $saved = Join-Path $backup ([string]$item.path)
@@ -129,21 +134,26 @@ foreach ($item in @($state.files)) {
             }
         }
     }
-    $restore.Add(@{path=[string]$item.path;target=$target;saved=$saved;existed=[bool]$item.existed;current=$currentHash})
-}
-
-Write-Output ('Rollback preflight: PASS; ' + $restore.Count + ' archivos afectados.')
-Write-Output ('Backup: ' + $backup)
-if (-not $Apply) {
-    Write-Output 'DRY-RUN. Usá -Apply para restaurar la instalación anterior.'
-    return
+    $restore.Add(@{path=[string]$item.path;target=$target;saved=$saved;existed=[bool]$item.existed;current=$currentHash;merge=$mergeInstructions})
 }
 
 # For an unexpected I/O failure during rollback, preserve the current state for compensation.
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-rollback-' + [guid]::NewGuid().ToString('N'))
 $mutating = $false
 try {
-    New-Item -ItemType Directory -Path $staging -Force | Out-Null
+    New-PrivateDirectory $python $staging
+    $mergedPath = Join-Path $staging 'restored-instructions'
+    foreach ($item in $restore) {
+        if ($item.merge) {
+            $null = Invoke-ProfilePython $python @((Join-Path $PSScriptRoot 'profile_resources.py'),'undo-instructions','--home',$homePath,'--output',$mergedPath)
+        }
+    }
+    Write-Output ('Rollback preflight: PASS; ' + $restore.Count + ' archivos afectados.')
+    Write-Output ('Backup: ' + $backup)
+    if (-not $Apply) {
+        Write-Output 'DRY-RUN. Usá -Apply para restaurar la instalación anterior.'
+        return
+    }
     foreach ($item in $restore) {
         if ($null -ne $item.current) {
             $snapshot = Join-Path $staging $item.path
@@ -154,7 +164,13 @@ try {
     }
     $mutating = $true
     foreach ($item in $restore) {
-        if ($item.existed) {
+        if ($item.merge) {
+            if ($item.existed -or (Get-Item -LiteralPath $mergedPath).Length -gt 0) {
+                [IO.File]::WriteAllBytes($item.target, [IO.File]::ReadAllBytes($mergedPath))
+            } else {
+                Remove-Item -LiteralPath $item.target -Force
+            }
+        } elseif ($item.existed) {
             New-Item -ItemType Directory -Path (Split-Path -Parent $item.target) -Force | Out-Null
             Copy-Item -LiteralPath $item.saved -Destination $item.target -Force
         } elseif (Test-Path -LiteralPath $item.target) {

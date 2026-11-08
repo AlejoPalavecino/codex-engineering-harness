@@ -18,6 +18,11 @@ function Get-LegacyManagedHash([object]$Baselines, [string]$Version, [string]$Re
     return $null
 }
 function Get-ExpectedManagedHash([object]$State, [object]$Baselines, [string]$Relative) {
+    if ($null -ne $State.PSObject.Properties['preserved_files'] -and $null -ne $State.preserved_files) {
+        foreach ($entry in $State.preserved_files.PSObject.Properties) {
+            if ($entry.Name -eq $Relative) { return [string]$entry.Value }
+        }
+    }
     if ($State.PSObject.Properties.Name -contains 'managed_files' -and $null -ne $State.managed_files) {
         foreach ($entry in $State.managed_files.PSObject.Properties) {
             if ($entry.Name -eq $Relative) { return [string]$entry.Value }
@@ -30,12 +35,16 @@ function Get-ExpectedManagedHash([object]$State, [object]$Baselines, [string]$Re
     }
     return Get-LegacyManagedHash $Baselines ([string]$State.version) $Relative
 }
-$homePath = if ($CodexHome) { [IO.Path]::GetFullPath($CodexHome) } elseif ($env:CODEX_HOME) { [IO.Path]::GetFullPath($env:CODEX_HOME) } else { Join-Path $HOME '.codex' }
+. (Join-Path $PSScriptRoot 'profile.ps1')
+$homePath = Resolve-ProfileHome $CodexHome
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$python = Get-Python
+$inventory = Get-ProfileInventory $python 'verify' $homePath
+Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath 'AGENTS.md'))
 $statePath = Join-Path $homePath 'harness-install/state.json'
 $configPath = Join-Path $homePath 'config.toml'
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { throw 'No se encontró state.json de una instalación del harness.' }
-$state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+$state = Get-Content -LiteralPath $statePath -Encoding UTF8 -Raw | ConvertFrom-Json
 if ($null -eq $state.files) { throw 'Manifiesto de instalación incompleto.' }
 
 $errors = 0
@@ -45,22 +54,8 @@ if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
     throw 'Falta scripts/legacy-managed-hashes.json; no se puede validar el inventario administrado.'
 }
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
-$requiredResources = @(
-    @{path='AGENTS.md'; source='config/AGENTS.md'},
-    @{path='agents/solution_architect.toml'; source='agents/solution_architect.toml'},
-    @{path='agents/product_designer.toml'; source='agents/product_designer.toml'},
-    @{path='agents/test_engineer.toml'; source='agents/test_engineer.toml'},
-    @{path='agents/quality_reviewer.toml'; source='agents/quality_reviewer.toml'},
-    @{path='skills/harness-discovery/SKILL.md'; source='skills/harness-discovery/SKILL.md'},
-    @{path='skills/harness-architecture/SKILL.md'; source='skills/harness-architecture/SKILL.md'},
-    @{path='skills/harness-ux-ui/SKILL.md'; source='skills/harness-ux-ui/SKILL.md'},
-    @{path='skills/harness-specification/SKILL.md'; source='skills/harness-specification/SKILL.md'},
-    @{path='skills/harness-tdd-qa/SKILL.md'; source='skills/harness-tdd-qa/SKILL.md'},
-    @{path='harness/bin/taskboard.py'; source='scripts/taskboard.py'},
-    @{path='harness/templates/feature-tasks.md'; source='templates/feature-tasks.md'},
-    @{path='harness/docs/protocols/TTP.md'; source='docs/protocols/TTP.md'}
-)
-foreach ($resource in $requiredResources) {
+foreach ($entry in $inventory.PSObject.Properties) {
+    $resource = @{path=$entry.Name; source=[string]$entry.Value}
     $target = Join-Path $homePath $resource.path
     $actual = Get-Hash $target
     if ($null -eq $actual) {
@@ -68,17 +63,14 @@ foreach ($resource in $requiredResources) {
         $errors++
         continue
     }
+    if ($resource.path -eq 'AGENTS.md') { continue }
     $expected = Get-ExpectedManagedHash $state $legacyBaselines $resource.path
     if ($null -eq $expected) {
-        $source = Join-Path $root $resource.source
-        $sourceHash = Get-Hash $source
-        if ($null -eq $sourceHash -or $actual -ne $sourceHash) {
-            Write-Warning ('No existe una huella confiable para verificar: ' + $resource.path)
-            $warnings++
-        }
+        Write-Warning ('Falta una huella registrada: ' + $resource.path)
+        $errors++
     } elseif ($actual -ne $expected) {
-        Write-Warning ('Archivo administrado con deriva o personalización: ' + $resource.path)
-        $warnings++
+        Write-Warning ('El recurso cambió después de la instalación: ' + $resource.path)
+        $errors++
     }
 }
 foreach ($item in @($state.files)) {
@@ -94,35 +86,22 @@ foreach ($custom in @($state.preserved_customizations)) {
 }
 
 $tool = Join-Path $root 'scripts/toml_config.py'
-$python = $null
-foreach ($candidate in @('python','py')) {
-    if (-not (Get-Command $candidate -ErrorAction SilentlyContinue)) { continue }
-    $prefix = @()
-    if ($candidate -eq 'py') { $prefix = @('-3.11') }
-    try {
-        & $candidate @prefix -c 'import tomllib; import sys; sys.exit(0 if sys.version_info >= (3, 11) else 1)' 2>$null
-        if ($LASTEXITCODE -eq 0) { $python = @{command=$candidate;prefix=$prefix}; break }
-    } catch {}
-}
-if ($null -eq $python) {
-    Write-Warning 'Falta Python 3.11+: no se pudo validar la sintaxis de TOML.'
-    $errors++
-} else {
-    $params = @($tool,'validate','--input',$configPath,'--manifest',$statePath)
-    $command = [string]$python.command
-    $allArgs = @($python.prefix) + $params
-    $result = & $command @allArgs 2>&1
-    Write-Output (($result | Out-String).Trim())
-    if ($LASTEXITCODE -ne 0) { $errors++ }
-    foreach ($name in @('solution_architect','product_designer','test_engineer','quality_reviewer')) {
-        $agentPath = Join-Path $homePath ('agents/' + $name + '.toml')
-        if (-not (Test-Path -LiteralPath $agentPath -PathType Leaf)) { continue }
-        # Avoid nested quotes: Windows PowerShell 5.1 rewrites native -c arguments.
-        & $command @($python.prefix) -c 'import tomllib,pathlib,sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_bytes().decode())' $agentPath 2>$null
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning ('Agente con TOML inválido: ' + $name)
-            $errors++
-        }
+$params = @($tool,'validate','--input',$configPath,'--manifest',$statePath)
+$command = [string]$python.command
+$allArgs = @($python.prefix) + $params
+$result = & $command @allArgs 2>&1
+Write-Output (($result | Out-String).Trim())
+if ($LASTEXITCODE -ne 0) { $errors++ }
+foreach ($entry in $inventory.PSObject.Properties) {
+    $name = $entry.Name
+    if ($name -notmatch '^agents/[^/]+\.toml$') { continue }
+    $agentPath = Join-Path $homePath $name
+    if (-not (Test-Path -LiteralPath $agentPath -PathType Leaf)) { continue }
+    # Avoid nested quotes: Windows PowerShell 5.1 rewrites native -c arguments.
+    & $command @($python.prefix) -c 'import tomllib,pathlib,sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_bytes().decode())' $agentPath 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        Write-Warning ('Agente con TOML inválido: ' + $name)
+        $errors++
     }
 }
 if (Get-Command codex -ErrorAction SilentlyContinue) {
