@@ -10,6 +10,7 @@ El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paq
 | Previsualizar / aplicar actualización | `chuli update` / `chuli update --apply` |
 | Comprobar la instalación | `chuli doctor` |
 | Revisar / confirmar la reversión | `chuli rollback` / `chuli rollback --apply` |
+| Revisar la adopción desde Gentle AI | `chuli install --adopt-gentle-routing` |
 | Usar un checkout de confianza para desarrollo o recuperación | `chuli --source RUTA doctor` |
 
 La distribución oficial conserva una copia verificable del paquete para diagnóstico y recuperación. Para una instalación histórica que todavía carece de ese paquete, especificá un checkout compatible con `--source`. El indicador de versión del perfil y la versión del Manager se refieren a productos instalables distintos.
