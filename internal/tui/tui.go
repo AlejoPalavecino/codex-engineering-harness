@@ -29,24 +29,23 @@ var (
 	bad     = lipgloss.NewStyle().Foreground(lipgloss.Color("#FF919B"))
 )
 
-var menu = []struct {
-	label  string
-	action string
-}{
-	{"Instalar / actualizar ultima release estable", "latest"},
-	{"Instalar desde un checkout local", "local"},
-	{"Diagnosticar instalacion", "doctor"},
-	{"Rollback de la ultima instalacion", "rollback"},
-	{"Acerca de Chuli", "about"},
+type menuItem struct{ label, action string }
+
+func choices(mgr manager.Manager) []menuItem {
+	items := []menuItem{{"Instalar o actualizar el perfil oficial", "latest"}}
+	if mgr.Source != "" {
+		items = append(items, menuItem{"Instalar desde --source", "local"})
+	}
+	return append(items, menuItem{"Ver modelos, agentes y skills registrados", "profile"}, menuItem{"Verificar el perfil instalado", "doctor"}, menuItem{"Restaurar la instalación anterior", "rollback"}, menuItem{"Acerca de Chuli", "about"})
 }
 
 type model struct {
+	height, offset int
 	mgr            manager.Manager
 	managerVersion string
 	installed      string
 	cursor         int
 	screen         string
-	operation      string
 	title          string
 	prepared       manager.Prepared
 	log            string
@@ -67,6 +66,8 @@ func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := message.(type) {
+	case tea.WindowSizeMsg:
+		m.height = msg.Height
 	case tea.KeyPressMsg:
 		key := msg.String()
 		if m.screen == busy {
@@ -84,19 +85,34 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.log = ""
 			return m, nil
 		}
+		if m.screen == preview || m.screen == result {
+			switch key {
+			case "down", "j", "pgdown", "up", "k", "pgup":
+				step := 1
+				if key == "pgdown" || key == "pgup" {
+					step = m.pageSize()
+				}
+				if key == "up" || key == "k" || key == "pgup" {
+					step = -step
+				}
+				m.offset = max(0, min(m.offset+step, len(m.lines())-m.pageSize()))
+				return m, nil
+			}
+		}
 		if m.screen == home {
+			options := choices(m.mgr)
 			switch key {
 			case "up", "k":
 				if m.cursor > 0 {
 					m.cursor--
 				}
 			case "down", "j":
-				if m.cursor < len(menu)-1 {
+				if m.cursor < len(options)-1 {
 					m.cursor++
 				}
 			case "enter":
-				choice := menu[m.cursor]
-				m.operation = choice.action
+				choice := options[m.cursor]
+				m.offset = 0
 				m.title = choice.label
 				m.fault = ""
 				m.log = ""
@@ -105,6 +121,9 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.screen = busy
+				if choice.action == "profile" {
+					return m, func() tea.Msg { summary, err := m.mgr.Profile(); return finishedMsg{summary, err} }
+				}
 				if choice.action == "doctor" {
 					return m, diagnoseCmd(m.mgr)
 				}
@@ -130,6 +149,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.fault = msg.err.Error()
 			return m, nil
 		}
+		m.offset = 0
 		m.prepared = msg.plan
 		m.log = msg.plan.Preview
 		m.screen = preview
@@ -138,6 +158,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		m.prepared.Cleanup()
 		m.prepared = manager.Prepared{}
 		m.screen = result
+		m.offset = 0
 		m.log = msg.log
 		if msg.err != nil {
 			m.fault = msg.err.Error()
@@ -162,36 +183,43 @@ func prepareCmd(m manager.Manager, action string) tea.Cmd {
 }
 func applyCmd(m manager.Manager, plan manager.Prepared) tea.Cmd {
 	return func() tea.Msg {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-		defer cancel()
-		log, err := m.Apply(ctx, plan)
+		log, err := m.Apply(context.Background(), plan)
 		return finishedMsg{log, err}
 	}
 }
 func diagnoseCmd(m manager.Manager) tea.Cmd {
 	return func() tea.Msg {
-		root, err := m.Local()
-		if err != nil {
-			return finishedMsg{"", err}
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 		defer cancel()
-		log, err := m.Script(ctx, root, "verify.ps1", false)
+		log, err := m.Doctor(ctx)
 		return finishedMsg{log, err}
 	}
 }
 
-func cutLog(input string, lines int) string {
-	chunks := strings.Split(strings.ReplaceAll(input, "\r\n", "\n"), "\n")
-	if len(chunks) > lines {
-		chunks = append([]string{"... (mostrando las últimas líneas)"}, chunks[len(chunks)-lines:]...)
+func (m model) pageSize() int {
+	if m.height == 0 {
+		return 15
 	}
-	for i, line := range chunks {
-		if len([]rune(line)) > 110 {
-			chunks[i] = string([]rune(line)[:110]) + "..."
-		}
+	return max(1, m.height-12)
+}
+
+func (m model) lines() []string {
+	log := m.log
+	if m.fault != "" {
+		log = m.fault + "\n" + log
 	}
-	return strings.Join(chunks, "\n")
+	return strings.Split(strings.TrimSpace(strings.ReplaceAll(log, "\r\n", "\n")), "\n")
+}
+
+func (m model) page() string {
+	lines := m.lines()
+	start := min(m.offset, max(0, len(lines)-m.pageSize()))
+	end := min(len(lines), start+m.pageSize())
+	page := strings.Join(lines[start:end], "\n")
+	if end-start < len(lines) {
+		page += "\n" + muted.Render(fmt.Sprintf("Líneas %d–%d de %d · ↑↓ / PgUp / PgDn", start+1, end, len(lines)))
+	}
+	return page
 }
 
 func (m model) View() tea.View {
@@ -202,13 +230,13 @@ func (m model) View() tea.View {
 	if installed == "" {
 		installed = "No instalado"
 	}
-	b.WriteString("Destino: Codex   |   Harness: " + installed + "\n")
+	b.WriteString("Perfil Chuli para Codex   |   Versión: " + installed + "\n")
 	b.WriteString(muted.Render("CODEX_HOME: ") + m.mgr.Home + "\n\n")
 
 	switch m.screen {
 	case home:
 		b.WriteString("Seleccioná una acción:\n\n")
-		for i, item := range menu {
+		for i, item := range choices(m.mgr) {
 			label := fmt.Sprintf("  %d. %s", i+1, item.label)
 			if i == m.cursor {
 				b.WriteString(active.Render("› "+label) + "\n")
@@ -222,25 +250,25 @@ func (m model) View() tea.View {
 		b.WriteString("Ejecutando comprobaciones. No cierres la terminal durante una escritura.\n")
 	case preview:
 		b.WriteString(heading.Render("Revisión previa - "+m.prepared.Version) + "\n")
-		b.WriteString("Todavía NO se modificó tu instalación.\n\n")
-		b.WriteString(cutLog(m.log, 19) + "\n\n")
+		b.WriteString("Revisá los cambios antes de confirmar.\n\n")
+		b.WriteString(m.page() + "\n\n")
 		b.WriteString(good.Render("S / Y confirmar") + "    " + muted.Render("N cancelar · Esc volver") + "\n")
 	case result:
 		if m.fault != "" {
-			b.WriteString(bad.Render("No se completó la operación") + "\n" + m.fault + "\n\n")
+			b.WriteString(bad.Render("No se completó la operación") + "\n\n")
 		} else {
-			b.WriteString(good.Render("Operación finalizada") + "\n\n")
+			b.WriteString(good.Render(m.title) + "\n\n")
 		}
-		if m.log != "" {
-			b.WriteString(cutLog(m.log, 21) + "\n\n")
+		if m.log != "" || m.fault != "" {
+			b.WriteString(m.page() + "\n\n")
 		}
 		b.WriteString(muted.Render("Enter / Esc volver · q salir") + "\n")
 	case about:
 		b.WriteString(heading.Render("Chuli — AI Engineering Harness") + "\n")
-		b.WriteString("La misma ingeniería, independiente del proveedor.\n\n")
-		b.WriteString("EWP · MRP · ASEP · TKA · CES · TTP\n")
-		b.WriteString("Este MVP administra Codex en Windows reutilizando los scripts publicados.\n")
-		b.WriteString("Antigravity, otros sistemas y autoactualización del ejecutable: futuros adaptadores.\n\n")
+		b.WriteString("Instala y actualiza el perfil de ingeniería en CODEX_HOME.\n")
+		b.WriteString("Después de instalar, abrí Codex como siempre.\n\n")
+		b.WriteString("El paquete oficial se verifica con SHA-256 y se conserva para recuperación.\n")
+		b.WriteString("Requisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).\n\n")
 		b.WriteString(muted.Render("Esc volver · q salir") + "\n")
 	}
 	view := tea.NewView(b.String())
