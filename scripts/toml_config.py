@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import os
 from pathlib import Path
 import re
 import sys
@@ -18,12 +19,15 @@ HEADER = re.compile(r"^\s*\[([^\]\r\n]+)\]\s*(?:#.*)?$")
 KEY = re.compile(r"^(\s*)([A-Za-z0-9_-]+)(\s*=\s*)(.*?)(\r?\n)?$")
 UNSET = object()
 
-ROLE_DESCRIPTIONS = {
-    "solution_architect": "Evalua arquitectura, stacks y decisiones tecnicas",
-    "product_designer": "Disena experiencias UX y UI",
-    "test_engineer": "Prepara pruebas y criterios de aceptacion",
-    "quality_reviewer": "Revisa resultados con evidencia independiente",
-}
+def agent_definitions():
+    for path in sorted((Path(__file__).resolve().parents[1] / "agents").glob("*.toml")):
+        agent = tomllib.loads(path.read_bytes().decode("utf-8-sig"))
+        if not re.fullmatch(r"[a-zA-Z0-9_-]+", path.stem) or agent.get("name") != path.stem:
+            raise ValueError(f"Invalid packaged agent identity: {path.name}")
+        description = agent.get("description")
+        if not isinstance(description, str) or not description:
+            raise ValueError(f"Missing agent description: {path.name}")
+        yield path.stem, description
 
 
 def value_at(data: dict, path: tuple[str, ...]):
@@ -116,17 +120,16 @@ def update_text(source: str, path: tuple[str, ...], value) -> str:
     return "".join(lines)
 
 
-def config_targets(configure_models: bool, skip_task_progress: bool):
+def config_targets(skip_task_progress: bool):
     targets: dict[tuple[str, ...], object] = {}
-    for role, description in ROLE_DESCRIPTIONS.items():
+    for role, description in agent_definitions():
         targets[("agents", role, "description")] = description
         targets[("agents", role, "config_file")] = "./agents/" + role + ".toml"
     if not skip_task_progress:
         targets[("tools", "update_plan", "enabled")] = True
-    if configure_models:
-        targets[("model",)] = "gpt-6.1-sol"
-        targets[("model_reasoning_effort",)] = "medium"
-        targets[("agents", "default_subagent_model")] = "gpt-6.1-sol"
+    targets[("model",)] = "gpt-6.1-sol"
+    targets[("model_reasoning_effort",)] = "medium"
+    targets[("agents", "default_subagent_model")] = "gpt-6.1-sol"
     return targets
 
 
@@ -138,7 +141,7 @@ def prepare(source: str, *, configure_models: bool = False,
     changed: list[str] = []
     preserved: list[str] = []
     tracked: dict[str, object] = {}
-    for path, wanted in config_targets(configure_models, skip_task_progress).items():
+    for path, wanted in config_targets(skip_task_progress).items():
         key = ".".join(path)
         current = value_at(expected, path)
         if current is not UNSET and current != wanted and not (replace_managed or (configure_models and path in {("model",), ("model_reasoning_effort",), ("agents", "default_subagent_model")})):
@@ -180,7 +183,8 @@ def main() -> int:
     parser.add_argument("--replace-managed", action="store_true")
     args = parser.parse_args()
     try:
-        source = args.input.read_text(encoding="utf-8-sig") if args.input.is_file() else ""
+        raw = args.input.read_bytes() if args.input.is_file() else b""
+        source = raw.decode("utf-8-sig")
         if args.action == "prepare":
             if args.output is None or args.report is None:
                 raise ValueError("prepare requires --output and --report")
@@ -188,7 +192,10 @@ def main() -> int:
                 source, configure_models=args.configure_models,
                 skip_task_progress=args.skip_task_progress,
                 replace_managed=args.replace_managed)
-            args.output.write_text(updated, encoding="utf-8", newline="")
+            encoding = "utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8"
+            args.output.write_text(updated, encoding=encoding, newline="")
+            if os.name != "nt":
+                args.output.chmod(0o600)
             args.report.write_text(json.dumps(report, indent=2), encoding="utf-8")
             print("TOML candidate valid; changed keys:", len(report["changed"]),
                   "; custom managed keys preserved:", len(report["preserved"]))
