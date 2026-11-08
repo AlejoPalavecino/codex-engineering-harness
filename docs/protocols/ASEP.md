@@ -27,4 +27,4 @@ Los permisos declarados en prompts **no son** controles de seguridad del filesys
 - Prohibir acceso productivo, push, merge o deploy sin autorización humana explícita.
 - En repositorios importantes usar revisión de PR y checks requeridos; limitar permisos de tokens CI.
 
-**Límite de v0.1:** no se suministra un sandbox propio ni un mecanismo portable de aislamiento de rutas. La validación y los permisos de Codex deben comprobarse en cada entorno.
+**Límite del harness:** no se suministra un sandbox propio ni un mecanismo portable de aislamiento de rutas. La validación y los permisos de Codex deben comprobarse en cada entorno.

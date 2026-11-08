@@ -25,6 +25,6 @@ Decisión humana vigente > especificación y ADR aprobados/versionados > comport
 | Ego(lite) | Skill/browser opcional | No, se distribuye separadamente |
 | CodeGraph, DB | Opcionales por proyecto | No |
 
-El instalador **preserva todos los MCP y plugins existentes**, no inventa credenciales y no copia skills de terceros. Para activar herramientas opcionales seguir las instrucciones de su proveedor. No se debe leer ni publicar `~/.codex/config.toml` real con secretos.
+El instalador **preserva todos los MCP y plugins existentes**. El catálogo distribuye sólo las skills y referencias inventariadas, con sus licencias en `skills/_shared/licenses/`. Para activar herramientas opcionales seguir las instrucciones de su proveedor. No se debe leer ni publicar `~/.codex/config.toml` real con secretos.
 
 Para trabajos sustanciales, conservar specs/ADR y tareas recuperables en el repositorio. Evitar sistemas paralelos de documentación y memorias con información contradictoria.
