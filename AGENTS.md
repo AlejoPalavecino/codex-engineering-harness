@@ -2,7 +2,8 @@
 
 Este `AGENTS.md` corresponde al **repositorio fuente**. El archivo que se instala en el home de Codex es `config/AGENTS.md`; no los confundas.
 
-- Mantener EWP R0/R1/R2 + C, MRP, ASEP, TKA y CES como contratos documentados.
+- Chuli Manager instala el perfil del usuario. Las sesiones de ingeniería se realizan en el cliente Codex elegido por la persona. Comprobar instalación, migración y rollback sobre un perfil temporal.
+- Aplicar [ODD](docs/protocols/ODD.md) y mantener EWP R0/R1/R2 + C, MRP, ASEP, TKA y CES como contratos documentados.
 - Cambios de agentes, modelos, permisos o activación de skills deben actualizar documentación y pruebas.
 - No incluir valores de `config.toml` personales, tokens, credenciales, logs, backups ni memoria Engram.
 - No modificar herramientas de terceros ni vender instrucciones de prompts como permisos efectivos.

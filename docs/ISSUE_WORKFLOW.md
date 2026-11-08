@@ -32,6 +32,6 @@ En un arranque sin issue aprobado, mantener el PR en borrador hasta resolver la 
 
 La verificación local puede comprobar sintaxis YAML, campos y correspondencia con el catálogo; la presentación real del formulario requiere que GitHub lo cargue desde la rama por defecto. Las etiquetas y la aprobación son metadatos remotos y necesitan lectura posterior. No hay sincronización automática de etiquetas ni un gate nuevo de CI para aprobar o cerrar issues.
 
-La cadena de evaluación/TTP se mantiene aparte: cinco unidades de 297, 351, 150, 307 y 119 líneas. Este arranque no cambia sus commits, pruebas ni resultados. Después de integrar el arranque, actualizar las bases de esa cadena y volver a comprobar sus diffs y CI.
+Desde 1.0, el trabajo `review-size` de GitHub Actions consulta las adiciones y eliminaciones del PR contra su base inmediata y exige como máximo 400 líneas. Los proyectos que usen el perfil Chuli mantienen sus propias políticas. El tamaño de una tarea dentro de ODD es una ayuda para planificar y puede diferir del tamaño del PR.
 
-Reversión: revertir los cuatro recursos de este flujo y el enlace en CONTRIBUTING. Si se crearon etiquetas remotas, no borrarlas automáticamente: primero revisar su uso y obtener autorización específica. Retirar el formulario no modifica issues existentes.
+La cadena de 0.2 quedó registrada en el historial. Para la publicación de 1.0, el [issue de entrega](https://github.com/AlejoPalavecino/codex-engineering-harness/issues/17) enlaza las unidades de cambios, la integración y la release.

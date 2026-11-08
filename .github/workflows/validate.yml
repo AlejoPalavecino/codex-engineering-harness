@@ -13,6 +13,24 @@ permissions:
   contents: read
 
 jobs:
+  review-size:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check review budget against the immediate PR base
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          pr=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR")
+          test "$(jq -r .head.sha <<< "$pr")" = "$SHA"
+          count=$(jq '.additions + .deletions' <<< "$pr")
+          echo "$count / 400 changed lines"
+          test "$count" -le 400
   structure:
     runs-on: ubuntu-latest
     steps:
