@@ -17,7 +17,7 @@
 - **Depends on:** TASK-001
 - **Owner:** chuli_worker
 - **Acceptance:** La vista previa conserva el perfil, el instalador protege archivos ajenos y el Manager verifica y recupera sin un checkout.
-- **Evidence:** Go E2E con dos versiones temporales, 13 casos PowerShell y rollback de perfiles reales 0.2.0/0.2.1. Evidencia en docs/TESTING.md.
+- **Evidence:** Go E2E con dos versiones temporales, 15 escenarios de recursos PowerShell y rollback de perfiles reales 0.2.0/0.2.1. Evidencia en docs/TESTING.md.
 - **Blocker:** none
 
 ### TASK-003 — Preparar y vincular la publicación al CI

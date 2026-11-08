@@ -32,6 +32,8 @@ En un perfil temporal sin credenciales, Codex CLI 0.167.0-alpha.4 aceptó la con
 
 Las migraciones de laboratorio desde los instaladores originales de 0.2.0 y 0.2.1 conservaron el modelo personalizado. El rollback de cada caso restauró los 17 archivos anteriores byte por byte. Una prueba adicional del Manager sirve dos versiones sintéticas del ZIP por HTTP de prueba y ejecuta instalación, actualización, diagnóstico offline y doble rollback desde un directorio vacío.
 
+También se generó un `AGENTS.md` de 89.717 bytes con el renderer de Gentle AI v4.4.0 para Codex. El preflight normal detectó el conflicto, el opt-in en vista previa conservó los bytes y la adopción aplicada pasó el verificador. El rollback recuperó el SHA-256 original `1e1b1678780b15e24c5581995e88462930ba435750a6fcf2f7009ae9fd0938aa`. La prueba se hizo sin credenciales y con un perfil de laboratorio.
+
 ## Distribución
 
 El workflow [Validate harness](../.github/workflows/validate.yml) construye un paquete de perfil y ejecutables nativos. El [publicador](../.github/workflows/release.yml) recupera esos artefactos por identificador de ejecución de CI, verifica que el SHA siga siendo el de main y publica los archivos junto a sus sumas SHA-256. El workflow también admite publicación manual de futuras versiones con aprobación explícita del número de versión y el run validado.
