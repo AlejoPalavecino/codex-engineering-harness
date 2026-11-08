@@ -262,9 +262,20 @@ def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: 
         known = {entry.get("AGENTS.md", "").lower() for entry in baselines.values()}
         if digest(data.replace(b"\r\n", b"\n")) in known:
             merged = block
-        elif data.startswith("# Codex Engineering Harness — instrucciones globales".encode()):
-            raise ValueError(f"Customized legacy orchestrator in {path}. Move your personal text outside the old instructions or choose a separate Chuli profile.")
         else:
+            if data.startswith("# Codex Engineering Harness — instrucciones globales".encode()):
+                # Gentle appends its own separator and may leave personal sections after
+                # the old document. Identify precisely the officially shipped prefix.
+                hasher = hashlib.sha256()
+                size = 0
+                for line in data.splitlines(keepends=True):
+                    hasher.update(line.replace(b"\r\n", b"\n"))
+                    size += len(line)
+                    if sections and hasher.hexdigest() in known:
+                        data = data[size:]
+                        break
+                else:
+                    raise ValueError(f"Customized legacy orchestrator in {path}. Move your personal text outside the old instructions or choose a separate Chuli profile.")
             separator = b"" if not data or data.endswith(b"\n") else b"\n"
             merged = data + separator + block
     output.write_bytes(prefix + merged)
