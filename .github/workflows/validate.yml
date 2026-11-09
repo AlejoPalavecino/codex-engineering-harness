@@ -107,7 +107,7 @@ jobs:
       - name: Check Go source formatting
         shell: bash
         run: |
-          dirty=$(gofmt -l cmd/chuli internal/manager internal/tui internal/eval)
+          dirty=$(gofmt -l cmd/chuli internal/manager internal/tui internal/eval internal/integrations)
           if [[ -n "$dirty" ]]; then
             echo "$dirty"
             exit 1
