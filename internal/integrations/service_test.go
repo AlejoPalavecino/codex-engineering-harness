@@ -2,11 +2,12 @@ package integrations
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 )
 
 func TestServicePreviewDoesNotWriteAndCanUndo(t *testing.T) {
-	s := Service{Home: t.TempDir()}
+	s := Service{Home: canonicalTestHome(t)}
 	ctx := context.Background()
 	p, err := s.Prepare(ctx, "exa", "configure")
 	if err != nil {
@@ -29,4 +30,13 @@ func TestServicePreviewDoesNotWriteAndCanUndo(t *testing.T) {
 	if _, err = s.Prepare(ctx, "egolite", "configure"); err == nil {
 		t.Fatal("registered browser as MCP")
 	}
+}
+
+func canonicalTestHome(t *testing.T) string {
+	t.Helper()
+	home, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return home
 }
