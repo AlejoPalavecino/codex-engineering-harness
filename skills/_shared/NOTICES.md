@@ -1,5 +1,7 @@
 # Material de terceros
 
+Además del catálogo de Gentle AI descrito abajo, se distribuye [Diagram Design 2.6](../diagram-design/SKILL.md), © 2025 Cathryn Lavery, bajo [MIT](../diagram-design/LICENSE), fijado en `6a7f19fcc132b39b126bea90167679b46b14bcc4`. Su manifiesto UPSTREAM.json conserva la procedencia y hashes. La integración de documentación de Chuli está separada de los archivos upstream, que permanecen intactos.
+
 Chuli integra procedimientos de **Gentle AI™ v4.4.0**, de Gentleman Programming, revisión `55240afb100ad6d2ef5fbe16f7be33a7693f77ad`. Las marcas Gentle AI y Engram pertenecen a Alan Buscaglia. Los nombres identifican la procedencia y los runtimes compatibles. [Código fuente](https://github.com/Gentleman-Programming/gentle-ai/tree/55240afb100ad6d2ef5fbe16f7be33a7693f77ad) · [Política de marcas](https://github.com/Gentleman-Programming/gentle-ai/blob/55240afb100ad6d2ef5fbe16f7be33a7693f77ad/TRADEMARKS.md).
 
 ## Alcance y licencias

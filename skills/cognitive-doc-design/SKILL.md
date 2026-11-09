@@ -34,6 +34,10 @@ Use it especially for:
 | Recognition over recall | Prefer tables, checklists, examples, and templates over prose that must be remembered. |
 | Review empathy | Design docs so reviewers can verify intent without reconstructing the whole story. |
 
+## Diagrams in Chuli
+
+Use [the diagram guide](references/diagrams.md) when relationships, decisions or handoffs are clearer visually. Load the bundled `diagram-design` skill only for a diagram that earns its place. Preserve the project's brand, source evidence, accessible text equivalent and editable source; a table or paragraph is sufficient when it explains the same thing. Do not invent components or render every document as a diagram.
+
 ## Documentation Shape
 
 Use this default structure unless the repo already provides a stronger template:

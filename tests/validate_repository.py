@@ -14,7 +14,7 @@ skills.update({"branch-pr", "chained-pr", "cognitive-doc-design", "comment-write
                "gentle-ai-bench", "go-testing", "hermes-ephemeral-delegation", "issue-creation",
                "judgment-day", "rdd-defect-workflow", "skill-creator", "skill-improver",
                "skill-registry", "systemic-issue-triage", "work-unit-commits",
-               "gentle-ai-collab-perfect", "issue-root-resolution", "rdd-advisory-transport"})
+               "gentle-ai-collab-perfect", "issue-root-resolution", "rdd-advisory-transport", "diagram-design"})
 assert {p.stem for p in (root / "agents").glob("*.toml")} == roles
 assert {p.parent.name for p in (root / "skills").glob("*/SKILL.md")} == skills
 

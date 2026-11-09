@@ -5,3 +5,6 @@ go.sum text eol=lf
 
 # Identical fixture/catalog bytes and SHA-256 across operating systems.
 evals/** text eol=lf
+
+# Preserve exact bytes of the pinned third-party diagram skill and its manifest.
+skills/diagram-design/** -text

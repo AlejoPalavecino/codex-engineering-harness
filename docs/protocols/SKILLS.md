@@ -1,6 +1,6 @@
 # Catálogo de skills
 
-Seleccioná por objetivo y por capacidad real del cliente. El perfil completo tiene 5 skills de Chuli y 18 tomadas de Gentle AI™ v4.4.0. Cargar una skill consiste en leer su procedimiento cuando hace falta. No instala las herramientas que ese procedimiento describe.
+Seleccioná por objetivo y por capacidad real del cliente. El perfil completo tiene 24 skills: 5 de Chuli, 18 tomadas de Gentle AI™ v4.4.0 y diagram-design 2.6. Cargar una skill consiste en leer su procedimiento cuando hace falta. No instala las herramientas que ese procedimiento describe.
 
 Las cinco nativas son `harness-discovery` (alcance), `harness-architecture` (contratos y alternativas), `harness-ux-ui` (flujos e interacción), `harness-specification` (aceptación y tareas), y `harness-tdd-qa` (pruebas y evidencia). Necesitan el contexto del proyecto. Un runner de pruebas o navegador sólo corresponde cuando hay una verificación concreta que lo requiere.
 
@@ -11,6 +11,7 @@ Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `harness-tdd-qa
 | `branch-pr` | Preparar PR según la política del destino | Codex | Git; para operaciones remotas, GitHub autorizado |
 | `chained-pr` | Dividir una entrega en unidades revisables | Codex | Git; publicar ramas o PR requiere autorización |
 | `cognitive-doc-design` | Diseñar documentación legible | Codex | Documento y audiencia |
+| `diagram-design` | Diagramas editoriales con fuente HTML y exportaciones SVG/PNG | Codex | Python para comprobación y SVG; navegador disponible para QA. PNG requiere Playwright/Chromium opcionales |
 | `comment-writer` | Redactar comentarios colaborativos | Codex | Contexto del intercambio |
 | `gentle-ai-bench` | Autoría y verificación de journeys de Gentle AI | Checkout de Gentle AI | bench/, compilador Go y CI del upstream |
 | `gentle-ai-collab-perfect` | Colaborar externamente con Gentle AI | Checkout de Gentle AI | Política de contribución de Gentleman-Programming/gentle-ai |
@@ -32,3 +33,5 @@ Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `harness-tdd-qa
 El catálogo conserva las 14 skills seleccionables del instalador upstream, la skill específica de Hermes y tres de su repositorio de contribución: `gentle-ai-collab-perfect`, `issue-root-resolution` y `rdd-advisory-transport`. Para las ocho duplicadas en origen se eligió la edición de distribución. Cada directorio conserva sus recursos. Las siete referencias comunes desplegables se encuentran en `skills/_shared/`; el fragmento que Gentle AI usa para construir su propio orquestador se conserva en `skills/_shared/upstream/` para consulta.
 
 En la instalación, resolvé los archivos por la ruta efectiva de la skill. Los avisos y el pin verificable viajan en `skills/_shared/NOTICES.md`. Un procedimiento instalado sólo se activa si coincide el objetivo, el runtime y las dependencias. Si el host ya proporciona otra skill con igual nombre, verificá su origen antes de invocarla.
+
+`diagram-design` se conserva completa e intacta desde cathrynlavery/diagram-design, commit `6a7f19fcc132b39b126bea90167679b46b14bcc4` (MIT). `skills/diagram-design/UPSTREAM.json` registra hashes de los 293 archivos originales y la licencia. cognitive-doc-design conecta con ella solo cuando una figura aporta comprensión; incluye guías, scripts y ejemplos, sin instalar el plugin ni prometer sus slash commands. Las actualizaciones upstream requieren revisión; no son automáticas.
