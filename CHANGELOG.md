@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1] — 2026-11-09
+
+- Instalador opcional de Chuli Manager para Windows por usuario: descarga oficial, SHA-256, registro de `chuli` en PATH y vista previa/confirmación (#58, issue #57).
+- Preservación del PATH y archivos existentes, rechazo de destinos ambiguos y recuperación ante fallos; pruebas en PowerShell 7 y Windows PowerShell 5.1.
+- `install-chuli-windows.ps1` incluido como archivo descargable de la release con su checksum, generado desde la fuente revisada por CI. Los ZIP/TAR portables permanecen disponibles.
+- Sin instalación permanente automática en la PC del usuario ni cambios al perfil Codex al ejecutar la vista previa.
+
 ## [1.1.0] — 2026-11-09
 
 - Asistente opcional de integraciones en TUI y CLI: Context7, Engram, Exa, GitHub y Egolite; vista previa, confirmación, comprobación y reversión de conexiones propias (#52–#56, issue #51).

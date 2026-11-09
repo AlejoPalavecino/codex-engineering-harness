@@ -82,15 +82,16 @@ jobs:
           set -euo pipefail
           git fetch origin main --tags
           [[ "$(git rev-parse origin/main)" == "$SHA" ]]
-          files=("chuli-profile-v${VERSION}.zip" "chuli_v${VERSION}_windows_amd64.zip" "chuli_v${VERSION}_linux_amd64.tar.gz" "chuli_v${VERSION}_darwin_arm64.tar.gz")
+          files=("chuli-profile-v${VERSION}.zip" "chuli_v${VERSION}_windows_amd64.zip" "chuli_v${VERSION}_linux_amd64.tar.gz" "chuli_v${VERSION}_darwin_arm64.tar.gz" "install-chuli-windows.ps1")
           (
             cd dist
-            [[ "$(find . -type f | wc -l)" -eq 4 ]]
+            [[ "$(find . -type f | wc -l)" -eq 5 ]]
             for name in "${files[@]}"; do test -s "$name"; done
             unzip -tq "${files[0]}"
             [[ "$(unzip -p "${files[0]}" VERSION | tr -d '\r\n')" == "$VERSION" ]]
             [[ "$(unzip -Z1 "${files[1]}")" == "chuli.exe" ]]
-            for name in "${files[@]:2}"; do [[ "$(tar -tzf "$name")" == "chuli" ]]; done
+            for name in "${files[@]:2:2}"; do [[ "$(tar -tzf "$name")" == "chuli" ]]; done
+            cmp "${files[4]}" ../scripts/install-manager.ps1
             sha256sum "${files[@]}" > SHA256SUMS.txt
             sha256sum -c SHA256SUMS.txt
           )

@@ -1,4 +1,4 @@
-"""Package the versioned Codex profile or a native Chuli binary using the stdlib."""
+"""Package the profile, native Manager, or standalone Windows installer."""
 
 import argparse
 import subprocess
@@ -35,7 +35,7 @@ def package_profile(output, version):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("kind", choices=("profile", "manager"))
+    parser.add_argument("kind", choices=("profile", "manager", "installer"))
     parser.add_argument("output", type=Path)
     parser.add_argument("--binary", type=Path)
     parser.add_argument("--goos", choices=("windows", "linux", "darwin"))
@@ -43,6 +43,12 @@ def main():
     args = parser.parse_args()
     version = (ROOT / "VERSION").read_text().strip()
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.kind == "installer":
+        source = ROOT / "scripts/install-manager.ps1"
+        if source.is_symlink() or not source.is_file():
+            raise ValueError("Invalid installer source")
+        (args.output / "install-chuli-windows.ps1").write_bytes(source.read_bytes())
+        return
     if args.kind == "profile":
         package_profile(args.output, version)
         return

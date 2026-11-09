@@ -15,7 +15,7 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
 
-var version = "1.1.0-dev"
+var version = "1.1.1-dev"
 
 func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")

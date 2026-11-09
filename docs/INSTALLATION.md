@@ -10,11 +10,11 @@ El perfil se instala bajo `CODEX_HOME`, con `~/.codex` como valor habitual. En W
 
 ### Comando chuli en Windows
 
-El checkout actual incluye un instalador del Manager para el usuario de Windows. Desde la carpeta del repositorio, en PowerShell:
+Desde v1.1.1, la release incluye `install-chuli-windows.ps1` para instalar el Manager por usuario. Descargalo desde [la última release](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest), compará su SHA-256 con `SHA256SUMS.txt` y revisá el script antes de ejecutarlo. Desde la carpeta de descarga, en PowerShell:
 
 ```powershell
-.\scripts\install-manager.ps1
-.\scripts\install-manager.ps1 -Apply
+.\install-chuli-windows.ps1
+.\install-chuli-windows.ps1 -Apply
 chuli
 ```
 
@@ -22,11 +22,11 @@ La primera llamada muestra el destino y la versión; `-Apply` descarga el Manage
 
 Para fijar una versión, agregá `-Version 1.1.0`; para elegir destino, `-InstallDir RUTA_ABSOLUTA`. Repetir el instalador permite actualizar el Manager y no duplica el PATH. Rechaza un comando `chuli` que pertenezca a otra instalación, archivos modificados, enlaces/junctions, paquetes inesperados y versiones anteriores. Si falla una escritura, intenta restaurar el ejecutable, registro y PATH anteriores; si la recuperación queda incompleta, conserva sus archivos `.chuli-backup` para revisión manual. Cerrá el Manager antes de reemplazarlo y evitá editar el PATH durante la instalación.
 
-Este instalador todavía no forma parte de los archivos de la release v1.1.0 publicada; por ahora se ejecuta desde un checkout revisado. Instala únicamente el Manager: la instalación/actualización del perfil de Codex se inicia después desde su TUI. No instala Python o PowerShell ni modifica su política de ejecución. La comparación SHA-256 comprueba integridad respecto de la release oficial, no una firma independiente del editor.
+La fuente del instalador es `scripts/install-manager.ps1` y también se puede ejecutar desde un checkout revisado. Instala únicamente el Manager: la instalación/actualización del perfil de Codex se inicia después desde su TUI. No instala Python o PowerShell ni modifica su política de ejecución. La comparación SHA-256 comprueba integridad respecto de la release oficial, no una firma independiente del editor.
 
 ### Descarga portable
 
-Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v1.1.0.zip` en esta versión.
+Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v1.1.1.zip` en esta versión.
 
 Reiniciá el cliente o abrí una sesión nueva. En el selector de skills buscá `harness-tdd-qa`, `cognitive-doc-design` y `judgment-day`. Podés pedir al orquestador que delegue una exploración a `chuli_explorer` y mirar el agente usado. La disponibilidad de un modelo depende del cliente y la cuenta. El chat web o móvil no lee la carpeta local del equipo.
 

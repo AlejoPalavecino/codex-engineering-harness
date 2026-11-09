@@ -52,7 +52,7 @@ Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar e
 | Linux x64 | `chuli_v<versión>_linux_amd64.tar.gz` |
 | macOS ARM64 | `chuli_v<versión>_darwin_arm64.tar.gz` |
 
-La [guía de instalación](docs/INSTALLATION.md) cubre requisitos, personalizaciones, actualización, verificación y rollback. Los cuatro artefactos de cada release se acompañan de `SHA256SUMS.txt` para comprobar las descargas.
+La [guía de instalación](docs/INSTALLATION.md) cubre requisitos, personalizaciones, actualización, verificación y rollback. Desde v1.1.1, el perfil, los tres Managers y el instalador Windows se acompañan de `SHA256SUMS.txt` para comprobar las descargas.
 
 > **¿Ya tenés un perfil personalizado?** Revisá la vista previa antes de aplicar. Chuli tiene reglas para preservar archivos ajenos y recursos personalizados; reemplazarlos requiere una decisión explícita. Consultá la guía antes de actualizar.
 
@@ -155,7 +155,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 1.1.0](docs/releases/v1.1.0.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 1.1.1](docs/releases/v1.1.1.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 
