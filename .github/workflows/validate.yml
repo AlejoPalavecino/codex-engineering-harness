@@ -87,6 +87,12 @@ jobs:
       - name: TTP resources compatibility with Windows PowerShell 5.1
         shell: powershell
         run: ./tests/windows-ttp-resources.ps1
+      - name: Manager command installer in PowerShell 7
+        shell: pwsh
+        run: ./tests/windows-manager-install.ps1
+      - name: Manager command installer in Windows PowerShell 5.1
+        shell: powershell
+        run: ./tests/windows-manager-install.ps1
 
   chuli-go:
     strategy:
