@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
+	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
 )
 
@@ -42,17 +43,20 @@ func choices(mgr manager.Manager) []menuItem {
 }
 
 type model struct {
-	height, offset int
-	mgr            manager.Manager
-	managerVersion string
-	installed      string
-	cursor         int
-	screen         string
-	title          string
-	action         string
-	prepared       manager.Prepared
-	log            string
-	fault          string
+	integrationID     string
+	integrationCursor int
+	integrationPlan   integrations.Plan
+	height, offset    int
+	mgr               manager.Manager
+	managerVersion    string
+	installed         string
+	cursor            int
+	screen            string
+	title             string
+	action            string
+	prepared          manager.Prepared
+	log               string
+	fault             string
 }
 
 type preparedMsg struct {

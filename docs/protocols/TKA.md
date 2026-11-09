@@ -27,4 +27,6 @@ Decisión humana vigente > especificación y ADR aprobados/versionados > comport
 
 El instalador **preserva todos los MCP y plugins existentes**. El catálogo distribuye sólo las skills y referencias inventariadas, con sus licencias en `skills/_shared/licenses/`. Para activar herramientas opcionales seguir las instrucciones de su proveedor. No se debe leer ni publicar `~/.codex/config.toml` real con secretos.
 
+El código actual de Chuli Manager suma un asistente voluntario de integraciones, separado del instalador del perfil. Incluye Context7, Engram, Exa, GitHub y Egolite. Muestra requisitos y guías oficiales, prepara una vista previa y requiere confirmación para agregar una conexión o deshacer su propia adición. No instala plugins ni descarga/ejecuta programas automáticamente. Los MCP existentes se preservan; las credenciales se referencian por nombre de variable de entorno. La detección de plugins declarados no garantiza inventariar conectores administrados por la app. El diagnóstico distingue disponibilidad local de conexión MCP remota y no ejecuta herramientas sobre datos del usuario. El ejecutable v1.0.1 publicado aún no incluye el asistente.
+
 Para trabajos sustanciales, conservar specs/ADR y tareas recuperables en el repositorio. Evitar sistemas paralelos de documentación y memorias con información contradictoria.

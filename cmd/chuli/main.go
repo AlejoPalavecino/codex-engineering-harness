@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/eval"
+	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
@@ -20,7 +21,7 @@ func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")
 	showVersion := flag.Bool("version", false, "Mostrar versión del gestor")
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--source RUTA] [tui|install|update|status|doctor|rollback|version|eval]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo. install y update admiten --adopt-gentle-routing para respaldar el routing de Gentle y usar Chuli.")
+		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--source RUTA] [tui|install|update|status|doctor|rollback|version|eval|integrations]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo. install y update admiten --adopt-gentle-routing para respaldar el routing de Gentle y usar Chuli.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -47,6 +48,10 @@ func main() {
 		fmt.Printf("Chuli Manager %s\nCODEX_HOME: %s\n%s\n", version, m.Home, summary)
 	case "eval":
 		if err := eval.CLI(flag.Args()[1:], *source, os.Stdout); err != nil {
+			fail(err)
+		}
+	case "integrations":
+		if err := (integrations.Service{Home: m.Home}).CLI(flag.Args()[1:], os.Stdout); err != nil {
 			fail(err)
 		}
 	case "doctor":

@@ -1,11 +1,11 @@
 {
-  "description": "Inventario orientativo para Chuli. Configurá cada proveedor sólo en el cliente y proyecto autorizados. Este JSON no se carga automáticamente en Codex.",
+  "description": "Inventario orientativo para Chuli. El código actual del Manager ofrece un asistente voluntario de Integraciones; el ejecutable v1.0.1 publicado aún no lo incluye. Configurá cada proveedor sólo en el cliente y proyecto autorizados. Este JSON no se carga automáticamente en Codex.",
   "integrations": [
     {
       "name": "engram",
       "kind": "mcp",
       "purpose": "Memoria persistente por proyecto",
-      "install": "Manual desde proveedor",
+      "install": "Descarga guiada oficial; el asistente registra el binario disponible en PATH",
       "required": false,
       "scope": "Proyecto seleccionado explícitamente; evita datos personales y secretos."
     },
@@ -13,28 +13,28 @@
       "name": "context7",
       "kind": "mcp",
       "purpose": "Documentación de librerías",
-      "install": "Manual",
+      "install": "Asistente: conexión remota y referencia a CONTEXT7_API_KEY",
       "required": false
     },
     {
       "name": "exa",
       "kind": "mcp",
       "purpose": "Investigación externa",
-      "install": "Manual con credenciales según proveedor",
+      "install": "Asistente: conexión remota; autenticación y límites según proveedor",
       "required": false
     },
     {
       "name": "github",
       "kind": "connector-or-mcp",
       "purpose": "Operaciones de repositorio autorizadas",
-      "install": "Autenticación manual",
+      "install": "Asistente: conexión remota y referencia a GITHUB_PAT_TOKEN; conector existente se conserva",
       "required": false
     },
     {
       "name": "ego-browser",
       "kind": "skill",
       "purpose": "Validación visual e interacción web",
-      "install": "Separado; no se incluye código de terceros",
+      "install": "Descarga y onboarding guiados; no se registra como MCP ni se incluye el navegador",
       "required": false
     }
   ]
