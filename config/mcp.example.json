@@ -1,5 +1,5 @@
 {
-  "description": "Inventario orientativo para Chuli. El código actual del Manager ofrece un asistente voluntario de Integraciones; el ejecutable v1.0.1 publicado aún no lo incluye. Configurá cada proveedor sólo en el cliente y proyecto autorizados. Este JSON no se carga automáticamente en Codex.",
+  "description": "Inventario orientativo para Chuli. El Manager v1.1.0 ofrece un asistente voluntario de Integraciones; actualizar sólo el perfil no reemplaza el ejecutable. Configurá cada proveedor sólo en el cliente y proyecto autorizados. Este JSON no se carga automáticamente en Codex.",
   "integrations": [
     {
       "name": "engram",

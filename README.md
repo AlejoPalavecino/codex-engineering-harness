@@ -120,7 +120,7 @@ Un rol define **de qué se ocupa un agente**. Una skill explica **cómo encarar 
 
 El catálogo de este checkout suma **24 skills**: las cinco propias, 18 de Gentle AI v4.4.0 y Diagram Design 2.6. Las importadas incluyen documentación, revisiones, contribución y preparación de unidades de trabajo; algunas requieren un repositorio o runtime específico. [Catálogo y condiciones](docs/protocols/SKILLS.md) · [Procedencia y licencias](THIRD_PARTY_NOTICES.md).
 
-> Diagram Design está incorporada en este código y llegará al perfil por una próxima release. La v1.0.1 publicada conserva su catálogo de 23 skills; esta mejora no modifica sus artefactos.
+> Diagram Design se incluye desde v1.1.0. La v1.0.1 conserva su catálogo histórico de 23 skills.
 
 ### Documentación que otra persona pueda seguir
 
@@ -143,7 +143,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | **Context7** | Consultar documentación de librerías cuando la versión importa. |
 | **GitHub** | Leer o gestionar issues, PR y entregas dentro de la autorización recibida. |
 
-**El código actual del Manager incluye un asistente de Integraciones:** elegís una opción, revisás los requisitos y confirmás la conexión. Engram y Egolite tienen descarga guiada; las claves se configuran en tu entorno y se conservan conexiones existentes. El asistente llegará en un próximo ejecutable; el Manager publicado en v1.0.1 todavía no lo incluye. [Cómo usarlo y qué comprueba](docs/TUI.md#asistente-de-integraciones) · [Herramientas y conocimiento](docs/protocols/TKA.md).
+**El código actual del Manager incluye un asistente de Integraciones:** elegís una opción, revisás los requisitos y confirmás la conexión. Engram y Egolite tienen descarga guiada; las claves se configuran en tu entorno y se conservan conexiones existentes. Disponible desde el Manager v1.1.0: actualizar sólo el perfil no reemplaza tu ejecutable. [Cómo usarlo y qué comprueba](docs/TUI.md#asistente-de-integraciones) · [Herramientas y conocimiento](docs/protocols/TKA.md).
 
 <a name="documentacion"></a>
 
@@ -155,7 +155,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 1.0.1](docs/releases/v1.0.1.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 1.1.0](docs/releases/v1.1.0.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 

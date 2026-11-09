@@ -1,4 +1,4 @@
-# Chuli Manager 1.0
+# Chuli Manager 1.1
 
 El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paquete del repositorio oficial, muestra el plan y espera confirmación para instalarlo. Una actualización del perfil puede incorporar skills, recursos o modelos. Para cambiar de versión del ejecutable descargá el nuevo Manager.
 
@@ -24,7 +24,7 @@ El evaluador continúa disponible en el checkout con `chuli --source RUTA eval c
 
 ## Asistente de integraciones
 
-Disponible en el código actual del Manager; el ejecutable publicado en v1.0.1 todavía no incluye este asistente. Instalar o actualizar sólo el perfil no actualiza el ejecutable.
+Disponible desde el Manager v1.1.0. Si tenés v1.0.1 o anterior, descargá y extraé el nuevo Manager; instalar o actualizar sólo el perfil no actualiza el ejecutable.
 
 En **Integraciones**, elegí Context7, Engram, Exa, GitHub o Egolite. La ficha explica su utilidad, estado y requisitos. Usá C para revisar la configuración, S/Y para confirmarla, V para comprobar, G para ver la guía y O para abrir el sitio oficial en tu navegador. D muestra la reversión antes de confirmarla. N cancela una vista previa; Esc vuelve un nivel. ↑↓/j/k y PgUp/PgDn desplazan el contenido largo. Todas las opciones son voluntarias.
 
@@ -50,4 +50,4 @@ Para probar desde el checkout: `go run ./cmd/chuli integrations list`. Usá un `
 
 El rediseño local agrega una marca textual inspirada en la PC del logo y una paleta verde/beige sobre fondo oscuro. Conserva las mismas operaciones y teclas. En terminal ancha, el menú muestra una explicación lateral de la opción elegida; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
 
-Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres de texto, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación todavía no está publicada en un ejecutable ni forma parte de las PRs #52–#56 del asistente.
+Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres de texto, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v1.1.0. Las PRs #52–#56 corresponden al asistente; el rediseño se integró como una unidad separada.

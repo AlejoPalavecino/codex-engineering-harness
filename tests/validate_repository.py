@@ -41,7 +41,7 @@ for required in ("R0", "R1", "R2", "Criticidad", "Human-in-the-Loop", "Engram", 
 
 for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json", "tests/test_taskboard.py", "VERSION"):
     assert (root / required_path).is_file(), required_path
-assert (root / "VERSION").read_text(encoding="utf-8").strip() == "1.0.1"
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "1.1.0"
 
 legacy_hashes = json.loads((root / "scripts/legacy-managed-hashes.json").read_text(encoding="utf-8"))
 assert set(legacy_hashes) == {"0.1.3", "0.2.0"}

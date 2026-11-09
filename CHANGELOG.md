@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.1.0] — 2026-11-09
+
+- Asistente opcional de integraciones en TUI y CLI: Context7, Engram, Exa, GitHub y Egolite; vista previa, confirmación, comprobación y reversión de conexiones propias (#52–#56, issue #51).
+- Consola CRT: marca en texto inspirada en el logo, verde fósforo/beige, explicación contextual, anchos adaptables y contenido paginado con destino completo.
+- Diagram Design 2.6 fijada a 6a7f19f: 293 recursos originales y licencia MIT, integridad verificable y activación condicional para documentación. Catálogo de 24 skills.
+- README ampliado, logo retro y diagramas de arquitectura y recorrido con fuentes HTML/SVG.
+- Pruebas del asistente con perfiles temporales, handshake MCP sin tools/call y compatibilidad de fixtures con macOS. Sin nuevos modelos ni permisos automáticos.
+- El perfil se actualiza desde el Manager existente; el diseño CRT y el asistente requieren descargar el ejecutable v1.1.0. No hay autoactualización del ejecutable.
+
 ## [1.0.1] — 2026-11-09
 
 - Preguntas enfocadas en decisiones pendientes, investigación del contexto disponible y continuidad de la autorización hasta verificar el resultado (#45, issue #47).
