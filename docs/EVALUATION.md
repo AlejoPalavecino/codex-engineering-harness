@@ -3,6 +3,8 @@
 **Estado del documento:** metodología histórica de la fundación v0.2. El catálogo conserva su huella y su baseline. Para Chuli 1.0, las pruebas de instalación, descubrimiento y distribución se documentan en [Pruebas](TESTING.md).
 **Baseline inmutable:** [v0.1.3](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v0.1.3), commit `68b756bd5e39539b4e277bb490321f8c06870755`.
 
+La [evaluación de voz y explicaciones](evaluations/natural-argentine-voice.md) prepara siete escenarios y una variante adicional. Se registra por separado del catálogo histórico; su presencia no acredita comportamiento observado del modelo.
+
 La evaluación complementaria de [preguntas y continuidad de autorización](evaluations/questions-and-authorization.md) cubre ocho criterios aprobados. Se ejecuta y registra por separado, sin alterar la huella del catálogo histórico ni atribuirle resultados de esos casos.
 
 ## Objetivo y límites
