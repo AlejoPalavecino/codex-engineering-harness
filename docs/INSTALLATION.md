@@ -8,7 +8,7 @@ El perfil se instala bajo `CODEX_HOME`, con `~/.codex` como valor habitual. En W
 
 ## Primera instalación
 
-Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v1.0.0.zip` en esta versión.
+Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v1.0.1.zip` en esta versión.
 
 Reiniciá el cliente o abrí una sesión nueva. En el selector de skills buscá `harness-tdd-qa`, `cognitive-doc-design` y `judgment-day`. Podés pedir al orquestador que delegue una exploración a `chuli_explorer` y mirar el agente usado. La disponibilidad de un modelo depende del cliente y la cuenta. El chat web o móvil no lee la carpeta local del equipo.
 

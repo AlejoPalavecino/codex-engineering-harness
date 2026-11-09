@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1] — 2026-11-09
+
+- Preguntas enfocadas en decisiones pendientes, investigación del contexto disponible y continuidad de la autorización hasta verificar el resultado (#45, issue #47).
+- Voz argentina más cercana y explicaciones cotidianas antes de introducir conceptos técnicos cuando aportan aprendizaje (#46, issue #48).
+- Diseño UX/UI por tareas y guion de revisión con egolite: apariencia, interacción y resultado comprobados por separado; referencias portables y fixture sintético (#50, issue #49).
+- Escenarios complementarios separados del catálogo histórico. Su entrega no acredita por sí sola comportamiento observado del modelo ni comprensión humana.
+- Distribución por el CI del SHA final, con perfil y Managers nativos versionados y sumas SHA-256. Sin nuevos modelos, agentes, dependencias ni cambios de permisos.
+
 ## [1.0.0] — Perfil personal para Codex
 
 - Manager orientado a instalar y mantener el perfil del usuario. El paquete del perfil y los binarios publicados provienen del CI del commit etiquetado.

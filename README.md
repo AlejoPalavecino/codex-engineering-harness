@@ -30,6 +30,6 @@ El flujo integra TDD cuando hay una prueba adecuada. Los cambios se dividen por 
 | --- | --- |
 | Operar la TUI y la CLI | [Manager](docs/TUI.md) |
 | Entender el producto y las decisiones | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Revisar novedades y cambios históricos | [Release 1.0.0](docs/releases/v1.0.0.md) · [Changelog](CHANGELOG.md) |
+| Revisar novedades y cambios históricos | [Release 1.0.1](docs/releases/v1.0.1.md) · [Changelog](CHANGELOG.md) |
 | Verificar el perfil y reproducir las pruebas | [Pruebas](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
