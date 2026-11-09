@@ -23,19 +23,19 @@ El usuario autorizó integrar las PR #45, #46 y #50 y publicar v1.0.1 el 2026-11
 - **Blocker:** none
 
 ### TASK-003 — Validar el candidato final de main
-- **State:** VERIFYING
+- **State:** DONE
 - **Depends on:** TASK-001, TASK-002
 - **Owner:** orchestrator
 - **Acceptance:** Checks locales pertinentes y Validate harness de push sobre el SHA final de main exitosos; artefactos ligados a ese run y sin cambios de head.
-- **Evidence:** none
+- **Evidence:** Validate harness push 42649842525 SUCCESS sobre c2863cfa46db5e8866606f96341751895e5ad505; main confirmado en ese SHA. Structure, Windows installer y Go Linux/Windows/macOS exitosos; artefactos generados por ese run.
 - **Blocker:** none
 
 ### TASK-004 — Publicar y comprobar la release estable
-- **State:** PLANNED
+- **State:** DONE
 - **Depends on:** TASK-003
 - **Owner:** orchestrator
 - **Acceptance:** Workflow de publicación exitoso; v1.0.1 apunta al SHA validado, es estable/latest y contiene cuatro archivos y SHA256SUMS comprobados.
-- **Evidence:** none
+- **Evidence:** Release v1.0.1 estable/latest publicada por run 42650306771 desde CI 42649842525 y SHA c2863cfa46db5e8866606f96341751895e5ad505. Cuatro sumas verificadas; perfil y Windows Manager correctos; upgrade oficial 1.0.0 -> 1.0.1 y rollback con verificación anterior exitosos. Diferencias limitadas a respaldos conservados.
 - **Blocker:** none
 
 ## Reversión y límites
@@ -49,3 +49,12 @@ Antes de publicar, revertir solo la preparación de versión si falla la aceptac
 - `go run ./cmd/chuli --source . eval check`: 11 escenarios válidos; huella cc0d2af804909ee1e10c99826b5de8979591b048c3d6e984f2de5dcfd0a286f1, sin cambios al catálogo histórico.
 - Versión: RED observado al exigir 1.0.1 antes de modificar VERSION; GREEN estructural en copia temporal usando los bytes canónicos del fixture histórico de HEAD, evitando la conversión local CRLF. No se alteró el fixture versionado.
 - Las campañas conductuales complementarias, comprensión humana y accesibilidad completa permanecen pendientes. La prueba manual de egolite y sus límites están en el tablero UX/UI; no se repitió ni se atribuye una campaña nueva al preparar la release.
+
+## Publicación y aceptación de artefactos oficiales
+
+- [CI del candidato](https://github.com/AlejoPalavecino/codex-engineering-harness/actions/runs/42649842525): SUCCESS, push de main en c2863cfa46db5e8866606f96341751895e5ad505. Los jobs de estructura, instalación Windows y Go Linux/Windows/macOS pasaron; review-size se omite en push por diseño.
+- [Publicador](https://github.com/AlejoPalavecino/codex-engineering-harness/actions/runs/42650306771): SUCCESS, workflow_dispatch con version=1.0.1 y validation_run=42649842525. El tag v1.0.1 apunta al SHA validado y [la release](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v1.0.1) está publicada como estable/latest.
+- Descarga independiente de los cuatro artefactos y SHA256SUMS.txt: los cuatro SHA-256 coinciden. Perfil VERSION=1.0.1; instrucciones del orquestador y referencias UX/UI iguales a los blobs del commit validado. Archivos Linux/macOS contienen el ejecutable esperado; el Manager Windows descargado informa «Chuli Manager 1.0.1».
+- Con perfiles oficiales descargados: instalación 1.0.0, actualización 1.0.1, verificación, rollback y verificación 1.0.0 con PowerShell 7: PASS en perfil temporal. El rollback restaura la versión del estado a 1.0.0 y los archivos activos byte a byte, conservando instrucciones y modelo personales sintéticos.
+- La primera comparación incluyó los respaldos nuevos conservados en backups/harness y falló por ese delta esperado. La auditoría posterior identificó exclusivamente esos archivos de respaldo como diferencias; ningún archivo activo difiere y el verificador anterior pasa. No hubo modificación de la release por este resultado.
+- PR #45, #46 y #50: MERGED; issues #47, #48 y #49: CLOSED por sus vínculos Closes. Este registro de cierre se conserva después de publicar, sin mover el tag ni reemplazar los artefactos del SHA validado.
