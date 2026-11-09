@@ -45,3 +45,9 @@ La configuración usa Python 3.11+ incluido como requisito del Manager. Antes de
 **Deshacer** usa el registro `CODEX_HOME/chuli-integrations/<id>.json`, que contiene únicamente la adición pública de Chuli. Elimina sólo un bloque intacto creado por el asistente, conserva el resto del archivo y rechaza conexiones modificadas. No desinstala programas, revoca tokens ni elimina memorias. Es independiente del rollback del perfil.
 
 Para probar desde el checkout: `go run ./cmd/chuli integrations list`. Usá un `CODEX_HOME` temporal para ensayar configuración y reversión. Para comprobar acceso real, hacelo desde una sesión nueva de Codex con tu autorización y cuenta; un handshake no demuestra permisos sobre datos.
+
+## Presentación Consola CRT
+
+El rediseño local agrega una marca textual inspirada en la PC del logo y una paleta verde/beige sobre fondo oscuro. Conserva las mismas operaciones y teclas. En terminal ancha, el menú muestra una explicación lateral de la opción elegida; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
+
+Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres de texto, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación todavía no está publicada en un ejecutable ni forma parte de las PRs #52–#56 del asistente.

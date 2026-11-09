@@ -11,6 +11,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
+	"github.com/charmbracelet/x/ansi"
 )
 
 func integrationKey(m model, key string) (model, tea.Cmd) {
@@ -135,8 +136,13 @@ func TestIntegrationTextRemainsScrollableInNarrowTerminal(t *testing.T) {
 	if cmd != nil || m.offset != 1 || m.page() == before {
 		t.Fatal("long text cannot be navigated")
 	}
-	view := m.View().Content
+	view := ansi.Strip(m.View().Content)
+	rows := strings.Split(view, "\n")
+	for i := range rows {
+		rows[i] = strings.TrimRight(rows[i], " ")
+	}
+	view = strings.Join(rows, "\n")
 	if !strings.Contains(view, "O abrir sitio oficial\nEnter revisar ficha\nEsc volver") {
-		t.Fatal("controls should wrap for narrow terminal")
+		t.Fatalf("controls should wrap for narrow terminal: %q", view)
 	}
 }

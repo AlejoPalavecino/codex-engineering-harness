@@ -17,3 +17,7 @@ Usar el logo completo con sus proporciones y margen. Mantener instrucciones, req
 Las figuras derivan de la identidad retro aprobada: papel beige `#f7f2e7`, tinta `#202a24`, texto secundario `#4b5c50`, acento verde oscuro `#22643a` y fondo de énfasis `#e4eedf`. El verde del logo se oscurece para mantener legibilidad en texto. Se usan tipografías de sistema: Segoe UI/Arial para contenido, Georgia para título HTML y monospace solo para etiquetas técnicas. No se descargan fuentes.
 
 Las fuentes HTML en assets/diagrams y sus SVG exportados conservan título, descripción y explicación textual. Los tamaños de contenido se amplían para lectura en README; los diagramas HTML mantienen un scroll local para no reducir todo a texto diminuto en móvil. La marca de Chuli se aplica a estas figuras del proyecto, sin sobrescribir la guía upstream ni perfiles personales compartidos.
+
+## Consola CRT del Manager
+
+Dirección aprobada para el rediseño: una PC y CHULI dibujados como texto, sin requerir protocolos de imágenes en la terminal. Fondo oscuro `#101713`, verde fósforo `#9BE79B`, beige `#E6D8B8` y texto `#F2F4EB`. El marcador de selección, títulos de estado y atajos conservan significado sin color. En anchos de 100 columnas o más, la explicación acompaña al menú en una segunda columna; en anchos menores se apila. La cabecera compacta la ruta larga, mientras que las vistas previas mantienen el destino completo dentro del contenido desplazable.

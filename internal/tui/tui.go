@@ -226,27 +226,28 @@ func (m model) pageSize() int {
 	if m.height == 0 {
 		return 15
 	}
-	overhead := 12
-	if strings.HasPrefix(m.screen, "integration-") {
-		if m.screen == integrationPreview {
-			overhead++
-		}
-		if m.fault != "" {
-			overhead++
-		}
-		if m.width > 0 && m.width < 70 {
-			overhead += 3
-		}
+	if m.width == 0 {
+		return max(1, m.height-12)
 	}
-	return max(1, m.height-overhead)
+	if m.crtPaged() {
+		return m.crtPageSize()
+	}
+	return max(1, m.height-12)
 }
 
 func (m model) lines() []string {
-	log := m.log
+	log := crtText(m.log)
 	if m.fault != "" {
-		log = m.fault + "\n" + log
+		log = crtText(m.fault) + "\n" + log
 	}
-	if strings.HasPrefix(m.screen, "integration-") && m.width > 0 {
+	if m.width > 0 && (m.screen == preview || m.screen == integrationPreview) {
+		prefix := "Cambios: revisá el plan antes de confirmar.\n\n"
+		if !strings.Contains(log, "Destino: "+crtText(m.mgr.Home)) {
+			prefix = "Destino: " + crtText(m.mgr.Home) + "\n" + prefix
+		}
+		log = prefix + log
+	}
+	if m.crtPaged() && m.width > 0 {
 		log = lipgloss.NewStyle().Width(max(20, m.width-2)).Render(log)
 	}
 	return strings.Split(strings.TrimSpace(strings.ReplaceAll(log, "\r\n", "\n")), "\n")
@@ -263,68 +264,7 @@ func (m model) page() string {
 	return page
 }
 
-func (m model) View() tea.View {
-	var b strings.Builder
-	b.WriteString(heading.Render("chuli  /  Engineering Harness Manager") + "    " + muted.Render("v"+m.managerVersion) + "\n")
-	b.WriteString(muted.Render(strings.Repeat("─", 57)) + "\n")
-	installed := m.installed
-	if installed == "" {
-		installed = "No instalado"
-	}
-	b.WriteString("Perfil Chuli para Codex   |   Versión: " + installed + "\n")
-	b.WriteString(muted.Render("CODEX_HOME: ") + m.mgr.Home + "\n\n")
-
-	switch m.screen {
-	case integrationList, integrationDetail, integrationPreview, integrationResult:
-		b.WriteString(m.integrationView())
-	case home:
-		b.WriteString("Seleccioná una acción:\n\n")
-		for i, item := range choices(m.mgr) {
-			label := fmt.Sprintf("  %d. %s", i+1, item.label)
-			if i == m.cursor {
-				b.WriteString(active.Render("› "+label) + "\n")
-			} else {
-				b.WriteString("  " + label + "\n")
-			}
-		}
-		b.WriteString("\n" + muted.Render("↑↓ / j k navegar  ·  Enter elegir  ·  q salir") + "\n")
-	case busy:
-		b.WriteString(heading.Render(m.title) + "\n\n")
-		b.WriteString("Ejecutando comprobaciones. No cierres la terminal durante una escritura.\n")
-	case preview:
-		b.WriteString(heading.Render("Revisión previa - "+m.prepared.Version) + "\n")
-		b.WriteString("Revisá los cambios antes de confirmar.\n\n")
-		b.WriteString(m.page() + "\n\n")
-		b.WriteString(good.Render("S / Y confirmar") + "    " + muted.Render("N cancelar · Esc volver") + "\n")
-	case conflict:
-		b.WriteString(heading.Render("Gentle controla el enrutamiento de este perfil") + "\n\n")
-		b.WriteString("A · Usar Chuli como orquestador y respaldar Gentle\n")
-		b.WriteString("Primero verás el plan. La confirmación se solicita después.\n")
-		b.WriteString(muted.Render("Esc volver · q salir") + "\n\n")
-		b.WriteString(m.page())
-	case result:
-		if m.fault != "" {
-			b.WriteString(bad.Render("No se completó la operación") + "\n\n")
-		} else {
-			b.WriteString(good.Render(m.title) + "\n\n")
-		}
-		if m.log != "" || m.fault != "" {
-			b.WriteString(m.page() + "\n\n")
-		}
-		b.WriteString(muted.Render("Enter / Esc volver · q salir") + "\n")
-	case about:
-		b.WriteString(heading.Render("Chuli — AI Engineering Harness") + "\n")
-		b.WriteString("Instala y actualiza el perfil de ingeniería en CODEX_HOME.\n")
-		b.WriteString("Después de instalar, abrí Codex como siempre.\n\n")
-		b.WriteString("El paquete oficial se verifica con SHA-256 y se conserva para recuperación.\n")
-		b.WriteString("Requisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).\n\n")
-		b.WriteString(muted.Render("Esc volver · q salir") + "\n")
-	}
-	view := tea.NewView(b.String())
-	view.AltScreen = true
-	view.WindowTitle = "Chuli Manager"
-	return view
-}
+func (m model) View() tea.View { return m.renderCRT() }
 
 func Run(mgr manager.Manager, version string) error {
 	installed, err := mgr.Installed()
