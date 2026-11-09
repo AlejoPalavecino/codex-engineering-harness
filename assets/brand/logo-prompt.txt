@@ -1,0 +1,8 @@
+Use case: logo-brand.
+Create an original logo concept for "CHULI", a software engineering harness for a coding assistant.
+Style: meticulously crafted late-1980s / early-1990s personal computer pixel art, distinctive and friendly, restrained professional retro computing identity.
+Subject: a recognizable compact beige vintage desktop PC, CRT monitor with thick ivory bezel, dark screen with a bright phosphor-green >_ command prompt, a small horizontal desktop base and a few crisp keyboard keys. Simplify silhouette to remain readable at small sizes.
+Composition: a single clean horizontal logo lockup, PC emblem on the left and the exact word "CHULI" on the right in large custom blocky pixel lettering. Wordmark readable, carefully spaced and spelled C H U L I. No extra text. Generous transparent margin around entire mark, no cropped edges.
+Palette: warm beige computer casing, dark charcoal outlines and screen, vivid phosphor green wordmark and screen details. Flat limited palette with deliberate pixel steps and just a few shadow tones; no blurry glow.
+Output: genuine transparent background, isolated logo only, no checkerboard or colored background baked in.
+Avoid: brand logos from real computer manufacturers, mascots or faces on the screen, neon cyberpunk, gradients, photorealism, presentation boards, multiple logos, slogans, watermarks.
