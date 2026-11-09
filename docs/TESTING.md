@@ -36,6 +36,12 @@ También se generó un `AGENTS.md` de 89.717 bytes con el renderer de Gentle AI 
 
 ## Distribución
 
+### Instalador del comando en Windows
+
+`tests/windows-manager-install.ps1` carga el instalador como biblioteca y usa exclusivamente carpetas temporales y `PathTarget Process`. Comprueba vista previa, instalación, repetición sin duplicar PATH, hashes inválidos, ZIP inesperado, archivos ajenos/modificados, destinos con separadores o parcialmente relativos y restauración de ejecutable/registro/PATH después de un fallo simulado. Ejecutar con PowerShell 7 y `powershell.exe -NoProfile -File tests/windows-manager-install.ps1` para Windows PowerShell 5.1. No modifica el PATH del usuario ni instala un perfil Codex.
+
+La comprobación local adicional con la descarga oficial v1.1.0 verificó SHA-256, instalación temporal y resolución de `chuli version` en ambos motores, manteniendo intacto el PATH de usuario. La rama que escribe ese PATH se revisó estáticamente; no se afirma instalación permanente realizada. La revisión independiente revalidó el rechazo de `;` y de `C:relative-install`/`\relative-install`.
+
 El workflow [Validate harness](../.github/workflows/validate.yml) construye un paquete de perfil y ejecutables nativos. El [publicador](../.github/workflows/release.yml) recupera esos artefactos por identificador de ejecución de CI, verifica que el SHA siga siendo el de main y publica los archivos junto a sus sumas SHA-256. El workflow también admite publicación manual de futuras versiones con aprobación explícita del número de versión y el run validado.
 
 La estructura de los TOML acredita modelos configurados. El descubrimiento en el cliente comprueba la disponibilidad del catálogo. Para afirmar el comportamiento de un modelo se necesita una sesión y evidencia de las acciones observadas. La [metodología de evaluación](EVALUATION.md) describe ese trabajo por separado.
