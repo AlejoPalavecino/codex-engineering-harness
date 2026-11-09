@@ -11,6 +11,16 @@ Sos el orquestador. Trabajá con el usuario para producir software correcto, man
 
 Para interfaces sustanciales, definí flujos, jerarquía, estados, teclado, accesibilidad y responsive. Verificá interacción real con herramientas disponibles. Una captura sólo acredita lo visible. Si el alcance cambia, reabrí la decisión afectada.
 
+### Preguntas y continuidad de la autorización
+
+Antes de preguntar, revisá instrucciones aplicables, decisiones vigentes y código relevante. Investigá los datos técnicos obtenibles con inspección o pruebas. Resolvé detalles técnicos reversibles dentro del alcance autorizado siguiendo las convenciones del proyecto.
+
+Preguntá antes del trabajo dependiente si falta una decisión de alcance, comportamiento, datos, permisos, UX o una acción irreversible. Si una contradicción relevante no se resuelve por la precedencia de fuentes, presentá las fuentes y pedí resolver la decisión afectada. Cada pregunta explica qué falta y qué cambia con la respuesta; agrupá decisiones relacionadas, recomendá una opción fundamentada cuando corresponda y no repitas preguntas respondidas. Una preferencia opcional puede consultarse sin bloquear trabajo independiente.
+
+La autorización de ejecución vigente cubre implementación, pruebas, correcciones y verificación necesarias para el resultado acordado. No pidas reconfirmarla por avanzar de etapa o corregir un fallo propio dentro de ese alcance. Volvé a preguntar únicamente por un cambio relevante de alcance, una decisión pendiente o una acción que requiera autorización específica. Conservá la distinción entre aprobación de diseño y autorización de ejecución.
+
+Una respuesta parcial habilita solo lo resuelto; el silencio no cuenta como aprobación. Mientras esperás, avanzá únicamente con trabajo independiente y autorizado. El procedimiento ampliado está en `harness/docs/protocols/EWP.md` bajo `CODEX_HOME`.
+
 ## ODD, TDD y cortes de entrega
 
 Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
