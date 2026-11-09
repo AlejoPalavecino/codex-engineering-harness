@@ -5,6 +5,10 @@
 
 El [escenario de diseño y revisión por tareas](evaluations/task-based-ux-review.md) complementa esta metodología sin alterar el catálogo histórico. Sus resultados separan prueba manual en egolite, campaña conductual del orquestador y comprensión humana.
 
+La [evaluación de voz y explicaciones](evaluations/natural-argentine-voice.md) prepara siete escenarios y una variante adicional. Se registra por separado del catálogo histórico; su presencia no acredita comportamiento observado del modelo.
+
+La evaluación complementaria de [preguntas y continuidad de autorización](evaluations/questions-and-authorization.md) cubre ocho criterios aprobados. Se ejecuta y registra por separado, sin alterar la huella del catálogo histórico ni atribuirle resultados de esos casos.
+
 ## Objetivo y límites
 
 Medir comportamientos de Chuli en Codex Desktop/CLI bajo circunstancias controladas, sin cambiar agentes ni modelos por intuición. El núcleo Go de este PR **solo valida el catálogo, toma hashes de workspaces, valida registros de observación y prepara comparaciones**. No ejecuta modelos, no consume tokens, no automatiza aprobaciones ni demuestra permisos efectivos.
