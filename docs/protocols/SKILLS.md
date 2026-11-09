@@ -4,6 +4,8 @@ Seleccioná por objetivo y por capacidad real del cliente. El perfil completo ti
 
 Las cinco nativas son `harness-discovery` (alcance), `harness-architecture` (contratos y alternativas), `harness-ux-ui` (flujos e interacción), `harness-specification` (aceptación y tareas), y `harness-tdd-qa` (pruebas y evidencia). Necesitan el contexto del proyecto. Un runner de pruebas o navegador sólo corresponde cuando hay una verificación concreta que lo requiere.
 
+Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `harness-tdd-qa` comprueba apariencia, interacción y resultado. Ambas incluyen referencias locales instalables. Ego-browser/egolite es la preferencia de revisión web si está disponible y autorizado; se distribuye por separado. Bibliotecas como ui-ux-pro-max o design-taste-frontend son apoyos opcionales revisados, no parte de este paquete: elegir una fuente de dirección visual por tarea, respetando el diseño aprobado. No se instalan automáticamente ni se impone un stack.
+
 | Skill importada | Objetivo | Runtime o destino | Requisitos |
 | --- | --- | --- | --- |
 | `branch-pr` | Preparar PR según la política del destino | Codex | Git; para operaciones remotas, GitHub autorizado |

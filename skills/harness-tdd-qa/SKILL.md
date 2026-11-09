@@ -13,6 +13,10 @@ description: "Aplicar test-first cuando corresponde y seleccionar verificaciones
 6. Verificar types, lint, build, integración, E2E, CI, seguridad, accesibilidad y rendimiento según corresponda.
 7. Registrar comandos y resultados; declarar límites y omisiones. No afirmar «verificado» si existen bloqueantes.
 
+## Revisión de interfaces
+
+Para cambios de interfaz, leer el guion y los criterios aprobados y aplicar [revisión en navegador](references/browser-review.md). Preferir ego-browser/egolite si está disponible y autorizado; consultar su skill y guía instalada antes de operar. Separar apariencia, interacción y resultado observable, con datos de prueba y tamaños pertinentes. Una captura o un clic enviado no prueban que la tarea funcione. Repetir comprobaciones afectadas tras corregir; declarar lo no probado cuando falte herramienta o evidencia. No sustituir investigación con personas por opiniones del agente.
+
 ## Conexión con seguimiento TTP
 
 Devolvé resultados de pruebas, comandos y evidencia por ID de tarea. Cuando la implementación finalice, el orquestador pasa la tarea a VERIFYING; solo después de satisfacer sus criterios pasa a DONE y se registra evidencia. Si falla, mantener IN_PROGRESS o BLOCKED con motivo. El verificador no debe editar directamente el registro de tareas, y el cierre no depende de lo que afirma el implementador.

@@ -3,6 +3,8 @@
 **Estado del documento:** metodología histórica de la fundación v0.2. El catálogo conserva su huella y su baseline. Para Chuli 1.0, las pruebas de instalación, descubrimiento y distribución se documentan en [Pruebas](TESTING.md).
 **Baseline inmutable:** [v0.1.3](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v0.1.3), commit `68b756bd5e39539b4e277bb490321f8c06870755`.
 
+El [escenario de diseño y revisión por tareas](evaluations/task-based-ux-review.md) complementa esta metodología sin alterar el catálogo histórico. Sus resultados separan prueba manual en egolite, campaña conductual del orquestador y comprensión humana.
+
 ## Objetivo y límites
 
 Medir comportamientos de Chuli en Codex Desktop/CLI bajo circunstancias controladas, sin cambiar agentes ni modelos por intuición. El núcleo Go de este PR **solo valida el catálogo, toma hashes de workspaces, valida registros de observación y prepara comparaciones**. No ejecuta modelos, no consume tokens, no automatiza aprobaciones ni demuestra permisos efectivos.

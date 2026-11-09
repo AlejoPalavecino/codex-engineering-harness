@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Devolución de prueba</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px; font: 1rem/1.5 system-ui, sans-serif; color: #17212b; background: #f5f6f7; }
+  main { max-width: 40rem; margin: auto; }
+  label, input:not([type=checkbox]), button { display: block; }
+  input:not([type=checkbox]) { width: 100%; padding: 12px; font: inherit; }
+  button { padding: 12px 20px; margin-top: 20px; font: inherit; cursor: pointer; }
+  :focus-visible { outline: 3px solid #124b99; outline-offset: 3px; }
+  #error { color: #9b1515; }
+  .option { margin-top: 16px; }
+</style>
+<main>
+  <h1>Registrar una devolución</h1>
+  <p>Entorno sintético: usá L-01. Los cambios duran hasta recargar esta página.</p>
+  <form id="return-form" novalidate>
+    <label for="loan">Código del préstamo</label>
+    <input id="loan" name="loan" aria-describedby="loan-help error" autocomplete="off">
+    <p id="loan-help">Ingresá el código del equipo que recibiste.</p>
+    <p id="error" role="alert"></p>
+    <label class="option"><input id="fail" type="checkbox"> Simular error de red</label>
+    <button id="submit" type="submit">Registrar devolución</button>
+  </form>
+  <h2>Resultado</h2>
+  <p id="result" role="status" data-events="0">Sin devoluciones registradas.</p>
+</main>
+<script>
+  const form = document.querySelector('#return-form');
+  const loan = document.querySelector('#loan');
+  const error = document.querySelector('#error');
+  const button = document.querySelector('#submit');
+  const result = document.querySelector('#result');
+  let pending = false;
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (pending) return;
+    error.textContent = '';
+    loan.removeAttribute('aria-invalid');
+    if (loan.value.trim() !== 'L-01') {
+      error.textContent = loan.value.trim() ? 'No encontramos ese préstamo. Probá con L-01.' : 'Ingresá el código del préstamo para continuar.';
+      loan.setAttribute('aria-invalid', 'true');
+      loan.focus();
+      return;
+    }
+    pending = true;
+    button.disabled = true;
+    button.textContent = 'Registrando…';
+    const fail = document.querySelector('#fail').checked;
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    if (fail) {
+      error.textContent = 'No pudimos conectar. Conservamos el código; desactivá la simulación y reintentá.';
+    } else {
+      const repeated = result.dataset.events === '1';
+      result.dataset.events = '1';
+      result.textContent = repeated ? 'L-01 ya estaba devuelto. No registramos otra devolución.' : 'Devolución de L-01 registrada. Total: 1.';
+    }
+    pending = false;
+    button.disabled = false;
+    button.textContent = 'Registrar devolución';
+  });
+</script>
+</html>
