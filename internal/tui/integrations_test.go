@@ -31,7 +31,7 @@ func integrationKey(m model, key string) (model, tea.Cmd) {
 }
 
 func TestIntegrationNavigationAndCancelDoNotWrite(t *testing.T) {
-	m := model{mgr: manager.Manager{Home: t.TempDir()}, screen: home, height: 30}
+	m := model{mgr: manager.Manager{Home: canonicalTUITestHome(t)}, screen: home, height: 30}
 	for index, item := range choices(m.mgr) {
 		if item.action == "integrations" {
 			m.cursor = index
@@ -82,7 +82,7 @@ func TestIntegrationNavigationAndCancelDoNotWrite(t *testing.T) {
 }
 
 func TestIntegrationConfirmApplyAndUndo(t *testing.T) {
-	homeDir := t.TempDir()
+	homeDir := canonicalTUITestHome(t)
 	service := integrations.Service{Home: homeDir}
 	plan, err := service.Prepare(context.Background(), "exa", "configure")
 	if err != nil {
