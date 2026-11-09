@@ -3,6 +3,8 @@
 **Estado del documento:** metodología histórica de la fundación v0.2. El catálogo conserva su huella y su baseline. Para Chuli 1.0, las pruebas de instalación, descubrimiento y distribución se documentan en [Pruebas](TESTING.md).
 **Baseline inmutable:** [v0.1.3](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v0.1.3), commit `68b756bd5e39539b4e277bb490321f8c06870755`.
 
+La [evaluación de voz y explicaciones](evaluations/natural-argentine-voice.md) prepara siete escenarios y una variante adicional. Se registra por separado del catálogo histórico; su presencia no acredita comportamiento observado del modelo.
+
 ## Objetivo y límites
 
 Medir comportamientos de Chuli en Codex Desktop/CLI bajo circunstancias controladas, sin cambiar agentes ni modelos por intuición. El núcleo Go de este PR **solo valida el catálogo, toma hashes de workspaces, valida registros de observación y prepara comparaciones**. No ejecuta modelos, no consume tokens, no automatiza aprobaciones ni demuestra permisos efectivos.
