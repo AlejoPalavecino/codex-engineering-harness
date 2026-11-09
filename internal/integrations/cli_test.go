@@ -10,7 +10,7 @@ import (
 )
 
 func TestCLICatalogGuidesAndExplicitApply(t *testing.T) {
-	s := Service{Home: t.TempDir()}
+	s := Service{Home: canonicalTestHome(t)}
 	var out bytes.Buffer
 	if err := s.CLI(nil, &out); err != nil {
 		t.Fatal(err)
