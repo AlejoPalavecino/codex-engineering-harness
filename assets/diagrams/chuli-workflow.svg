@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 696" role="img" aria-labelledby="chuli-workflow-title chuli-workflow-desc" id="chuli-workflow-root">
+      <title id="chuli-workflow-title">Del pedido a la evidencia</title>
+      <desc id="chuli-workflow-desc">Una consulta se investiga, un cambio entendido y autorizado se implementa y prueba, y una funcionalidad requiere acordar alcance y diseño antes de construir; todas las rutas entregan evidencia y límites.</desc>
+      <defs>
+      <style>#chuli-workflow-root { color: #202a24; font-family: "Segoe UI", Arial, sans-serif; }
+      #chuli-workflow-root .diagram-container { width: 100%; overflow-x: auto; }
+      #chuli-workflow-root .name { font-size: 20px; font-weight: 600; fill: #202a24; }
+      #chuli-workflow-root .detail { font-size: 14px; fill: #4b5c50; }
+      #chuli-workflow-root .tag { font: 12px ui-monospace, monospace; fill: #22643a; letter-spacing: 1px; }
+      #chuli-workflow-root .edge { fill: none; stroke: #4b5c50; stroke-width: 2; marker-end: url(#chuli-workflow-arrow); }
+      #chuli-workflow-root .node { fill: #f7f2e7; stroke: #69806e; stroke-width: 2; }
+      @media print {
+#chuli-workflow-root .diagram-container { overflow: visible; }
+}</style><marker id="chuli-workflow-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4b5c50"/></marker></defs>
+      <rect width="960" height="696" fill="#f7f2e7"/>
+      <text x="48" y="48" class="tag">CHULI / ELEGIR EL TRABAJO NECESARIO</text>
+      <path class="edge" d="M480 136 V160"/>
+      <path class="edge" d="M368 216 H176 Q168 216 168 224 V328"/>
+      <path class="edge" d="M480 272 V328"/>
+      <path class="edge" d="M592 216 H784 Q792 216 792 224 V328"/>
+      <path class="edge" d="M168 400 V576 Q168 584 176 584 H320"/>
+      <path class="edge" d="M480 400 V552"/>
+      <path class="edge" d="M792 400 V440"/>
+      <path class="edge" d="M792 504 V576 Q792 584 784 584 H640"/>
+      <rect x="212" y="224" width="112" height="24" fill="#f7f2e7"/>
+      <text x="268" y="241" text-anchor="middle" class="tag">CONSULTA</text>
+      <rect x="488" y="284" width="104" height="24" fill="#f7f2e7"/>
+      <text x="540" y="301" text-anchor="middle" class="tag">CAMBIO</text>
+      <rect x="620" y="224" width="156" height="24" fill="#f7f2e7"/>
+      <text x="698" y="241" text-anchor="middle" class="tag">FUNCIONALIDAD</text>
+      <rect x="384" y="88" width="192" height="48" rx="24" class="node"/>
+      <text x="480" y="119" text-anchor="middle" class="name">Tu pedido</text>
+      <polygon points="480,160 592,216 480,272 368,216" fill="#e4eedf" stroke="#22643a" stroke-width="2"/>
+      <text x="480" y="211" text-anchor="middle" class="detail">¿Qué necesita</text>
+      <text x="480" y="231" text-anchor="middle" class="detail">el pedido?</text>
+      <rect x="48" y="328" width="240" height="72" rx="6" class="node"/>
+      <text x="168" y="359" text-anchor="middle" class="name">Leer y explicar</text>
+      <text x="168" y="384" text-anchor="middle" class="detail">Sin modificar el proyecto.</text>
+      <rect x="360" y="328" width="240" height="72" rx="6" class="node"/>
+      <text x="480" y="359" text-anchor="middle" class="name">Cambiar y probar</text>
+      <text x="480" y="384" text-anchor="middle" class="detail">Cambio entendido y autorizado.</text>
+      <rect x="672" y="328" width="240" height="72" rx="6" class="node"/>
+      <text x="792" y="359" text-anchor="middle" class="name">Acordar el diseño</text>
+      <text x="792" y="384" text-anchor="middle" class="detail">Alcance, criterios y aprobación.</text>
+      <rect x="672" y="440" width="240" height="64" rx="6" class="node"/>
+      <text x="792" y="467" text-anchor="middle" class="name">Construir y probar</text>
+      <text x="792" y="491" text-anchor="middle" class="detail">Con ejecución autorizada.</text>
+      <rect x="320" y="552" width="320" height="64" rx="24" class="node"/>
+      <text x="480" y="579" text-anchor="middle" class="name">Resultado + evidencia</text>
+      <text x="480" y="603" text-anchor="middle" class="detail">Qué se comprobó y qué falta.</text>
+      <text x="48" y="664" class="detail">El riesgo puede exigir controles extra en cualquier cambio. Publicar requiere autorización.</text>
+    </svg>

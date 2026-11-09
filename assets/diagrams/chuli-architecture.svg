@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="chuli-architecture-title chuli-architecture-desc" id="chuli-architecture-root">
+      <title id="chuli-architecture-title">Dónde trabaja cada parte de Chuli</title>
+      <desc id="chuli-architecture-desc">El Manager instala el perfil local que Codex usa para trabajar sobre el proyecto y conservar decisiones, cambios y evidencia en Git.</desc>
+      <defs>
+      <style>#chuli-architecture-root { color: #202a24; font-family: "Segoe UI", Arial, sans-serif; }
+      #chuli-architecture-root .diagram-container { width: 100%; overflow-x: auto; }
+      #chuli-architecture-root .name { font-size: 20px; font-weight: 600; fill: #202a24; }
+      #chuli-architecture-root .detail { font-size: 16px; fill: #4b5c50; }
+      #chuli-architecture-root .tag { font: 12px ui-monospace, monospace; fill: #22643a; letter-spacing: 1px; }
+      #chuli-architecture-root .edge { fill: none; stroke: #4b5c50; stroke-width: 2; marker-end: url(#chuli-architecture-arrow); }
+      #chuli-architecture-root .node { fill: #f7f2e7; stroke: #69806e; stroke-width: 2; }
+      @media print {
+#chuli-architecture-root .diagram-container { overflow: visible; }
+}</style><marker id="chuli-architecture-arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4b5c50"/></marker></defs>
+      <rect width="960" height="600" fill="#f7f2e7"/>
+      <text x="64" y="48" class="tag">CHULI / MAPA DEL EQUIPO</text>
+      <text x="64" y="84" class="name">Instalás el perfil. Trabajás desde Codex.</text>
+      <path class="edge" d="M384 168 H576"/>
+      <path class="edge" d="M736 224 V352"/>
+      <path class="edge" d="M576 408 H384"/>
+      <rect x="408" y="176" width="144" height="24" fill="#f7f2e7"/>
+      <text x="480" y="193" text-anchor="middle" class="tag">INSTALA</text>
+      <rect x="744" y="268" width="144" height="24" fill="#f7f2e7"/>
+      <text x="816" y="285" text-anchor="middle" class="tag">CONFIGURA</text>
+      <rect x="400" y="416" width="160" height="24" fill="#f7f2e7"/>
+      <text x="480" y="433" text-anchor="middle" class="tag">TRABAJA EN</text>
+      <rect x="64" y="112" width="320" height="112" rx="6" class="node"/>
+      <text x="88" y="148" class="name">Chuli Manager</text>
+      <text x="88" y="180" class="detail">Instala, actualiza y revierte.</text>
+      <text x="88" y="204" class="detail">Se usa desde la terminal.</text>
+      <rect x="576" y="112" width="320" height="112" rx="6" fill="#e4eedf" stroke="#22643a" stroke-width="2"/>
+      <text x="600" y="148" class="name">Tu perfil local</text>
+      <text x="600" y="180" class="detail">Orquestador, roles y skills.</text>
+      <text x="600" y="204" class="detail">Vive en CODEX_HOME.</text>
+      <rect x="576" y="352" width="320" height="112" rx="6" class="node"/>
+      <text x="600" y="388" class="name">Codex CLI o app local</text>
+      <text x="600" y="420" class="detail">Acá conversás y programás.</text>
+      <text x="600" y="444" class="detail">Consume el perfil instalado.</text>
+      <rect x="64" y="352" width="320" height="112" rx="6" class="node"/>
+      <text x="88" y="388" class="name">Tu proyecto + Git</text>
+      <text x="88" y="420" class="detail">Código, pruebas y decisiones.</text>
+      <text x="88" y="444" class="detail">Evidencia para poder retomar.</text>
+      <text x="64" y="540" class="detail">El Manager administra versiones. El trabajo de ingeniería ocurre en Codex.</text>
+      <text x="64" y="572" class="tag">EL PERFIL ORIENTA EL TRABAJO; LOS PERMISOS EFECTIVOS LOS CONTROLA EL ENTORNO.</text>
+    </svg>

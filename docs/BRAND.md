@@ -11,3 +11,9 @@ La dirección del README toma la PC personal de fines de los ochenta y principio
 El [logo de Chuli](../assets/brand/chuli-logo.png) es un PNG con transparencia, generado con la herramienta integrada de imágenes. Se conserva el [prompt de generación](../assets/brand/logo-prompt.txt) para revisar su procedencia y explorar futuras variantes. El archivo original tiene 2172×724 píxeles; el README lo muestra a una anchura menor sin alterar la imagen.
 
 Usar el logo completo con sus proporciones y margen. Mantener instrucciones, requisitos, enlaces y nombres de comandos como texto accesible, en lugar de incrustarlos en ilustraciones. Los títulos numerados y el diagrama del README evocan un manual de computación; no son una salida real del Manager.
+
+## Diagramas de documentación
+
+Las figuras derivan de la identidad retro aprobada: papel beige `#f7f2e7`, tinta `#202a24`, texto secundario `#4b5c50`, acento verde oscuro `#22643a` y fondo de énfasis `#e4eedf`. El verde del logo se oscurece para mantener legibilidad en texto. Se usan tipografías de sistema: Segoe UI/Arial para contenido, Georgia para título HTML y monospace solo para etiquetas técnicas. No se descargan fuentes.
+
+Las fuentes HTML en assets/diagrams y sus SVG exportados conservan título, descripción y explicación textual. Los tamaños de contenido se amplían para lectura en README; los diagramas HTML mantienen un scroll local para no reducir todo a texto diminuto en móvil. La marca de Chuli se aplica a estas figuras del proyecto, sin sobrescribir la guía upstream ni perfiles personales compartidos.

@@ -8,23 +8,32 @@
 
 De la idea al cambio comprobado, con decisiones claras y un compañero que te explica mientras trabajan.
 
-[Descargar](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest) · [Instalación](#instalacion) · [Cómo trabaja](#como-trabaja) · [Documentación](#documentacion)
+[Descargar](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest) · [Qué es](#que-es) · [Instalación](#instalacion) · [Cómo trabaja](#como-trabaja) · [Componentes](#componentes) · [Documentación](#documentacion)
 
-**6 especialistas · 23 skills · instalación con respaldo y rollback**
+**6 especialistas · decisiones claras · documentación para compartir**
 
 </div>
 
 ---
 
-```text
-                 CHULI / PERFIL PERSONAL DE INGENIERÍA
+<a name="que-es"></a>
 
-       IDEA  ───►  DECISIONES  ───►  CAMBIO  ───►  EVIDENCIA
-```
+## 00 · Qué estás instalando
 
-Chuli instala instrucciones, roles y herramientas de trabajo en tu perfil local de Codex. El **Manager** administra la instalación y las versiones desde la terminal. Después seguís programando desde Codex CLI o desde el modo Codex local de la app de escritorio de ChatGPT.
+Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar el trabajo, especialistas para tareas concretas y procedimientos que el agente consulta cuando hacen falta. Está pensado para construir y mantener un proyecto con decisiones, cambios y comprobaciones que otra persona pueda entender.
 
-El orquestador te ayuda a definir lo que falta, resolver cambios y comprobar el resultado. Habla en español argentino, explica primero con palabras cotidianas y suma el concepto técnico cuando te sirve para aprender.
+![El Manager instala el perfil local; Codex usa ese perfil para trabajar sobre tu proyecto y conservar evidencia en Git.](assets/diagrams/chuli-architecture.svg)
+
+**El recorrido:** abrís el Manager para instalar o actualizar el perfil; después abrís Codex en tu proyecto y trabajás ahí. El Manager no dirige cada etapa de desarrollo. El orquestador corre dentro de la sesión de Codex y te ayuda a decidir qué hace falta investigar, acordar, implementar o verificar.
+
+| Parte | Dónde está | Qué hace |
+| --- | --- | --- |
+| **Chuli Manager** | El ejecutable `chuli` / `chuli.exe` | Descarga, instala, verifica, actualiza y revierte el perfil. |
+| **Perfil de Chuli** | Tu `CODEX_HOME`, normalmente `~/.codex` | Contiene instrucciones, configuración de roles, skills y recursos. |
+| **Tu sesión de Codex** | Codex CLI o el modo Codex local de la app de escritorio | Es donde conversás, el agente usa herramientas y se modifica el proyecto autorizado. |
+| **Tu proyecto** | El repositorio donde estás trabajando | Conserva código, pruebas y documentación; en trabajo sustancial, decisiones y seguimiento para retomar. |
+
+[Fuente del diagrama](assets/diagrams/chuli-architecture.html) · [Operaciones del Manager](docs/TUI.md) · [Responsabilidad de cada componente](docs/protocols/TKA.md)
 
 <a name="instalacion"></a>
 
@@ -51,6 +60,10 @@ La [guía de instalación](docs/INSTALLATION.md) cubre requisitos, personalizaci
 
 ## 02 · Del pedido al resultado
 
+El orquestador es el punto de contacto: conversa con vos, revisa el contexto y elige cuánto proceso necesita el pedido. Habla en español argentino, explica primero en palabras cotidianas y suma el concepto técnico cuando te sirve para aprender.
+
+![Una consulta se investiga; un cambio entendido y autorizado se implementa y prueba; una funcionalidad necesita acuerdos antes de construir. Todas las rutas entregan evidencia y límites.](assets/diagrams/chuli-workflow.svg)
+
 | Vos necesitás… | Chuli trabaja así |
 | --- | --- |
 | Entender código o evaluar una idea | Investiga y explica con referencias. Una consulta mantiene el trabajo en lectura. |
@@ -60,7 +73,11 @@ La [guía de instalación](docs/INSTALLATION.md) cubre requisitos, personalizaci
 
 Pregunta por decisiones que cambian el resultado y resuelve detalles técnicos reversibles dentro del alcance autorizado. Esa autorización acompaña la implementación, las correcciones y la verificación. Si cambia el alcance, vuelve a consultar lo afectado.
 
-Delega cuando una exploración, un especialista o una revisión independiente aporta valor. Usa TDD cuando hay una prueba adecuada y procura unidades revisables de unas 400 líneas, con código, pruebas y documentación del comportamiento juntos. Las reglas de tu proyecto siguen vigentes.
+El riesgo se evalúa aparte del tamaño: un cambio pequeño de permisos puede necesitar controles adicionales. Aprobar un diseño y autorizar su implementación son decisiones distintas. Publicar, hacer push, abrir una PR, integrar o desplegar requieren la autorización aplicable.
+
+Usa TDD cuando hay una prueba adecuada y procura unidades revisables de unas 400 líneas, con código, pruebas y documentación del comportamiento juntos. Un cierre explica qué cambió, cómo se comprobó y qué quedó pendiente; escribir código o guardar una captura no alcanza para afirmar que todo funciona.
+
+[Fuente del diagrama](assets/diagrams/chuli-workflow.html) · [Rutas de trabajo](docs/protocols/EWP.md) · [Unidades y evidencia](docs/protocols/ODD.md)
 
 ### Probalo con un pedido real
 
@@ -70,20 +87,63 @@ Delega cuando una exploración, un especialista o una revisión independiente ap
 
 > «Revisemos este formulario: qué necesita completar la persona, cómo se recupera de un error y cómo vamos a comprobarlo con egolite».
 
+<a name="componentes"></a>
+
 ## 03 · Debajo del gabinete
 
-| Pieza | Para qué sirve |
+### El orquestador coordina; los especialistas profundizan
+
+No todos los pedidos necesitan un equipo de agentes. El orquestador trabaja en línea por defecto y delega cuando una exploración, una especialidad o una revisión independiente aporta valor. Vos conservás las decisiones de producto, alcance, diseño y entrega.
+
+| Especialista | Cuándo ayuda | Qué devuelve |
+| --- | --- | --- |
+| Exploración · `chuli_explorer` | Hace falta ubicar un contrato o entender código existente. | Un mapa con rutas, consumidores y referencias. |
+| Implementación · `chuli_worker` | Hay una unidad de comportamiento definida y autorizada. | Cambios, comprobaciones, límites y forma de revertir. |
+| Arquitectura · `solution_architect` | Hay alternativas técnicas que conviene comparar. | Opciones, consecuencias, riesgos y decisiones pendientes. |
+| Producto · `product_designer` | Hay que definir una experiencia o rediseñar una interfaz. | Flujos, estados, dirección visual y criterios verificables. |
+| Pruebas · `test_engineer` | Hace falta convertir aceptación y riesgos en pruebas. | Casos ejecutables, resultados y cobertura pendiente. |
+| Revisión · `quality_reviewer` | El riesgo justifica verificar un candidato de forma independiente. | Hallazgos reproducibles y verificaciones realizadas/omitidas. |
+
+Los modelos declarados y los contratos de cada rol están en [Especialistas](docs/AGENTS.md). Su disponibilidad depende del cliente y de la cuenta; una configuración no demuestra por sí sola qué modelo se ejecutó.
+
+### Las skills aportan el procedimiento
+
+Un rol define **de qué se ocupa un agente**. Una skill explica **cómo encarar una tarea**. Las herramientas son las que permiten leer archivos, ejecutar pruebas o usar un navegador, con los permisos efectivos del entorno.
+
+| Skill propia | Pregunta que ayuda a resolver |
 | --- | --- |
-| **Orquestador** | Coordina el trabajo y conserva las decisiones de producto, diseño y entrega. |
-| **6 especialistas** | Exploración, implementación, arquitectura, diseño de producto, pruebas y revisión. [Roles y modelos](docs/AGENTS.md). |
-| **5 skills de Chuli** | Relevamiento, arquitectura, UX/UI, especificación y pruebas. |
-| **18 skills de Gentle AI v4.4.0** | Procedimientos de documentación, revisión y unidades de trabajo, entre otros; conservan sus recursos y atribución. |
-| **Seguimiento por funcionalidad** | Guías, plantilla y validador para retomar trabajos sustanciales desde decisiones y evidencia en Git. |
-| **Manager** | Instalación, actualización, diagnóstico y rollback del perfil. |
+| [`harness-discovery`](skills/harness-discovery/SKILL.md) | ¿Qué necesita la persona y qué falta decidir? |
+| [`harness-architecture`](skills/harness-architecture/SKILL.md) | ¿Qué solución técnica encaja con el proyecto y sus restricciones? |
+| [`harness-ux-ui`](skills/harness-ux-ui/SKILL.md) | ¿Cómo completa su tarea una persona y cómo se recupera de errores? |
+| [`harness-specification`](skills/harness-specification/SKILL.md) | ¿Qué significa terminado y cómo se divide el trabajo? |
+| [`harness-tdd-qa`](skills/harness-tdd-qa/SKILL.md) | ¿Qué evidencia necesitamos para comprobar el cambio? |
 
-El perfil usa `CODEX_HOME/AGENTS.md`, configuración de roles y modelos en `config.toml`, y recursos instalados. El destino predeterminado suele ser `~/.codex`. El [catálogo](docs/protocols/SKILLS.md) explica el objetivo y las condiciones de cada skill; [licencias y procedencia](THIRD_PARTY_NOTICES.md) identifica los recursos de terceros.
+El catálogo de este checkout suma **24 skills**: las cinco propias, 18 de Gentle AI v4.4.0 y Diagram Design 2.6. Las importadas incluyen documentación, revisiones, contribución y preparación de unidades de trabajo; algunas requieren un repositorio o runtime específico. [Catálogo y condiciones](docs/protocols/SKILLS.md) · [Procedencia y licencias](THIRD_PARTY_NOTICES.md).
 
-**Las integraciones externas se configuran por separado.** Egolite es la preferencia de revisión web cuando está disponible y autorizado. Engram y otros MCP son opcionales; el paquete de Chuli no los instala automáticamente. Los modelos declarados dependen de lo que el cliente y la cuenta permitan ejecutar.
+> Diagram Design está incorporada en este código y llegará al perfil por una próxima release. La v1.0.1 publicada conserva su catálogo de 23 skills; esta mejora no modifica sus artefactos.
+
+### Documentación que otra persona pueda seguir
+
+[`cognitive-doc-design`](skills/cognitive-doc-design/SKILL.md) organiza la explicación y deriva a [`diagram-design`](skills/diagram-design/SKILL.md) cuando una figura aclara relaciones, decisiones o recorridos. El objetivo es poder compartir el proyecto y entender qué existe, cómo se conecta y qué falta resolver. Una lista o tabla sigue siendo suficiente cuando comunica lo mismo.
+
+Los diagramas conservan fuente HTML, exportación SVG/PNG y explicación textual. En GitHub se muestran los SVG estáticos; el HTML queda disponible para revisar o editar. La skill incluye sus recursos y licencia, sin instalar el plugin o dependencias opcionales. [Guía de uso en Chuli](skills/cognitive-doc-design/references/diagrams.md).
+
+### El seguimiento permite retomar
+
+En un trabajo sustancial, Chuli mantiene un tablero por funcionalidad en `odd/tasks/<funcionalidad>.md`, conectado con la especificación y el diseño aprobados. Registra tareas, dependencias, estado, evidencia y bloqueos. Una tarea termina cuando hay comprobaciones que sostienen sus criterios.
+
+Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contrastan con el diff y las pruebas disponibles. En cambios pequeños alcanza el contexto y una comprobación focalizada; no se generan documentos por obligación. [Seguimiento TTP](docs/protocols/TTP.md).
+
+### Las integraciones amplían lo que puede comprobar
+
+| Integración opcional | Para qué se usa |
+| --- | --- |
+| **Egolite / ego-browser** | Inspeccionar interfaces y diagramas en un navegador y comprobar interacción real. |
+| **Engram** | Recuperar decisiones duraderas del proyecto; complementa los archivos versionados. |
+| **Context7** | Consultar documentación de librerías cuando la versión importa. |
+| **GitHub** | Leer o gestionar issues, PR y entregas dentro de la autorización recibida. |
+
+**Se configuran por separado:** Chuli no instala automáticamente estos servicios ni concede sus permisos. El orquestador debe comprobar qué herramientas están disponibles. [Herramientas y conocimiento](docs/protocols/TKA.md).
 
 <a name="documentacion"></a>
 
