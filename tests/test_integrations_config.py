@@ -18,7 +18,7 @@ class IntegrationsConfig(unittest.TestCase):
         spec.loader.exec_module(self.helper)
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.home = Path(self.temp.name)
+        self.home = Path(self.temp.name).resolve()
         self.config = self.home / "config.toml"
         self.entry = {"url": "https://mcp.exa.ai/mcp"}
 
