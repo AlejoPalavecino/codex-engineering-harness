@@ -26,8 +26,6 @@ El evaluador continúa disponible en el checkout con `chuli --source RUTA eval c
 
 Disponible en el código actual del Manager; el ejecutable publicado en v1.0.1 todavía no incluye este asistente. Instalar o actualizar sólo el perfil no actualiza el ejecutable.
 
-El menú de integraciones se conecta en el siguiente corte; en este corte están disponibles los comandos CLI.
-
 En **Integraciones**, elegí Context7, Engram, Exa, GitHub o Egolite. La ficha explica su utilidad, estado y requisitos. Usá C para revisar la configuración, S/Y para confirmarla, V para comprobar, G para ver la guía y O para abrir el sitio oficial en tu navegador. D muestra la reversión antes de confirmarla. N cancela una vista previa; Esc vuelve un nivel. ↑↓/j/k y PgUp/PgDn desplazan el contenido largo. Todas las opciones son voluntarias.
 
 | Opción | Preparación | Alcance de la comprobación |
