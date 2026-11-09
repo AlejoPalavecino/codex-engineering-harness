@@ -39,10 +39,11 @@ func choices(mgr manager.Manager) []menuItem {
 	if mgr.Source != "" {
 		items = append(items, menuItem{"Instalar desde --source", "local"})
 	}
-	return append(items, menuItem{"Ver modelos, agentes y skills registrados", "profile"}, menuItem{"Verificar el perfil instalado", "doctor"}, menuItem{"Restaurar la instalación anterior", "rollback"}, menuItem{"Acerca de Chuli", "about"})
+	return append(items, menuItem{"Integraciones: configurar herramientas", "integrations"}, menuItem{"Ver modelos, agentes y skills registrados", "profile"}, menuItem{"Verificar el perfil instalado", "doctor"}, menuItem{"Restaurar la instalación anterior", "rollback"}, menuItem{"Acerca de Chuli", "about"})
 }
 
 type model struct {
+	width             int
 	integrationID     string
 	integrationCursor int
 	integrationPlan   integrations.Plan
@@ -72,9 +73,13 @@ type finishedMsg struct {
 func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if next, cmd, handled := m.updateIntegrations(message); handled {
+		return next, cmd
+	}
 	switch msg := message.(type) {
 	case tea.WindowSizeMsg:
 		m.height = msg.Height
+		m.width = msg.Width
 	case tea.KeyPressMsg:
 		key := strings.ToLower(msg.String())
 		if m.screen == busy {
@@ -126,6 +131,10 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.log = ""
 				if choice.action == "about" {
 					m.screen = about
+					return m, nil
+				}
+				if choice.action == "integrations" {
+					m.screen = integrationList
 					return m, nil
 				}
 				m.screen = busy
@@ -217,13 +226,28 @@ func (m model) pageSize() int {
 	if m.height == 0 {
 		return 15
 	}
-	return max(1, m.height-12)
+	overhead := 12
+	if strings.HasPrefix(m.screen, "integration-") {
+		if m.screen == integrationPreview {
+			overhead++
+		}
+		if m.fault != "" {
+			overhead++
+		}
+		if m.width > 0 && m.width < 70 {
+			overhead += 3
+		}
+	}
+	return max(1, m.height-overhead)
 }
 
 func (m model) lines() []string {
 	log := m.log
 	if m.fault != "" {
 		log = m.fault + "\n" + log
+	}
+	if strings.HasPrefix(m.screen, "integration-") && m.width > 0 {
+		log = lipgloss.NewStyle().Width(max(20, m.width-2)).Render(log)
 	}
 	return strings.Split(strings.TrimSpace(strings.ReplaceAll(log, "\r\n", "\n")), "\n")
 }
@@ -251,6 +275,8 @@ func (m model) View() tea.View {
 	b.WriteString(muted.Render("CODEX_HOME: ") + m.mgr.Home + "\n\n")
 
 	switch m.screen {
+	case integrationList, integrationDetail, integrationPreview, integrationResult:
+		b.WriteString(m.integrationView())
 	case home:
 		b.WriteString("Seleccioná una acción:\n\n")
 		for i, item := range choices(m.mgr) {

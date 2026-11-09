@@ -143,7 +143,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | **Context7** | Consultar documentación de librerías cuando la versión importa. |
 | **GitHub** | Leer o gestionar issues, PR y entregas dentro de la autorización recibida. |
 
-**El código actual del Manager incluye comandos de integración; el menú se conecta en el siguiente corte:** elegís una opción, revisás los requisitos y confirmás la conexión. Engram y Egolite tienen descarga guiada; las claves se configuran en tu entorno y se conservan conexiones existentes. El asistente llegará en un próximo ejecutable; el Manager publicado en v1.0.1 todavía no lo incluye. [Cómo usarlo y qué comprueba](docs/TUI.md#asistente-de-integraciones) · [Herramientas y conocimiento](docs/protocols/TKA.md).
+**El código actual del Manager incluye un asistente de Integraciones:** elegís una opción, revisás los requisitos y confirmás la conexión. Engram y Egolite tienen descarga guiada; las claves se configuran en tu entorno y se conservan conexiones existentes. El asistente llegará en un próximo ejecutable; el Manager publicado en v1.0.1 todavía no lo incluye. [Cómo usarlo y qué comprueba](docs/TUI.md#asistente-de-integraciones) · [Herramientas y conocimiento](docs/protocols/TKA.md).
 
 <a name="documentacion"></a>
 
