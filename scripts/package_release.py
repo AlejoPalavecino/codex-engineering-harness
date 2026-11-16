@@ -12,7 +12,7 @@ PROFILE_FILES = {
     "VERSION", "LICENSE", "THIRD_PARTY_NOTICES.md", "templates/feature-tasks.md",
     "docs/protocols/TTP.md", "scripts/install.ps1", "scripts/verify.ps1",
     "scripts/rollback.ps1", "scripts/profile.ps1", "scripts/profile_resources.py", "scripts/toml_config.py",
-    "scripts/taskboard.py", "scripts/legacy-managed-hashes.json",
+    "scripts/client_targets.py", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json",
 }
 
 

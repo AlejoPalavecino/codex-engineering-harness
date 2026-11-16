@@ -102,6 +102,9 @@ jobs:
       - name: Manager command installer in Windows PowerShell 5.1
         shell: powershell
         run: ./tests/windows-manager-install.ps1
+      - name: Multi-client installation, presets and rollback (Codex, Claude, AGY)
+        shell: pwsh
+        run: ./tests/windows-multiclient.ps1
 
   chuli-go:
     strategy:

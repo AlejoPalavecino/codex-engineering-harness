@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Reverts the most recent managed Codex Engineering Harness installation.
@@ -7,7 +7,11 @@
   Refuses rollback if installed files have changed since installation.
 #>
 [CmdletBinding()]
-param([switch]$Apply, [string]$CodexHome)
+param(
+    [switch]$Apply,
+    [string]$CodexHome,
+    [ValidateSet('','codex','claude','agy')][string]$Client = ''
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -78,13 +82,18 @@ if ($scriptVersionText -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$' -or [version]$script
     throw 'Rollback requiere el ejecutor seguro v0.2.1 o posterior; no se modificó CODEX_HOME.'
 }
 . (Join-Path $PSScriptRoot 'profile.ps1')
-$homePath = Resolve-ProfileHome $CodexHome
+$effectiveClient = if ($Client) { $Client } else { 'codex' }
+$homePath = Resolve-ProfileHome $CodexHome $effectiveClient
 $python = Get-Python
-$null = Get-ProfileInventory $python 'rollback' $homePath
 $statePath = Join-Path $homePath 'harness-install/state.json'
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { throw 'No existe un manifiesto de instalación.' }
 $rawState = [IO.File]::ReadAllText($statePath)
 $state = $rawState | ConvertFrom-Json
+if (-not $Client -and $null -ne $state.PSObject.Properties['client'] -and $state.client) {
+    $effectiveClient = [string]$state.client
+}
+$instrRel = Get-ClientInstructionPath $effectiveClient
+$null = Get-ProfileInventory $python 'rollback' $homePath -Client $effectiveClient
 Assert-Manifest $state 'Current'
 if ([version]$state.version -lt [version]'0.1.2') {
     throw 'Rollback automático de instalaciones anteriores a v0.1.2 no está soportado.'
@@ -117,7 +126,7 @@ foreach ($item in @($state.files)) {
     $target = Join-Path $homePath ([string]$item.path)
     Assert-Within $homePath $target
     $currentHash = Get-Hash $target
-    $mergeInstructions = $item.path -eq 'AGENTS.md' -and $currentHash -ne $item.installed_sha256 -and
+    $mergeInstructions = $item.path -eq $instrRel -and $currentHash -ne $item.installed_sha256 -and
         $null -ne $currentHash -and $null -ne $state.PSObject.Properties['orchestrator_sha256']
     if (-not $mergeInstructions -and $currentHash -ne $item.installed_sha256) {
         throw ('Archivo administrado modificado o ausente: ' + $item.path + '. Sin cambios.')
@@ -145,7 +154,7 @@ try {
     $mergedPath = Join-Path $staging 'restored-instructions'
     foreach ($item in $restore) {
         if ($item.merge) {
-            $null = Invoke-ProfilePython $python @((Join-Path $PSScriptRoot 'profile_resources.py'),'undo-instructions','--home',$homePath,'--output',$mergedPath)
+            $null = Invoke-ProfilePython $python @((Join-Path $PSScriptRoot 'profile_resources.py'),'undo-instructions','--home',$homePath,'--output',$mergedPath,'--client',$effectiveClient)
         }
     }
     Write-Output ('Rollback preflight: PASS; ' + $restore.Count + ' archivos afectados.')

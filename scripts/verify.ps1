@@ -1,6 +1,9 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 [CmdletBinding()]
-param([string]$CodexHome)
+param(
+    [string]$CodexHome,
+    [ValidateSet('','codex','claude','agy')][string]$Client = ''
+)
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -36,16 +39,22 @@ function Get-ExpectedManagedHash([object]$State, [object]$Baselines, [string]$Re
     return Get-LegacyManagedHash $Baselines ([string]$State.version) $Relative
 }
 . (Join-Path $PSScriptRoot 'profile.ps1')
-$homePath = Resolve-ProfileHome $CodexHome
-$root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
-$python = Get-Python
-$inventory = Get-ProfileInventory $python 'verify' $homePath
-Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath 'AGENTS.md'))
+$effectiveClient = if ($Client) { $Client } else { 'codex' }
+$homePath = Resolve-ProfileHome $CodexHome $effectiveClient
 $statePath = Join-Path $homePath 'harness-install/state.json'
-$configPath = Join-Path $homePath 'config.toml'
 if (-not (Test-Path -LiteralPath $statePath -PathType Leaf)) { throw 'No se encontró state.json de una instalación del harness.' }
 $state = Get-Content -LiteralPath $statePath -Encoding UTF8 -Raw | ConvertFrom-Json
 if ($null -eq $state.files) { throw 'Manifiesto de instalación incompleto.' }
+if (-not $Client -and $null -ne $state.PSObject.Properties['client'] -and $state.client) {
+    $effectiveClient = [string]$state.client
+}
+$instrRel = Get-ClientInstructionPath $effectiveClient
+$configRel = Get-ClientConfigPath $effectiveClient
+$root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
+$python = Get-Python
+$inventory = Get-ProfileInventory $python 'verify' $homePath -Client $effectiveClient
+Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath $instrRel))
+$configPath = Join-Path $homePath $configRel
 
 $errors = 0
 $warnings = 0
@@ -63,7 +72,7 @@ foreach ($entry in $inventory.PSObject.Properties) {
         $errors++
         continue
     }
-    if ($resource.path -eq 'AGENTS.md') { continue }
+    if ($resource.path -eq $instrRel) { continue }
     $expected = Get-ExpectedManagedHash $state $legacyBaselines $resource.path
     if ($null -eq $expected) {
         Write-Warning ('Falta una huella registrada: ' + $resource.path)
@@ -74,10 +83,10 @@ foreach ($entry in $inventory.PSObject.Properties) {
     }
 }
 foreach ($item in @($state.files)) {
-    if ($item.path -ne 'config.toml') { continue }
+    if ($item.path -ne $configRel) { continue }
     $actual = Get-Hash (Join-Path $homePath $item.path)
     if ($actual -ne $item.installed_sha256) {
-        Write-Warning 'config.toml cambió después de instalarse; se validarán sintaxis y claves administradas.'
+        Write-Warning ($configRel + ' cambió después de instalarse; se validarán sintaxis y claves administradas.')
         $warnings++
     }
 }
@@ -85,8 +94,13 @@ foreach ($custom in @($state.preserved_customizations)) {
     Write-Output ('Personalización preservada durante instalación: ' + $custom)
 }
 
-$tool = Join-Path $root 'scripts/toml_config.py'
-$params = @($tool,'validate','--input',$configPath,'--manifest',$statePath)
+if ($effectiveClient -eq 'codex') {
+    $tool = Join-Path $root 'scripts/toml_config.py'
+    $params = @($tool,'validate','--input',$configPath,'--manifest',$statePath)
+} else {
+    $tool = Join-Path $root 'scripts/client_targets.py'
+    $params = @($tool,'json-config','validate','--client',$effectiveClient,'--input',$configPath,'--manifest',$statePath)
+}
 $command = [string]$python.command
 $allArgs = @($python.prefix) + $params
 $result = & $command @allArgs 2>&1

@@ -1,0 +1,226 @@
+{
+  "schema_version": 1,
+  "roles": [
+    {
+      "id": "orchestrator",
+      "name": "Orquestador",
+      "summary": "Enrutamiento EWP, autoridad, continuidad y cierre"
+    },
+    {
+      "id": "chuli_explorer",
+      "name": "Exploración · chuli_explorer",
+      "summary": "Mapa de código y contratos en solo lectura"
+    },
+    {
+      "id": "chuli_worker",
+      "name": "Implementación · chuli_worker",
+      "summary": "Unidad autorizada con pruebas y verificación"
+    },
+    {
+      "id": "solution_architect",
+      "name": "Arquitectura · solution_architect",
+      "summary": "Alternativas técnicas, contratos y trade-offs"
+    },
+    {
+      "id": "product_designer",
+      "name": "Producto · product_designer",
+      "summary": "Flujos de tarea, estados UX/UI y accesibilidad"
+    },
+    {
+      "id": "test_engineer",
+      "name": "Pruebas · test_engineer",
+      "summary": "Casos ejecutables derivados de aceptación y TDD"
+    },
+    {
+      "id": "quality_reviewer",
+      "name": "Revisión · quality_reviewer",
+      "summary": "Verificación independiente sobre un candidato fijo"
+    }
+  ],
+  "clients": {
+    "codex": {
+      "id": "codex",
+      "name": "OpenAI Codex",
+      "short": "Codex",
+      "default_home": ".codex",
+      "env_home": "CODEX_HOME",
+      "default_preset": "codex-balanced",
+      "models": [
+        "gpt-6.1-sol",
+        "gpt-6.1-terra",
+        "gpt-6-luna",
+        "gpt-6-astra"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "presets": {
+        "codex-balanced": {
+          "name": "Equilibrado (Sol / Terra / Luna)",
+          "description": "Configuración recomendada para ingeniería diaria en Codex.",
+          "roles": {
+            "orchestrator": { "model": "gpt-6.1-sol", "effort": "medium" },
+            "chuli_explorer": { "model": "gpt-6-luna", "effort": "medium" },
+            "chuli_worker": { "model": "gpt-6.1-sol", "effort": "medium" },
+            "solution_architect": { "model": "gpt-6.1-sol", "effort": "high" },
+            "product_designer": { "model": "gpt-6.1-terra", "effort": "medium" },
+            "test_engineer": { "model": "gpt-6.1-sol", "effort": "medium" },
+            "quality_reviewer": { "model": "gpt-6.1-sol", "effort": "high" }
+          }
+        },
+        "codex-astra-max": {
+          "name": "Máxima Capacidad (Astra + Sol High)",
+          "description": "Prioriza GPT-6 Astra en decisiones críticas, arquitectura y revisión.",
+          "roles": {
+            "orchestrator": { "model": "gpt-6-astra", "effort": "high" },
+            "chuli_explorer": { "model": "gpt-6.1-sol", "effort": "medium" },
+            "chuli_worker": { "model": "gpt-6.1-sol", "effort": "high" },
+            "solution_architect": { "model": "gpt-6-astra", "effort": "high" },
+            "product_designer": { "model": "gpt-6.1-terra", "effort": "high" },
+            "test_engineer": { "model": "gpt-6.1-sol", "effort": "high" },
+            "quality_reviewer": { "model": "gpt-6-astra", "effort": "high" }
+          }
+        },
+        "codex-fast": {
+          "name": "Rápido y Económico (Sol + Luna)",
+          "description": "Menor latencia y consumo de cuota para cambios acotados.",
+          "roles": {
+            "orchestrator": { "model": "gpt-6.1-sol", "effort": "low" },
+            "chuli_explorer": { "model": "gpt-6-luna", "effort": "low" },
+            "chuli_worker": { "model": "gpt-6-luna", "effort": "medium" },
+            "solution_architect": { "model": "gpt-6.1-sol", "effort": "medium" },
+            "product_designer": { "model": "gpt-6.1-terra", "effort": "low" },
+            "test_engineer": { "model": "gpt-6-luna", "effort": "medium" },
+            "quality_reviewer": { "model": "gpt-6.1-sol", "effort": "medium" }
+          }
+        }
+      }
+    },
+    "claude": {
+      "id": "claude",
+      "name": "Claude Code",
+      "short": "Claude",
+      "default_home": ".claude",
+      "env_home": "CLAUDE_CONFIG_DIR",
+      "default_preset": "claude-balanced",
+      "models": [
+        "claude-fable-5-2",
+        "claude-opus-5-5",
+        "claude-sonnet-5-5",
+        "claude-haiku-5-5",
+        "inherit"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "presets": {
+        "claude-balanced": {
+          "name": "Equilibrado Pro/Max (Opus 5.5 + Fable 5.2 + Sonnet 5.5)",
+          "description": "Opus 5.5 al mando, Fable 5.2 en arquitectura/revisión, Sonnet 5.5 en código y Haiku 5.5 en lectura.",
+          "roles": {
+            "orchestrator": { "model": "claude-opus-5-5", "effort": "medium" },
+            "chuli_explorer": { "model": "claude-haiku-5-5", "effort": "low" },
+            "chuli_worker": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "solution_architect": { "model": "claude-fable-5-2", "effort": "high" },
+            "product_designer": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "test_engineer": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "quality_reviewer": { "model": "claude-fable-5-2", "effort": "high" }
+          }
+        },
+        "claude-fable-max": {
+          "name": "Máxima Capacidad (Fable 5.2 + Opus 5.5)",
+          "description": "Razonamiento profundo con Claude Fable 5.2 y Opus 5.5 en todo el flujo.",
+          "roles": {
+            "orchestrator": { "model": "claude-fable-5-2", "effort": "high" },
+            "chuli_explorer": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "chuli_worker": { "model": "claude-opus-5-5", "effort": "high" },
+            "solution_architect": { "model": "claude-fable-5-2", "effort": "high" },
+            "product_designer": { "model": "claude-opus-5-5", "effort": "medium" },
+            "test_engineer": { "model": "claude-opus-5-5", "effort": "medium" },
+            "quality_reviewer": { "model": "claude-fable-5-2", "effort": "high" }
+          }
+        },
+        "claude-fast": {
+          "name": "Rápido y Eficiente (Sonnet 5.5 + Haiku 5.5)",
+          "description": "Optimiza velocidad y cuota con Sonnet 5.5 y exploración en Haiku 5.5.",
+          "roles": {
+            "orchestrator": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "chuli_explorer": { "model": "claude-haiku-5-5", "effort": "low" },
+            "chuli_worker": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "solution_architect": { "model": "claude-opus-5-5", "effort": "medium" },
+            "product_designer": { "model": "claude-sonnet-5-5", "effort": "medium" },
+            "test_engineer": { "model": "claude-sonnet-5-5", "effort": "low" },
+            "quality_reviewer": { "model": "claude-opus-5-5", "effort": "high" }
+          }
+        }
+      }
+    },
+    "agy": {
+      "id": "agy",
+      "name": "AGY CLI (Antigravity)",
+      "short": "AGY",
+      "default_home": ".gemini/config",
+      "env_home": "AGY_HOME",
+      "default_preset": "agy-balanced",
+      "models": [
+        "orchestrator-argon",
+        "orchestrator-carbon",
+        "gemini-4-carbon",
+        "gemini-4-argon",
+        "gemini-4-hydrogen",
+        "inherit"
+      ],
+      "efforts": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "presets": {
+        "agy-balanced": {
+          "name": "Equilibrado (Orchestrator Argon + Carbon + Hydrogen)",
+          "description": "Combina planificación en Argon, arquitectura/revisión en Carbon y ejecución en Hydrogen.",
+          "roles": {
+            "orchestrator": { "model": "orchestrator-argon", "effort": "medium" },
+            "chuli_explorer": { "model": "gemini-4-hydrogen", "effort": "medium" },
+            "chuli_worker": { "model": "gemini-4-hydrogen", "effort": "high" },
+            "solution_architect": { "model": "gemini-4-carbon", "effort": "high" },
+            "product_designer": { "model": "gemini-4-argon", "effort": "medium" },
+            "test_engineer": { "model": "gemini-4-hydrogen", "effort": "high" },
+            "quality_reviewer": { "model": "gemini-4-carbon", "effort": "high" }
+          }
+        },
+        "agy-carbon-max": {
+          "name": "Máxima Capacidad (Orchestrator Carbon + Carbon High)",
+          "description": "Frontera Gemini 4 Carbon en orquestación, arquitectura y revisión crítica.",
+          "roles": {
+            "orchestrator": { "model": "orchestrator-carbon", "effort": "high" },
+            "chuli_explorer": { "model": "gemini-4-argon", "effort": "medium" },
+            "chuli_worker": { "model": "gemini-4-argon", "effort": "high" },
+            "solution_architect": { "model": "gemini-4-carbon", "effort": "high" },
+            "product_designer": { "model": "gemini-4-carbon", "effort": "medium" },
+            "test_engineer": { "model": "gemini-4-argon", "effort": "high" },
+            "quality_reviewer": { "model": "gemini-4-carbon", "effort": "high" }
+          }
+        },
+        "agy-hydrogen-fast": {
+          "name": "Alta Velocidad (Hydrogen High/Extra + Argon)",
+          "description": "Ejecución rápida en Gemini 4 Hydrogen con soporte de Argon en decisiones.",
+          "roles": {
+            "orchestrator": { "model": "gemini-4-hydrogen", "effort": "xhigh" },
+            "chuli_explorer": { "model": "gemini-4-hydrogen", "effort": "low" },
+            "chuli_worker": { "model": "gemini-4-hydrogen", "effort": "high" },
+            "solution_architect": { "model": "gemini-4-argon", "effort": "high" },
+            "product_designer": { "model": "gemini-4-hydrogen", "effort": "high" },
+            "test_engineer": { "model": "gemini-4-hydrogen", "effort": "medium" },
+            "quality_reviewer": { "model": "gemini-4-argon", "effort": "high" }
+          }
+        }
+      }
+    }
+  }
+}

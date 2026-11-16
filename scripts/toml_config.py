@@ -120,28 +120,32 @@ def update_text(source: str, path: tuple[str, ...], value) -> str:
     return "".join(lines)
 
 
-def config_targets(skip_task_progress: bool):
+def config_targets(skip_task_progress: bool, orchestrator_model: str = "gpt-6.1-sol",
+                   orchestrator_effort: str = "medium", subagent_model: str = "gpt-6.1-sol"):
     targets: dict[tuple[str, ...], object] = {}
     for role, description in agent_definitions():
         targets[("agents", role, "description")] = description
         targets[("agents", role, "config_file")] = "./agents/" + role + ".toml"
     if not skip_task_progress:
         targets[("tools", "update_plan", "enabled")] = True
-    targets[("model",)] = "gpt-6.1-sol"
-    targets[("model_reasoning_effort",)] = "medium"
-    targets[("agents", "default_subagent_model")] = "gpt-6.1-sol"
+    targets[("model",)] = orchestrator_model
+    targets[("model_reasoning_effort",)] = orchestrator_effort
+    targets[("agents", "default_subagent_model")] = subagent_model
     return targets
 
 
 def prepare(source: str, *, configure_models: bool = False,
-            skip_task_progress: bool = False, replace_managed: bool = False):
+            skip_task_progress: bool = False, replace_managed: bool = False,
+            orchestrator_model: str = "gpt-6.1-sol",
+            orchestrator_effort: str = "medium",
+            subagent_model: str = "gpt-6.1-sol"):
     before = tomllib.loads(source)
     expected = copy.deepcopy(before)
     updated = source
     changed: list[str] = []
     preserved: list[str] = []
     tracked: dict[str, object] = {}
-    for path, wanted in config_targets(skip_task_progress).items():
+    for path, wanted in config_targets(skip_task_progress, orchestrator_model, orchestrator_effort, subagent_model).items():
         key = ".".join(path)
         current = value_at(expected, path)
         if current is not UNSET and current != wanted and not (replace_managed or (configure_models and path in {("model",), ("model_reasoning_effort",), ("agents", "default_subagent_model")})):
@@ -181,6 +185,9 @@ def main() -> int:
     parser.add_argument("--configure-models", action="store_true")
     parser.add_argument("--skip-task-progress", action="store_true")
     parser.add_argument("--replace-managed", action="store_true")
+    parser.add_argument("--orchestrator-model", default="gpt-6.1-sol")
+    parser.add_argument("--orchestrator-effort", default="medium")
+    parser.add_argument("--subagent-model", default="gpt-6.1-sol")
     args = parser.parse_args()
     try:
         raw = args.input.read_bytes() if args.input.is_file() else b""
@@ -191,7 +198,10 @@ def main() -> int:
             updated, report = prepare(
                 source, configure_models=args.configure_models,
                 skip_task_progress=args.skip_task_progress,
-                replace_managed=args.replace_managed)
+                replace_managed=args.replace_managed,
+                orchestrator_model=args.orchestrator_model,
+                orchestrator_effort=args.orchestrator_effort,
+                subagent_model=args.subagent_model)
             encoding = "utf-8-sig" if raw.startswith(b"\xef\xbb\xbf") else "utf-8"
             args.output.write_text(updated, encoding=encoding, newline="")
             if os.name != "nt":

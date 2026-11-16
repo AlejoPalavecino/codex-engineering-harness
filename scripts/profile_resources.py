@@ -55,11 +55,30 @@ def valid_relative(name: str) -> bool:
     )
 
 
-def inventory(root: Path) -> dict[str, str]:
-    result = {"AGENTS.md": "config/AGENTS.md", "harness/bin/taskboard.py": "scripts/taskboard.py",
+def instruction_rel(client: str = "codex") -> str:
+    if client == "claude":
+        return "CLAUDE.md"
+    if client == "agy":
+        return "plugins/chuli/rules/AGENTS.md"
+    return "AGENTS.md"
+
+
+def config_rel(client: str = "codex") -> str:
+    if client in ("claude", "agy"):
+        return "settings.json"
+    return "config.toml"
+
+
+def inventory(root: Path, client: str = "codex") -> dict[str, str]:
+    instr = instruction_rel(client)
+    result = {instr: "config/AGENTS.md", "harness/bin/taskboard.py": "scripts/taskboard.py",
               "harness/templates/feature-tasks.md": "templates/feature-tasks.md",
               "harness/THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"}
-    for folder, target in (("skills", "skills"), ("agents", "agents"),
+    if client == "agy":
+        result["plugins/chuli/plugin.json"] = "VERSION"
+    skills_target = "plugins/chuli/skills" if client == "agy" else "skills"
+    agents_target = "plugins/chuli/agents" if client == "agy" else "agents"
+    for folder, target in (("skills", skills_target), ("agents", agents_target),
                            ("docs/protocols", "harness/docs/protocols")):
         base = root / folder
         safe_path(base, directory=True)
@@ -80,6 +99,8 @@ def inventory(root: Path) -> dict[str, str]:
                 relative = path.relative_to(base).as_posix()
                 if not valid_relative(relative):
                     raise ValueError(f"Unsafe source name: {relative}")
+                if folder == "agents" and client in ("claude", "agy"):
+                    relative = path.stem + ".md"
                 result[f"{target}/{relative}"] = path.relative_to(root).as_posix()
     if len({name.casefold() for name in result}) != len(result):
         raise ValueError("Case-insensitive collision in package paths")
@@ -90,22 +111,24 @@ def inventory(root: Path) -> dict[str, str]:
     return dict(sorted(result.items()))
 
 
-def preflight(home: Path, action: str, adopt_gentle: bool = False) -> dict[str, str]:
+def preflight(home: Path, action: str, adopt_gentle: bool = False, client: str = "codex") -> dict[str, str]:
     if not home.is_absolute() or ".." in home.parts or home == home.parent:
         raise ValueError("Expected an absolute profile directory below the filesystem root")
     if home == ROOT or home.is_relative_to(ROOT) or ROOT.is_relative_to(home):
         raise ValueError("Profile and source checkout must be separate directories")
-    resources = inventory(ROOT)
-    allowed = set(resources) | LEGACY_AGENTS | {"config.toml"}
+    resources = inventory(ROOT, client)
+    allowed = set(resources) | LEGACY_AGENTS | {config_rel(client)}
     safe_path(home, directory=True)
     for name in (*allowed, "harness-install/state.json", "AGENTS.override.md"):
         safe_path(home / name)
     safe_path(home / "backups/harness", directory=True)
+    instr_rel = instruction_rel(client)
     if action in {"install", "verify"}:
-        override = home / "AGENTS.override.md"
-        if override.exists() and override.read_bytes().strip():
-            raise ValueError(f"Instruction source {override} overrides AGENTS.md. Choose a separate Chuli profile or move this override.")
-        instructions = home / "AGENTS.md"
+        if client == "codex":
+            override = home / "AGENTS.override.md"
+            if override.exists() and override.read_bytes().strip():
+                raise ValueError(f"Instruction source {override} overrides AGENTS.md. Choose a separate Chuli profile or move this override.")
+        instructions = home / instr_rel
         if instructions.is_file():
             content = instructions.read_bytes()
             gentle_sections(content.removeprefix(BOM), instructions, adopt_gentle and action == "install")
@@ -116,10 +139,10 @@ def preflight(home: Path, action: str, adopt_gentle: bool = False) -> dict[str, 
         state = json.loads(state_path.read_bytes())
         validate_state_paths(home, state, allowed, action == "rollback")
         if action == "verify":
-            data = (home / "AGENTS.md").read_bytes().removeprefix(BOM)
+            data = (home / instr_rel).read_bytes().removeprefix(BOM)
             span = block_span(data)
             if not span or digest(data[span[0]:span[1]]) != state.get("orchestrator_sha256"):
-                raise ValueError("Chuli orchestrator block differs from the installed profile. Inspect AGENTS.md and run the installer after review.")
+                raise ValueError(f"Chuli orchestrator block differs from the installed profile. Inspect {instr_rel} and run the installer after review.")
         if action == "rollback" and state.get("previous_state_existed"):
             previous_path = Path(state["backup_dir"]) / "_previous_state.json"
             previous_bytes = previous_path.read_bytes()
@@ -230,8 +253,10 @@ def gentle_sections(data: bytes, path: Path, adopt: bool) -> list[tuple[int, int
     return spans
 
 
-def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: bool = False) -> dict:
-    path = home / "AGENTS.md"
+def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: bool = False,
+                         client: str = "codex", preset: str = "", role_models_json: str = "") -> dict:
+    instr_rel = instruction_rel(client)
+    path = home / instr_rel
     raw = path.read_bytes() if path.is_file() else b""
     raw.decode("utf-8-sig")  # Preserve all surrounding bytes, including the BOM and CRLF.
     prefix = BOM if raw.startswith(BOM) else b""
@@ -239,7 +264,13 @@ def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: 
     sections = gentle_sections(data, path, adopt_gentle)
     for start, end, _ in reversed(sections):
         data = data[:start] + data[end:]
-    source = (ROOT / "config/AGENTS.md").read_bytes().decode("utf-8-sig").replace("\r\n", "\n").encode().rstrip(b"\n")
+    if client == "codex" and not preset and not role_models_json:
+        source = (ROOT / "config/AGENTS.md").read_bytes().decode("utf-8-sig").replace("\r\n", "\n").encode().rstrip(b"\n")
+    else:
+        import client_targets
+        overrides = json.loads(role_models_json) if role_models_json else None
+        _, resolved = client_targets.resolve_role_models(client, preset, overrides)
+        source = client_targets.render_orchestrator_body(client, resolved)
     if BEGIN in source or END in source:
         raise ValueError("config/AGENTS.md must contain only the managed body")
     block = BEGIN + b"\n" + source + b"\n" + END + b"\n"
@@ -283,17 +314,18 @@ def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: 
             "preserved": preserved, "adopted_gentle": [section.decode() for _, _, section in sections]}
 
 
-def undo_instructions(home: Path, output: Path) -> None:
+def undo_instructions(home: Path, output: Path, client: str = "codex") -> None:
     """Restore only the managed block when the user edited neighboring instructions."""
+    instr_rel = instruction_rel(client)
     state = json.loads((home / "harness-install/state.json").read_bytes())
-    current = (home / "AGENTS.md").read_bytes()
+    current = (home / instr_rel).read_bytes()
     bom = BOM if current.startswith(BOM) else b""
     data = current[len(bom):]
-    original = Path(state["backup_dir"]) / "AGENTS.md"
+    original = Path(state["backup_dir"]) / instr_rel
     if state.get("adopted_gentle"):
         # The install appends Chuli after any surviving personal sections. Content added
         # after that exact installed prefix can be kept independently of the old layout.
-        record = next(r for r in state["files"] if r["path"] == "AGENTS.md")
+        record = next(r for r in state["files"] if r["path"] == instr_rel)
         try:
             span = block_span(data)
         except ValueError:
@@ -304,11 +336,11 @@ def undo_instructions(home: Path, output: Path) -> None:
             separator = b"\n" if prior and trailing and not prior.endswith(b"\n") else b""
             output.write_bytes(prior + separator + trailing)
             return
-        raise ValueError(f"CHULI_GENTLE_ROLLBACK_CONFLICT: AGENTS.md changed since adoption. Restore the installed layout or compare your edits with the original backup at {original}. Rollback stopped.")
+        raise ValueError(f"CHULI_GENTLE_ROLLBACK_CONFLICT: {instr_rel} changed since adoption. Restore the installed layout or compare your edits with the original backup at {original}. Rollback stopped.")
     span = block_span(data)
     if not span or digest(data[span[0]:span[1]]) != state.get("orchestrator_sha256"):
         raise ValueError("Managed orchestrator edited after installation; rollback stopped")
-    existed = next(record["existed"] for record in state["files"] if record["path"] == "AGENTS.md")
+    existed = next(record["existed"] for record in state["files"] if record["path"] == instr_rel)
     previous = original.read_bytes().removeprefix(BOM) if existed else b""
     old_span = block_span(previous)
     if old_span:
@@ -330,14 +362,20 @@ def main() -> None:
     parser.add_argument("--output", type=Path)
     parser.add_argument("--replace", action="store_true")
     parser.add_argument("--adopt-gentle-routing", action="store_true")
+    parser.add_argument("--client", choices=("codex", "claude", "agy"), default="codex")
+    parser.add_argument("--preset", default="")
+    parser.add_argument("--role-models-json", default="")
     args = parser.parse_args()
     if args.action == "instructions":
-        result = prepare_instructions(args.home, args.output, args.replace, args.adopt_gentle_routing)
+        result = prepare_instructions(
+            args.home, args.output, args.replace, args.adopt_gentle_routing,
+            args.client, args.preset, args.role_models_json,
+        )
     elif args.action == "undo-instructions":
-        undo_instructions(args.home, args.output)
+        undo_instructions(args.home, args.output, args.client)
         return
     else:
-        result = preflight(args.home, args.action, args.adopt_gentle_routing)
+        result = preflight(args.home, args.action, args.adopt_gentle_routing, args.client)
     print(json.dumps(result, ensure_ascii=True))
 
 

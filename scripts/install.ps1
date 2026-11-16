@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 <#
 .SYNOPSIS
   Instala o actualiza Codex Engineering Harness. Sin -Apply es dry-run.
@@ -15,7 +15,10 @@ param(
     [switch]$SkipTaskProgress,
     [switch]$ReplaceCustomized,
     [switch]$AdoptGentleRouting,
-    [string]$CodexHome
+    [string]$CodexHome,
+    [ValidateSet('codex','claude','agy')][string]$Client = 'codex',
+    [string]$Preset = '',
+    [string]$RoleModelsJson = ''
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -31,21 +34,23 @@ function Save-Text([string]$Path, [string]$Value) {
 }
 
 . (Join-Path $PSScriptRoot 'profile.ps1')
-$homePath = Resolve-ProfileHome $CodexHome
+$homePath = Resolve-ProfileHome $CodexHome $Client
+$instrRel = Get-ClientInstructionPath $Client
+$configRel = Get-ClientConfigPath $Client
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $harnessVersion = [IO.File]::ReadAllText((Join-Path $root 'VERSION')).Trim()
 if ($harnessVersion -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
     throw 'VERSION inválido; instalación cancelada antes de modificar Codex.'
 }
 $statePath = Join-Path $homePath 'harness-install/state.json'
-$configPath = Join-Path $homePath 'config.toml'
+$configPath = Join-Path $homePath $configRel
 $legacyBaselinePath = Join-Path $root 'scripts/legacy-managed-hashes.json'
 if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
     throw 'Falta scripts/legacy-managed-hashes.json; instalación cancelada antes de modificar Codex.'
 }
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
 $python = Get-Python
-$inventory = Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting
+$inventory = Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting -Client $Client
 $previous = $null
 $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
@@ -59,7 +64,7 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
         }
     }
     foreach ($record in @($previous.files)) {
-        if ($record.path -and $record.path -ne 'config.toml' -and $record.installed_sha256 -and -not $managedFiles.ContainsKey([string]$record.path)) {
+        if ($record.path -and $record.path -notin @('config.toml','settings.json') -and $record.installed_sha256 -and -not $managedFiles.ContainsKey([string]$record.path)) {
             $managedFiles[[string]$record.path] = [string]$record.installed_sha256
         }
     }
@@ -72,8 +77,9 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
             }
         }
     }
-    # config.toml is tracked separately through managed_config.
+    # config.toml / settings.json is tracked separately through managed_config.
     $managedFiles.Remove('config.toml') | Out-Null
+    $managedFiles.Remove('settings.json') | Out-Null
 }
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-stage-' + [guid]::NewGuid().ToString('N'))
 $preservedFiles = @{}
@@ -87,14 +93,43 @@ try {
     New-PrivateDirectory $python $staging
     $items = New-Object 'System.Collections.Generic.List[object]'
     $instructionsPath = Join-Path $staging 'AGENTS.md'
-    $instructionArgs = @((Join-Path $PSScriptRoot 'profile_resources.py'), 'instructions', '--home', $homePath, '--output', $instructionsPath)
+    $instructionArgs = @((Join-Path $PSScriptRoot 'profile_resources.py'), 'instructions', '--home', $homePath, '--output', $instructionsPath, '--client', $Client)
+    if ($Preset) { $instructionArgs += @('--preset', $Preset) }
+    if ($RoleModelsJson) { $instructionArgs += @('--role-models-json', $RoleModelsJson) }
     if ($ReplaceCustomized) { $instructionArgs += '--replace' }
     if ($AdoptGentleRouting) { $instructionArgs += '--adopt-gentle-routing' }
     $instructions = (Invoke-ProfilePython $python $instructionArgs) | ConvertFrom-Json
+    $stagedMap = @{}
+    $orchModel = 'gpt-6.1-sol'
+    $orchEffort = 'medium'
+    $subModel = 'gpt-6.1-sol'
+    $resolvedPreset = 'codex-balanced'
+    $resolvedRoleModels = [ordered]@{
+        orchestrator       = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
+        chuli_explorer     = @{ model = 'gpt-6-luna';    effort = 'medium' }
+        chuli_worker       = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
+        solution_architect = @{ model = 'gpt-6.1-sol';   effort = 'high'   }
+        product_designer   = @{ model = 'gpt-6.1-terra'; effort = 'medium' }
+        test_engineer      = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
+        quality_reviewer   = @{ model = 'gpt-6.1-sol';   effort = 'high'   }
+    }
+    if ($Client -ne 'codex' -or $Preset -or $RoleModelsJson) {
+        $stagedAgentsDir = Join-Path $staging 'staged-agents'
+        $stageArgs = @((Join-Path $PSScriptRoot 'client_targets.py'), 'stage-agents', '--client', $Client, '--output-dir', $stagedAgentsDir)
+        if ($Preset) { $stageArgs += @('--preset', $Preset) }
+        if ($RoleModelsJson) { $stageArgs += @('--role-models-json', $RoleModelsJson) }
+        $stageInfo = (Invoke-ProfilePython $python $stageArgs) | ConvertFrom-Json
+        foreach ($prop in $stageInfo.staged.PSObject.Properties) { $stagedMap[$prop.Name] = [string]$prop.Value }
+        $orchModel = [string]$stageInfo.role_models.orchestrator.model
+        $orchEffort = [string]$stageInfo.role_models.orchestrator.effort
+        $subModel = [string]$stageInfo.role_models.chuli_worker.model
+        $resolvedPreset = [string]$stageInfo.preset
+        $resolvedRoleModels = $stageInfo.role_models
+    }
     foreach ($entry in $inventory.PSObject.Properties) {
         $items.Add(@{path=$entry.Name; source=[string]$entry.Value; kind='copy'})
     }
-    if ($RemoveLegacyAgents) {
+    if ($RemoveLegacyAgents -and $Client -eq 'codex') {
         foreach ($name in @('architect','explorer','reviewer','slice_worker','test_runner')) {
             $items.Add(@{path=('agents/' + $name + '.toml'); source=''; kind='remove'})
         }
@@ -108,20 +143,22 @@ try {
         if ($item.kind -eq 'copy') {
             $source = Join-Path $root $item.source
             if (-not (Test-Path -LiteralPath $source -PathType Leaf)) { throw ('Falta archivo del repositorio: ' + $item.source) }
-            if ($item.path -eq 'AGENTS.md') { $source = $instructionsPath }
+            if ($item.path -eq $instrRel) { $source = $instructionsPath }
+            elseif ($stagedMap.ContainsKey([string]$item.path)) { $source = $stagedMap[[string]$item.path] }
             $sourceHash = Get-Hash $source
             $knownManagedHash = $null
             if ($managedFiles.ContainsKey([string]$item.path)) {
                 $knownManagedHash = [string]$managedFiles[[string]$item.path]
             }
-            if ($item.path -eq 'AGENTS.md' -and $instructions.preserved -and @($instructions.adopted_gentle).Count -eq 0) {
-                $preserved.Add('AGENTS.md (customized Chuli block)')
+            $customModelUpdate = ($Preset -ne '' -or $RoleModelsJson -ne '') -and $stagedMap.ContainsKey([string]$item.path)
+            if ($item.path -eq $instrRel -and $instructions.preserved -and @($instructions.adopted_gentle).Count -eq 0) {
+                $preserved.Add(($instrRel + ' (customized Chuli block)'))
                 $action = 'PRESERVE-CUSTOMIZED'
-            } elseif ($sourceHash -eq $oldHash -and ($knownManagedHash -or $item.path -eq 'AGENTS.md' -or $ReplaceCustomized)) {
+            } elseif ($sourceHash -eq $oldHash -and ($knownManagedHash -or $item.path -eq $instrRel -or $ReplaceCustomized -or $customModelUpdate)) {
                 $action = 'UNCHANGED'
             } elseif ($null -eq $oldHash) {
                 $action = 'CREATE'
-            } elseif ($item.path -eq 'AGENTS.md' -or $knownManagedHash -eq $oldHash) {
+            } elseif ($item.path -eq $instrRel -or $knownManagedHash -eq $oldHash -or ($customModelUpdate -and $knownManagedHash)) {
                 $action = 'UPDATE'
             } elseif ($ReplaceCustomized) {
                 $action = 'REPLACE-APPROVED'
@@ -144,31 +181,44 @@ try {
         $changes.Add([ordered]@{path=[string]$item.path; kind=[string]$item.kind; action=$action; original=$oldHash; source=$source; source_hash=$sourceHash})
     }
 
-    $inputPath = Join-Path $staging 'original.toml'
-    $candidatePath = Join-Path $staging 'candidate.toml'
+    $inputPath = Join-Path $staging ('original-' + $configRel)
+    $candidatePath = Join-Path $staging ('candidate-' + $configRel)
     $reportPath = Join-Path $staging 'config-report.json'
     if (Test-Path -LiteralPath $configPath -PathType Leaf) {
         Copy-Item -LiteralPath $configPath -Destination $inputPath
     } else {
         Save-Text $inputPath ''
     }
-    $args = @((Join-Path $root 'scripts/toml_config.py'), 'prepare', '--input', $inputPath,
-        '--output', $candidatePath, '--report', $reportPath)
-    if ($ConfigureModels) { $args += '--configure-models' }
-    if ($SkipTaskProgress) { $args += '--skip-task-progress' }
-    if ($ReplaceCustomized) { $args += '--replace-managed' }
-    $reportOutput = Invoke-ProfilePython $python $args
+    $wantModelUpdate = [bool]($ConfigureModels -or $Preset -or $RoleModelsJson)
+    if ($Client -eq 'codex') {
+        $args = @((Join-Path $root 'scripts/toml_config.py'), 'prepare', '--input', $inputPath,
+            '--output', $candidatePath, '--report', $reportPath,
+            '--orchestrator-model', $orchModel, '--orchestrator-effort', $orchEffort, '--subagent-model', $subModel)
+        if ($wantModelUpdate) { $args += '--configure-models' }
+        if ($SkipTaskProgress) { $args += '--skip-task-progress' }
+        if ($ReplaceCustomized) { $args += '--replace-managed' }
+        $reportOutput = Invoke-ProfilePython $python $args
+    } else {
+        $args = @((Join-Path $root 'scripts/client_targets.py'), 'json-config', 'prepare', '--client', $Client,
+            '--input', $inputPath, '--output', $candidatePath, '--report', $reportPath)
+        if ($Preset) { $args += @('--preset', $Preset) }
+        if ($RoleModelsJson) { $args += @('--role-models-json', $RoleModelsJson) }
+        if ($wantModelUpdate) { $args += '--configure-models' }
+        if ($ReplaceCustomized) { $args += '--replace-managed' }
+        $reportOutput = Invoke-ProfilePython $python $args
+    }
     $report = Get-Content -LiteralPath $reportPath -Raw | ConvertFrom-Json
-    foreach ($key in @($report.preserved)) { $preserved.Add(('config.toml -> ' + $key)) }
+    foreach ($key in @($report.preserved)) { $preserved.Add(($configRel + ' -> ' + $key)) }
     $oldConfigHash = Get-Hash $configPath
     $newConfigHash = Get-Hash $candidatePath
     $configAction = if ($oldConfigHash -eq $newConfigHash) { 'UNCHANGED' } elseif ($null -eq $oldConfigHash) { 'CREATE' } else { 'UPDATE-VALIDATED' }
-    $changes.Add([ordered]@{path='config.toml';kind='config';action=$configAction;original=$oldConfigHash;source=$candidatePath})
+    $changes.Add([ordered]@{path=$configRel;kind='config';action=$configAction;original=$oldConfigHash;source=$candidatePath})
 
     Write-Output ('Codex home: ' + $homePath)
-    Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath 'AGENTS.md'))
+    Write-Output ('Client: ' + $Client + ' (preset: ' + $resolvedPreset + ')')
+    Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath $instrRel))
     if (@($instructions.adopted_gentle).Count -gt 0) {
-        Write-Output ('Gentle AI -> Chuli: ' + ($instructions.adopted_gentle -join ', ') + ' in AGENTS.md. Original included in backup on apply.')
+        Write-Output ('Gentle AI -> Chuli: ' + ($instructions.adopted_gentle -join ', ') + ' in ' + $instrRel + '. Original included in backup on apply.')
     }
     Write-Output ('Version candidate: ' + $harnessVersion)
     Write-Output ('Python TOML validation: PASS')
@@ -243,6 +293,9 @@ try {
     foreach ($property in $report.tracked.PSObject.Properties) { $tracked[$property.Name] = $property.Value }
     $state = [ordered]@{
         version=$harnessVersion
+        client=$Client
+        preset=$resolvedPreset
+        role_models=$resolvedRoleModels
         schema_version=2
         rollback_schema_version=2
         installed_at=(Get-Date).ToString('o')
