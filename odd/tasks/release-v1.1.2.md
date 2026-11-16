@@ -23,9 +23,9 @@ El usuario autorizó preparar la rama, los commits y lanzar la release v1.1.2 en
 - **Blocker:** none
 
 ### TASK-003 — Integrar en main, validar CI y publicar v1.1.2
-- **State:** IN_PROGRESS
+- **State:** DONE
 - **Depends on:** TASK-002
 - **Owner:** orchestrator
 - **Acceptance:** `Validate harness` verde en `main`, `release.yml` exitoso para `1.1.2`, release `v1.1.2` publicada como `latest` con 5 artefactos y `SHA256SUMS.txt`, y resolución verificada con `go install ...@v1.1.2`.
-- **Evidence:** pending
+- **Evidence:** Rama `feat/release-v1.1.2` integrada en `main` (`922dcc9`). CI `Validate harness` push `43809647921` OK en `structure`, `windows-installer` (incluyendo `validate_repository.py` en Windows) y `chuli-go` (Ubuntu/Windows/macOS con `go install ./cmd/chuli`). Publicador `43810038695` OK; release `v1.1.2` publicada como `latest` (`https://github.com/AlejoPalavecino/codex-engineering-harness/releases/tag/v1.1.2`) con 5 artefactos + `SHA256SUMS.txt` y tag `v1.1.2` apuntando a `922dcc9`. Verificado remotamente con `go install ...@v1.1.2` y `@latest` en `GOBIN` temporal (`Chuli Manager 1.1.2`), seguido de `chuli install --apply` y `chuli doctor` en `CODEX_HOME` y `APPDATA` temporales (`Versión registrada: 1.1.2`, `Errores: 0`).
 - **Blocker:** none
