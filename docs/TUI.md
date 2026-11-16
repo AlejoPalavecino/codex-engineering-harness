@@ -1,12 +1,16 @@
-# Chuli Manager 1.1
+# Chuli Manager 2.0
 
-El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paquete del repositorio oficial, muestra el plan y espera confirmación para instalarlo. Una actualización del perfil puede incorporar skills, recursos o modelos. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
+El menú se abre con `chuli` o `chuli.exe`. Permite administrar el perfil en **OpenAI Codex (`codex`)**, **Claude Code (`claude`)** y **AGY CLI (`agy`)**, elegir presets rápidos o personalizar el modelo y esfuerzo de cada uno de los 7 roles. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v2.0.0` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
 
 Para usar `chuli` desde cualquier carpeta en Windows, desde v1.1.1 podés descargar `install-chuli-windows.ps1` de la release (fuente: `scripts/install-manager.ps1`): revisá su vista previa y ejecutalo con `-Apply` para instalarlo y registrarlo en el PATH de tu usuario. [Instalación del comando](INSTALLATION.md#comando-chuli-en-windows). El ZIP del Manager sigue disponible como alternativa portable.
 
 | Operación | Uso |
 | --- | --- |
 | Ver la versión del Manager | `chuli version` |
+| Elegir cliente (`codex`, `claude` o `agy`) | `chuli --client claude status` |
+| Listar presets y modelos por rol | `chuli --client claude models` |
+| Instalar con un preset o modelo por rol | `chuli --client claude install --preset claude-balanced --apply` |
+| Personalizar un agente puntual | `chuli --client codex install --role orchestrator=gpt-6.1-sol:medium --apply` |
 | Ver el destino, modelo registrado e inventario de agentes y skills | `chuli status` |
 | Previsualizar / aplicar instalación | `chuli install` / `chuli install --apply` |
 | Previsualizar / aplicar actualización | `chuli update` / `chuli update --apply` |
@@ -50,6 +54,16 @@ Para probar desde el checkout: `go run ./cmd/chuli integrations list`. Usá un `
 
 ## Presentación Consola CRT
 
-El rediseño local agrega una marca textual inspirada en la PC del logo y una paleta verde/beige sobre fondo oscuro. Conserva las mismas operaciones y teclas. En terminal ancha, el menú muestra una explicación lateral de la opción elegida; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
+El rediseño local incorpora el logotipo pixel-art de la PC retro y las letras en bloque `CHULI` con sombra sobre fondo oscuro, manteniendo una paleta verde neón, ámbar y beige de alto contraste. Conserva las mismas operaciones y atajos de teclado. En terminales anchas (`>= 100` cols), el menú principal muestra la explicación lateral y la tarjeta enmarcada del equipo activo con los 7 roles y sus badges de esfuerzo; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
 
-Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres de texto, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v1.1.0. Las PRs #52–#56 corresponden al asistente; el rediseño se integró como una unidad separada.
+```text
+  ▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄░   ● MULTI-CLIENT HARNESS · v2.0.0
+  ██  ▀▄        ██░   ▄█████▄ ██░ ██░ ██░ ██░ ██░    █████░
+  ██  ▄▀ ▄▄▄    ██░   ██░  ▀▀ ██░ ██░ ██░ ██░ ██░     ▐█▌░
+  ▀█▄▄▄▄▄▄▄▄▄▄▄▄█▀░   ██░     ██████░ ██░ ██░ ██░     ▐█▌░
+ ▄▄▄▄▄▄▄████▄▄▄▄▄▄▄░  ██░  ▄▄ ██░ ██░ ██░ ██░ ██░     ▐█▌░
+ ███▄▄▄██████▀▀▀███░  ▀█████▀ ██░ ██░ ▀████▀░ █████░ █████░
+ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀   [● 1:Codex]  [○ 2:Claude]  [○ 3:AGY]
+```
+
+Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres Unicode de bloque estándar, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v2.0.0. Las PRs #52–#56 corresponden al asistente original; el rediseño visual y el configurador multi-cliente se integraron sobre esa base.

@@ -4,9 +4,9 @@
 
 # Chuli
 
-**Un perfil de ingeniería para el Codex que ya usás.**
+**Un harness de ingeniería para Codex, Claude Code y AGY CLI.**
 
-De la idea al cambio comprobado, con decisiones claras y un compañero que te explica mientras trabajan.
+De la idea al cambio comprobado, con decisiones claras, modelos configurables por agente y un compañero que te explica mientras trabajan.
 
 [Descargar](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest) · [Qué es](#que-es) · [Instalación](#instalacion) · [Cómo trabaja](#como-trabaja) · [Componentes](#componentes) · [Documentación](#documentacion)
 
@@ -44,14 +44,14 @@ Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar e
 ### Con un comando (Go 1.26+, Windows / Linux / macOS)
 
 ```sh
-# Stable channel: the latest release (v1.1.2)
-go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2
+# Stable channel: the latest release (v2.0.0)
+go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v2.0.0
 
 # Or always install the latest tagged release
 go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@latest
 ```
 
-Después ejecutá `chuli`, elegí **Instalar o actualizar el perfil oficial**, revisá el destino y el plan, y confirmá. El Manager descarga la última release, comprueba su `SHA-256` y deja listo el perfil en `CODEX_HOME` (`~/.codex`). Por último, abrí una sesión nueva de Codex en tu proyecto.
+Después ejecutá `chuli`: en la consola CRT podés elegir tu cliente (**OpenAI Codex**, **Claude Code** o **AGY CLI**), seleccionar un **preset rápido** o configurar qué modelo y esfuerzo usa cada uno de los **7 agentes**, revisar la vista previa y confirmar. El Manager descarga la última release, comprueba su `SHA-256` y aplica el perfil en tu entorno (`~/.codex`, `~/.claude` o `~/.gemini/config`).
 
 ### Sin Go (instalador Windows o descarga portable)
 
@@ -169,7 +169,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 1.1.2](docs/releases/v1.1.2.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 2.0.0](docs/releases/v2.0.0.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 

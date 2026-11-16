@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.0] — 2026-11-16
+
+- Soporte multi-cliente completo para **OpenAI Codex (`~/.codex`)**, **Claude Code (`~/.claude`)** y **AGY CLI (`~/.gemini/config`)** desde una única fuente canónica (`config/models.json` y `scripts/client_targets.py`).
+- Catálogo actualizado de modelos y 9 presets rápidos: familia **GPT-6.1 (`Sol`, `Terra`, `Luna`, `Astra`)**, **Claude 5.5 (`Opus 5.5`, `Sonnet 5.5`, `Haiku 5.5`) + `Fable 5.2`**, y **Gemini 4 (`Carbon`, `Argon`, `Hydrogen`, `Orchestrator`)**.
+- Configurador interactivo de modelos y nivel de esfuerzo rol por rol en la consola CRT (`Modelos y presets`) y subcomando CLI `chuli [--client codex|claude|agy] models` / `install --preset ... --role ROL=MODELO[:ESFUERZO]`.
+- Rediseño visual de la consola CRT con monitor enmarcado, selector rápido de cliente (`Tab` / `1`/`2`/`3`) y tarjeta de equipo activo en terminales anchas.
+- Preservación de personalizaciones, validación estructural (`verify.ps1`) y `rollback.ps1` byte a byte para los tres clientes (`config.toml`, `settings.json` con soporte UTF-8 BOM, `AGENTS.md`, `CLAUDE.md` y plugin nativo `plugins/chuli/` en AGY).
+
 ## [1.1.2] — 2026-11-16
 
 - Instalación multiplataforma con un comando mediante `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2` (o `@latest`) y detección automática de la versión del módulo desde `runtime/debug.ReadBuildInfo()`.

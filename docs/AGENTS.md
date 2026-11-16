@@ -18,6 +18,16 @@ Indicá objetivo, tarea, criterios, rutas de contexto y skills concretas, herram
 
 No cambies los nombres de los dos roles `chuli_*` por `explorer` o `worker` nativos. Esos alias pueden corresponder a otros modelos o no existir. Los archivos de rol expresan los valores pedidos. Para afirmar que el cliente los honró hay que observar una sesión.
 
+## Adaptación multi-cliente y presets (v2.0)
+
+El catálogo [`config/models.json`](../config/models.json) y `scripts/client_targets.py` proyectan estos mismos siete roles hacia tres clientes:
+
+- **OpenAI Codex (`codex`):** genera `agents/*.toml` y actualiza `model` / `model_reasoning_effort` en `config.toml` (presets `codex-balanced`, `codex-astra-max`, `codex-fast`).
+- **Claude Code (`claude`):** genera `.claude/agents/*.md` con frontmatter YAML (`model`, `effort`, `tools`, `disallowedTools`) y actualiza `.claude/settings.json` (presets `claude-balanced`, `claude-fable-max`, `claude-fast`).
+- **Google Antigravity CLI (`agy`):** empaqueta `.gemini/config/plugins/chuli/` (`plugin.json`, `rules/AGENTS.md`, `agents/*.md` con `subagent: true`, `mainAgent: false` y `tools` nativas) y actualiza `.gemini/settings.json` con el formato `"Orchestrator (Argon)"` / `"Gemini 4 Carbon (High)"` (presets `agy-balanced`, `agy-carbon-max`, `agy-hydrogen-fast`).
+
+También podés personalizar modelo y esfuerzo rol por rol desde la pantalla `Modelos y presets` (`M`) de la TUI o mediante `--preset` y `--role <rol>=<modelo>[:<esfuerzo>]`.
+
 ## Procedimientos
 
 El [catálogo de skills](protocols/SKILLS.md) identifica las cinco nativas y las 18 importadas, su runtime y requisitos. El [protocolo ODD](protocols/ODD.md) describe cómo combinar las decisiones del orquestador, TDD y la revisión según riesgo.
