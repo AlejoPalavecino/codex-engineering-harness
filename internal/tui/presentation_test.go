@@ -45,7 +45,7 @@ func TestCRTResponsiveHome(t *testing.T) {
 			if width >= 100 {
 				found := false
 				for _, line := range strings.Split(text, "\n") {
-					if strings.Contains(line, "›") && strings.Contains(line, "Instalá") {
+					if strings.Contains(line, "›") && strings.Contains(line, "Elegí AGY, Claude o Codex") {
 						found = true
 					}
 				}
@@ -86,17 +86,37 @@ func TestCRTStatesAndScrollableLogs(t *testing.T) {
 }
 
 func TestCRTAllScreensFitTerminalWidth(t *testing.T) {
+	screens := []string{
+		home, busy, preview, conflict, result, about,
+		integrationList, integrationDetail, integrationPreview, integrationResult, integrationCustomForm,
+		installPlatformsScreen, installProfileScreen, installConfirmScreen, installGentleScreen,
+		updateScreen, versionsScreen, modelsScreen, modelsSaveScreen, rolePickerScreen, skillsScreen, skillsAddScreen,
+	}
 	for _, size := range [][2]int{{40, 24}, {80, 24}, {120, 32}} {
-		for _, screen := range []string{home, busy, preview, conflict, result, about, integrationList, integrationDetail, integrationPreview, integrationResult} {
-			m := model{screen: screen, width: size[0], height: size[1], integrationID: "github", title: "Comprobando integración", log: strings.Repeat("cambio revisable ", 15), mgr: manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)}}
+		for _, screen := range screens {
+			m := model{
+				screen:              screen,
+				width:               size[0],
+				height:              size[1],
+				integrationID:       "github",
+				wizardActiveID:      "codex",
+				wizardSelected:      map[string]bool{"codex": true},
+				wizardConfigs:       map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
+				updatesChecked:      true,
+				updateReport:        manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: "• Mejoras generales"},
+				skillsDraftDisabled: map[string]bool{},
+				title:               "Comprobando integración",
+				log:                 strings.Repeat("cambio revisable ", 15),
+				mgr:                 manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
+			}
 			text := ansi.Strip(m.renderCRT().Content)
 			for _, line := range strings.Split(text, "\n") {
 				if lipgloss.Width(line) > size[0] {
 					t.Errorf("%s at %dx%d: line exceeds width: %q", screen, size[0], size[1], line)
 				}
 			}
-			if !strings.Contains(text, "CODEX_HOME:") || !strings.Contains(text, "destination/") {
-				t.Errorf("%s lost destination", screen)
+			if !strings.Contains(text, "Carpeta Codex:") || !strings.Contains(text, "destination/") {
+				t.Errorf("%s lost destination:\n%s", screen, text)
 			}
 		}
 	}
@@ -115,9 +135,29 @@ func TestCRTRejectsTerminalControls(t *testing.T) {
 }
 
 func TestCRTHeightKeepsControlsVisible(t *testing.T) {
+	screens := []string{
+		home, modelsScreen, modelsSaveScreen, rolePickerScreen, busy, preview, conflict, result, about,
+		integrationList, integrationPreview, integrationDetail, integrationResult, integrationCustomForm,
+		installPlatformsScreen, installProfileScreen, installConfirmScreen, installGentleScreen,
+		updateScreen, versionsScreen, skillsScreen, skillsAddScreen,
+	}
 	for _, size := range [][2]int{{40, 24}, {80, 24}, {120, 32}} {
-		for _, screen := range []string{home, modelsScreen, busy, preview, conflict, result, about, integrationList, integrationPreview, integrationDetail, integrationResult} {
-			m := model{screen: screen, width: size[0], height: size[1], integrationID: "exa", mgr: manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)}, log: strings.Repeat("cambio revisable largo ", 100), fault: "un error recuperable"}
+		for _, screen := range screens {
+			m := model{
+				screen:              screen,
+				width:               size[0],
+				height:              size[1],
+				integrationID:       "exa",
+				wizardActiveID:      "codex",
+				wizardSelected:      map[string]bool{"codex": true},
+				wizardConfigs:       map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
+				updatesChecked:      true,
+				updateReport:        manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: strings.Repeat("• Novedad importante\n", 30)},
+				skillsDraftDisabled: map[string]bool{},
+				mgr:                 manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
+				log:                 strings.Repeat("cambio revisable largo ", 100),
+				fault:               "un error recuperable",
+			}
 			content := m.renderCRT().Content
 			if rows := lipgloss.Height(content); rows > size[1] {
 				t.Errorf("%s %dx%d used %d rows", screen, size[0], size[1], rows)

@@ -128,8 +128,6 @@ func crtText(s string) string {
 	}, s)
 }
 
-// renderCRT presents the existing state machine without starting operations or
-// changing its navigation. Width zero uses the ordinary 80-column layout.
 func (m model) renderCRT() tea.View {
 	page := ""
 	if m.crtPaged() {
@@ -141,8 +139,6 @@ func (m model) renderCRT() tea.View {
 	return view
 }
 
-// crtFrame accepts page content separately so pagination can measure the actual
-// wrapped header, state and shortcuts without recursively rendering a page.
 func (m model) crtFrame(page string) string {
 	width := m.width
 	if width <= 0 {
@@ -175,8 +171,9 @@ func (m model) crtFrame(page string) string {
 	}
 	b.WriteString(headerLine + "\n")
 	b.WriteString("Perfil: " + installed + "\n")
+	prefix := "Carpeta " + clientSpec.Short + ": "
 	homeLabel := m.mgr.Home
-	keep := max(1, width-12)
+	keep := max(1, width-lipgloss.Width(prefix)-1)
 	if w := lipgloss.Width(homeLabel); w > keep {
 		if keep <= 1 {
 			homeLabel = "…"
@@ -184,7 +181,14 @@ func (m model) crtFrame(page string) string {
 			homeLabel = ansi.TruncateLeft(homeLabel, w-keep+1, "…")
 		}
 	}
-	b.WriteString("CODEX_HOME: " + homeLabel + "\n")
+	b.WriteString(prefix + homeLabel + "\n")
+	if m.screen == home && (m.updateReport.AnyProfileUpdate || m.updateReport.ManagerNewer) && m.updateReport.Latest.Tag != "" {
+		notice := fmt.Sprintf("★ Nueva versión %s disponible — Entrá en Actualizar para ver novedades", crtText(m.updateReport.Latest.Tag))
+		if width < 68 {
+			notice = fmt.Sprintf("★ Hay actualización %s (ver Actualizar)", crtText(m.updateReport.Latest.Tag))
+		}
+		b.WriteString(crtAmber.Render(notice) + "\n")
+	}
 	b.WriteString(crtBeige.Render(strings.Repeat("━", min(width, 76))) + "\n")
 	body, keys := m.crtBody(width, page)
 	b.WriteString(body)
@@ -196,29 +200,91 @@ func (m model) crtFrame(page string) string {
 	return crtWhite.Width(width).Render(content)
 }
 
+func renderProgressBar(step, total, width int) string {
+	if total <= 0 {
+		total = 1
+	}
+	if step < 0 {
+		step = 0
+	}
+	if step > total {
+		step = total
+	}
+	barWidth := min(24, max(10, width-18))
+	filled := (step * barWidth) / total
+	if filled == 0 && step > 0 {
+		filled = 1
+	}
+	return "[" + crtNeon.Render(strings.Repeat("█", filled)) + crtCaseSide.Render(strings.Repeat("░", barWidth-filled)) + fmt.Sprintf("] %d/%d", step, total)
+}
+
 func (m model) crtBody(width int, page string) (string, string) {
 	if strings.HasPrefix(m.screen, "integration-") {
 		return m.crtIntegration(width, page)
 	}
 	switch m.screen {
+	case installPlatformsScreen, installProfileScreen, installConfirmScreen, installGentleScreen, updateScreen, versionsScreen:
+		return m.crtWizard(width, page)
+	case skillsScreen, skillsAddScreen:
+		return m.crtSkills(width)
 	case home:
-		keys := "↑↓ / j k navegar · Enter elegir · Tab cliente · M modelos · q salir"
-		if width < 68 {
-			keys = "↑↓ / j k navegar · Enter elegir · q salir"
+		keys := "↑↓ navegar · Enter elegir · Tab cliente · D verificar · ? ayuda · q salir"
+		if width < 72 {
+			keys = "↑↓ nav · Enter elegir · D verificar · q salir"
 		}
 		return m.crtHome(width), keys
-	case modelsScreen:
+	case modelsScreen, modelsSaveScreen, rolePickerScreen:
 		return m.crtModels(width)
 	case busy:
-		return crtGreen.Render("EN CURSO") + "\n" + m.title + "\n\nEjecutando comprobaciones.\nNo cierres la terminal durante una escritura.", ""
+		spin := spinnerFrames[m.spinnerIdx%len(spinnerFrames)]
+		label := crtText(m.progressLabel)
+		if label == "" {
+			label = "Preparando configuración..."
+		}
+		bar := renderProgressBar(m.progressStep, m.progressTotal, width)
+		var out strings.Builder
+		out.WriteString(crtGreen.Render("EN CURSO · "+spin) + " " + crtAmber.Render(m.title) + "\n\n")
+		out.WriteString(bar + "\n\n")
+		out.WriteString(crtBeige.Render(label) + "\n\n")
+		keys := ""
+		if m.busyCancelable {
+			out.WriteString("Consultando GitHub Releases...")
+			keys = "Esc cancelar · q salir"
+		} else {
+			out.WriteString("Estamos trabajando por vos. No cierres la terminal.")
+		}
+		return out.String(), keys
 	case preview:
 		return crtGreen.Render("REVISIÓN PREVIA / "+m.prepared.Version) + "\n\n" + page, "S / Y confirmar · N cancelar · Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
 	case conflict:
 		return crtBeige.Render("CONFLICTO / Gentle controla el enrutamiento") + "\n\nA · Usar Chuli como orquestador y respaldar Gentle\nPrimero verás el plan. La confirmación se solicita después.\n\n" + page, "A revisar plan · Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
 	case result:
-		return m.crtOutcome() + "\n" + m.title + "\n\n" + page, "Enter / Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
+		if m.resultSummary != "" && !m.showTechLog {
+			var res strings.Builder
+			res.WriteString(m.crtOutcome() + "\n")
+			if m.title != "" {
+				res.WriteString(crtAmber.Render(m.title) + "\n\n")
+			}
+			if m.fault != "" {
+				res.WriteString(crtAmber.Render("Motivo: ") + crtText(m.fault) + "\n\n")
+			}
+			res.WriteString(crtText(m.resultSummary))
+			if m.resultNext != "" {
+				res.WriteString("\n\n" + crtGreen.Render("Próximo paso:") + "\n" + crtText(m.resultNext))
+			}
+			keys := "Enter / Esc volver al inicio · q salir"
+			if m.log != "" {
+				keys = "V ver detalle técnico · " + keys
+			}
+			return res.String(), keys
+		}
+		keys := "Enter / Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
+		if m.resultSummary != "" {
+			keys = "V ocultar detalle técnico · " + keys
+		}
+		return m.crtOutcome() + "\n" + m.title + "\n\n" + page, keys
 	case about:
-		return crtGreen.Render("Acerca de Chuli") + "\n\nChuli es el harness de ingeniería para Codex, Claude Code y AGY CLI.\nChuli Manager instala, personaliza modelos por agente y actualiza el perfil.\nDespués de instalar, abrí tu cliente habitual (codex, claude o agy).\n\nEl paquete oficial se verifica con SHA-256 y se conserva para recuperación.\nRequisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).", "Esc volver · q salir"
+		return crtGreen.Render("Acerca de Chuli") + "\n\nChuli es el harness de ingeniería para Codex, Claude Code y AGY CLI.\nChuli Manager instala, actualiza, versiona y configura modelos, MCPs y skills.\nDespués de instalar, abrí tu herramienta habitual (codex, claude o agy).\n\nEl paquete oficial se verifica con SHA-256 y crea respaldos automáticos.\nRequisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).", "Esc volver · q salir"
 	}
 	return "", "Esc volver · q salir"
 }
@@ -299,17 +365,12 @@ func (m model) crtHome(width int) string {
 	menu.WriteString(crtGreen.Render("Seleccioná una acción") + gap)
 	for index, item := range items {
 		name := item.label
-		if width < 60 {
-			name = map[string]string{
-				"latest":       "Instalar o actualizar",
-				"local":        "Instalar desde --source",
-				"models":       "Modelos y presets",
-				"integrations": "Integraciones",
-				"profile":      "Modelos, agentes y skills",
-				"doctor":       "Comprobar perfil",
-				"rollback":     "Restaurar instalación",
-				"about":        "Acerca de Chuli",
-			}[item.action]
+		if item.action == "update" && m.updateReport.AnyProfileUpdate && m.updateReport.Latest.Tag != "" {
+			if width >= 54 {
+				name += " [NUEVA " + m.updateReport.Latest.Tag + "]"
+			} else {
+				name += " [★]"
+			}
 		}
 		label := fmt.Sprintf("%d. %s", index+1, name)
 		if index == m.cursor {
@@ -327,14 +388,12 @@ func (m model) crtHome(width int) string {
 		}
 	}
 	explanations := map[string]string{
-		"latest":       "Instalá el perfil y seguí trabajando en Codex.\nRevisás el plan antes de escribir.",
-		"local":        "Instalá desde el checkout elegido con --source.\nRevisás el plan antes de escribir.",
-		"models":       "Elegí el cliente (Codex, Claude Code o AGY CLI), un preset rápido\no el modelo y esfuerzo de cada uno de los 7 agentes.",
-		"integrations": "Conectá documentación, memoria y herramientas.\nElegís cada conexión y confirmás su configuración.",
-		"profile":      "Consultá los modelos, agentes y skills registrados.\nLos datos vienen del manifiesto de instalación.",
-		"doctor":       "Comprobá el perfil instalado y sus recursos.\nEl resultado distingue fallos y límites.",
-		"rollback":     "Revisá el plan para restaurar el perfil anterior.\nLa reversión necesita tu confirmación.",
-		"about":        "Conocé Chuli Manager y sus requisitos.\nEl trabajo de ingeniería se realiza en Codex.",
+		"install":      "Elegí AGY, Claude o Codex, seleccioná un preset o personalizá\ntus modelos e instalá paso a paso con animación limpia.",
+		"update":       "Detecta nuevas releases, muestra un resumen de qué incluyen\ny actualiza tus plataformas ya instaladas.",
+		"versions":     "Mirá qué versión tenés en cada plataforma, cambiá a otra\nrelease o restaurá la instalación anterior (rollback).",
+		"models":       "Configurá presets, modelos por rol o perfiles propios\nsegún el proveedor (Codex, Claude o AGY) y aplicalos directo.",
+		"integrations": "Conectá, probá o agregá servidores MCP por plataforma\n(Context7, Engram, Exa, GitHub o MCPs personalizados).",
+		"skills":       "Explorá qué hace cada skill, prendelas o apagalas por\nplataforma y sumá tus propias skills locales.",
 	}
 	explanation := explanations[items[max(0, min(m.cursor, len(items)-1))].action]
 	if width >= 100 {
@@ -358,7 +417,7 @@ func (m model) crtHome(width int) string {
 		return lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right)
 	}
 	separator := "\n"
-	if compactHeight && len(items) > 7 {
+	if compactHeight && len(items) > 6 {
 		separator = ""
 	}
 	return menu.String() + separator + explanation
@@ -378,13 +437,55 @@ func (m model) crtPage() string {
 }
 
 func (m model) crtIntegration(width int, page string) (string, string) {
+	spec, _ := manager.FindClient(m.mgr.Target)
 	var b strings.Builder
-	b.WriteString(crtGreen.Render("Integraciones") + "\n\n")
+	b.WriteString(crtGreen.Render("MCPs e Integraciones") + "  " + renderClientTabs(spec.ID) + "\n\n")
+
+	if m.screen == integrationCustomForm {
+		tipo := "URL remota (HTTPS)"
+		targetLabel := "URL del servidor (https://...)"
+		if m.customMCPIsCmd {
+			tipo = "Comando local (stdio)"
+			targetLabel = "Comando y argumentos (ej. npx -y ...)"
+		}
+		fields := []struct{ label, val string }{
+			{"Nombre corto", m.customMCPName},
+			{"Tipo (←/→)", tipo},
+			{targetLabel, m.customMCPTarget},
+			{"Variable env token (opcional)", m.customMCPEnv},
+		}
+		b.WriteString(crtAmber.Render("Agregar MCP personalizado para "+spec.Short) + "\n\n")
+		for idx, f := range fields {
+			val := f.val
+			if idx == m.customMCPField && idx != 1 {
+				val += "_"
+			}
+			line := fmt.Sprintf("%-30s: %s", f.label, val)
+			if width < 64 {
+				line = f.label + ": " + val
+			}
+			if idx == m.customMCPField {
+				b.WriteString(crtNeon.Render("› "+line) + "\n")
+			} else {
+				b.WriteString("  " + line + "\n")
+			}
+		}
+		if m.fault != "" {
+			b.WriteString("\n" + crtAmber.Render(m.fault))
+		}
+		return strings.TrimRight(b.String(), "\n"), "↑↓ / Tab campo · ←→ tipo · Enter continuar · Esc cancelar"
+	}
+
 	if m.screen == integrationList {
-		for index, item := range integrations.Catalog() {
-			label := item.Name
-			if width >= 90 {
-				label += " · " + item.Purpose
+		items := m.mcpListItems()
+		for index, item := range items {
+			badge := "[ ]"
+			if item.Active {
+				badge = "[✓]"
+			}
+			label := fmt.Sprintf("%s %s · %s", badge, item.Name, item.Purpose)
+			if width < 78 {
+				label = fmt.Sprintf("%s %s", badge, item.Name)
 			}
 			if index == m.integrationCursor {
 				b.WriteString(crtGreen.Render("› "+label) + "\n")
@@ -392,11 +493,18 @@ func (m model) crtIntegration(width int, page string) (string, string) {
 				b.WriteString("  " + label + "\n")
 			}
 		}
-		b.WriteString("\nElegí una opción para revisar estado, requisitos y guía.")
-		return b.String(), "↑↓ / j k navegar · Enter elegir · Esc volver · q salir"
+		b.WriteString("\nElegí una opción o presioná N para sumar un MCP propio.")
+		if m.fault != "" {
+			b.WriteString("\n" + crtAmber.Render(m.fault))
+		}
+		return b.String(), "↑↓ navegar · Enter elegir · N nuevo MCP · Tab proveedor · Esc volver"
 	}
-	item, _ := integrations.Find(m.integrationID)
-	b.WriteString(item.Name + "\n")
+
+	name := m.integrationID
+	if item, ok := integrations.Find(m.integrationID); ok {
+		name = item.Name
+	}
+	b.WriteString(name + "\n")
 	if m.screen == integrationPreview {
 		b.WriteString(crtGreen.Render("REVISIÓN PREVIA") + "\n")
 	} else if m.screen == integrationResult || m.fault != "" {
@@ -406,7 +514,12 @@ func (m model) crtIntegration(width int, page string) (string, string) {
 	if m.screen == integrationPreview {
 		return b.String(), "S / Y confirmar · N cancelar · Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
 	}
+	_, isCatalog := integrations.Find(m.integrationID)
 	keys := ""
+	if !isCatalog {
+		keys = "D quitar si es de Chuli · V comprobar\nEnter actualizar ficha · Esc volver · q salir"
+		return b.String(), keys
+	}
 	if m.integrationID != "egolite" {
 		keys = "C configurar · D deshacer\n"
 	}
@@ -420,7 +533,7 @@ func (m model) crtIntegration(width int, page string) (string, string) {
 
 func (m model) crtPaged() bool {
 	switch m.screen {
-	case preview, conflict, result, integrationDetail, integrationPreview, integrationResult:
+	case preview, conflict, result, updateScreen, integrationDetail, integrationPreview, integrationResult:
 		return true
 	}
 	return false

@@ -7,20 +7,22 @@ import (
 	"testing"
 )
 
-func TestDefaultMenuRequiresExplicitLocalSource(t *testing.T) {
+func TestDefaultMenuAndExplicitLocalSourceInWizard(t *testing.T) {
+	items := choices(manager.Manager{})
+	want := []string{"install", "update", "versions", "models", "integrations", "skills"}
+	if len(items) != len(want) {
+		t.Fatalf("expected %d main menu buttons, got %d", len(want), len(items))
+	}
+	for i, w := range want {
+		if items[i].action != w {
+			t.Fatalf("menu[%d] = %q, want %q", i, items[i].action, w)
+		}
+	}
 	for _, s := range []string{"", "/trusted"} {
-		hasLocal := false
-		choices := choices(manager.Manager{Source: s})
-		if choices[0].action != "latest" {
-			t.Fatal("default must be the official profile")
-		}
-		for _, item := range choices {
-			if item.action == "local" {
-				hasLocal = true
-			}
-		}
-		if (s != "") != hasLocal {
-			t.Fatal("local source availability", s)
+		m := model{mgr: manager.Manager{Home: canonicalTUITestHome(t), Source: s}}
+		m.initWizard()
+		if m.wizardUseLocal != (s != "") {
+			t.Fatalf("wizardUseLocal=%v for Source=%q", m.wizardUseLocal, s)
 		}
 	}
 }

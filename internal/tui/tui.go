@@ -35,37 +35,78 @@ var (
 type menuItem struct{ label, action string }
 
 func choices(mgr manager.Manager) []menuItem {
-	items := []menuItem{{"Instalar o actualizar el perfil oficial", "latest"}}
-	if mgr.Source != "" {
-		items = append(items, menuItem{"Instalar desde --source", "local"})
+	return []menuItem{
+		{"Instalar", "install"},
+		{"Actualizar", "update"},
+		{"Gestionar versiones", "versions"},
+		{"Perfiles de AI", "models"},
+		{"MCPs", "integrations"},
+		{"Skills", "skills"},
 	}
-	return append(items,
-		menuItem{"Modelos y presets: configurar agentes", "models"},
-		menuItem{"Integraciones: configurar herramientas", "integrations"},
-		menuItem{"Ver modelos, agentes y skills registrados", "profile"},
-		menuItem{"Verificar el perfil instalado", "doctor"},
-		menuItem{"Restaurar la instalación anterior", "rollback"},
-		menuItem{"Acerca de Chuli", "about"},
-	)
 }
 
 type model struct {
-	width             int
-	integrationID     string
-	integrationCursor int
-	integrationPlan   integrations.Plan
-	roleCursor        int
-	height, offset    int
-	mgr               manager.Manager
-	managerVersion    string
-	installed         string
-	cursor            int
-	screen            string
-	title             string
-	action            string
-	prepared          manager.Prepared
-	log               string
-	fault             string
+	width               int
+	integrationID       string
+	integrationCursor   int
+	integrationPlan     integrations.Plan
+	configuredMCPs      []integrations.ConfiguredServer
+	selectedCustomMCP   integrations.ConfiguredServer
+	customMCPField      int
+	customMCPName       string
+	customMCPIsCmd      bool
+	customMCPTarget     string
+	customMCPEnv        string
+	roleCursor          int
+	height, offset      int
+	mgr                 manager.Manager
+	managerVersion      string
+	installed           string
+	cursor              int
+	screen              string
+	title               string
+	action              string
+	prepared            manager.Prepared
+	log                 string
+	fault               string
+	resultSummary       string
+	resultNext          string
+	showTechLog         bool
+	statuses            []manager.ClientStatus
+	updatesChecked      bool
+	updateCheckErr      string
+	updateReport        manager.UpdateReport
+	releases            []manager.Release
+	cachedTags          []string
+	wizardSelected      map[string]bool
+	wizardConfigs       map[string]wizardClientConfig
+	wizardCursor        int
+	wizardProfileCursor int
+	wizardActiveID      string
+	wizardProviderIdx   int
+	wizardConfirmCursor int
+	wizardUseLocal      bool
+	wizardReturn        bool
+	adoptGentle         bool
+	versionCursor       int
+	updateCursor        int
+	rolePickerModelIdx  int
+	progressStep        int
+	progressTotal       int
+	progressLabel       string
+	spinnerIdx          int
+	activeTracker       *progressTracker
+	busyCancelable      bool
+	busyReturnScreen    string
+	savedProfiles       []manager.SavedProfile
+	savedProfileIdx     int
+	profileNameInput    string
+	skillsList          []manager.SkillInfo
+	skillsDraftDisabled map[string]bool
+	skillsCursor        int
+	skillsDirty         bool
+	skillPathInput      string
+	skillNotice         string
 }
 
 type preparedMsg struct {
@@ -78,9 +119,17 @@ type finishedMsg struct {
 	err error
 }
 
-func (m model) Init() tea.Cmd { return nil }
+func (m model) Init() tea.Cmd {
+	return checkUpdatesCmd(m.mgr, m.managerVersion)
+}
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if next, cmd, handled := m.updateWizard(message); handled {
+		return next, cmd
+	}
+	if next, cmd, handled := m.updateSkills(message); handled {
+		return next, cmd
+	}
 	if next, cmd, handled := m.updateIntegrations(message); handled {
 		return next, cmd
 	}
@@ -94,6 +143,21 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		key := strings.ToLower(msg.String())
 		if m.screen == busy {
+			if m.busyCancelable {
+				switch key {
+				case "ctrl+c", "q":
+					return m, tea.Quit
+				case "esc":
+					ret := m.busyReturnScreen
+					if ret == "" {
+						ret = home
+					}
+					m.busyCancelable = false
+					m.busyReturnScreen = ""
+					m.screen = ret
+					return m, nil
+				}
+			}
 			return m, nil
 		} // Do not detach a mutating process.
 		switch key {
@@ -106,6 +170,9 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			m.screen = home
 			m.fault = ""
 			m.log = ""
+			m.resultSummary = ""
+			m.resultNext = ""
+			m.showTechLog = false
 			return m, nil
 		}
 		if m.screen == preview || m.screen == result || m.screen == conflict {
@@ -122,6 +189,11 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		}
+		if m.screen == result && key == "v" {
+			m.showTechLog = !m.showTechLog
+			m.offset = 0
+			return m, nil
+		}
 		if m.screen == home {
 			options := choices(m.mgr)
 			switch key {
@@ -135,8 +207,26 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.switchClient("agy")
 			case "m":
 				m.ensureModelState()
+				m.reloadSavedProfiles()
+				m.wizardReturn = false
 				m.screen = modelsScreen
 				return m, nil
+			case "?", "a":
+				m.screen = about
+				return m, nil
+			case "d":
+				m.offset = 0
+				m.title = "Verificar el perfil instalado"
+				m.action = "doctor"
+				m.fault = ""
+				m.log = ""
+				m.resultSummary = ""
+				m.resultNext = ""
+				m.showTechLog = true
+				m.progressStep, m.progressTotal = 1, 1
+				m.progressLabel = "Comprobando archivos, reglas y configuración..."
+				m.screen = busy
+				return m, diagnoseCmd(m.mgr)
 			case "up", "k":
 				if m.cursor > 0 {
 					m.cursor--
@@ -152,31 +242,62 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.action = choice.action
 				m.fault = ""
 				m.log = ""
-				if choice.action == "about" {
-					m.screen = about
+				m.resultSummary = ""
+				m.resultNext = ""
+				m.showTechLog = false
+				switch choice.action {
+				case "install":
+					m.initWizard()
+					m.screen = installPlatformsScreen
 					return m, nil
-				}
-				if choice.action == "models" {
+				case "update":
+					m.updateCursor = 0
+					if !m.updatesChecked {
+						m.screen = busy
+						m.busyCancelable = true
+						m.busyReturnScreen = updateScreen
+						m.title = "Buscando actualizaciones"
+						m.progressStep, m.progressTotal = 1, 1
+						m.progressLabel = "Consultando últimas releases oficiales en GitHub..."
+						return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
+					}
+					m.screen = updateScreen
+					m.log = m.updateReport.Summary
+					return m, nil
+				case "versions":
+					m.versionCursor = 0
+					if !m.updatesChecked {
+						m.screen = busy
+						m.busyCancelable = true
+						m.busyReturnScreen = versionsScreen
+						m.title = "Cargando versiones"
+						m.progressStep, m.progressTotal = 1, 1
+						m.progressLabel = "Consultando releases disponibles en GitHub..."
+						return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
+					}
+					m.screen = versionsScreen
+					return m, nil
+				case "models":
 					m.ensureModelState()
+					m.reloadSavedProfiles()
+					m.wizardReturn = false
 					m.screen = modelsScreen
 					return m, nil
-				}
-				if choice.action == "integrations" {
+				case "integrations":
+					m.integrationCursor = 0
 					m.screen = integrationList
 					return m, nil
+				case "skills":
+					m.skillsCursor = 0
+					m.skillNotice = ""
+					m.screen = skillsScreen
+					return m, loadSkillsCmd(m.mgr)
 				}
-				m.screen = busy
-				if choice.action == "profile" {
-					return m, func() tea.Msg { summary, err := m.mgr.Profile(); return finishedMsg{summary, err} }
-				}
-				if choice.action == "doctor" {
-					return m, diagnoseCmd(m.mgr)
-				}
-				return m, prepareCmd(m.mgr, choice.action, false)
 			}
 		} else if m.screen == conflict && key == "a" {
 			m.screen = busy
 			m.title = "Usar Chuli como orquestador y respaldar Gentle"
+			m.progressLabel = "Respaldando instrucciones anteriores y preparando plan..."
 			m.log, m.fault = "", ""
 			m.offset = 0
 			return m, prepareCmd(m.mgr, m.action, true)
@@ -185,6 +306,7 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			case "y", "s":
 				m.screen = busy
 				m.title = "Aplicando: " + m.title
+				m.progressLabel = "Aplicando cambios de forma segura..."
 				return m, applyCmd(m.mgr, m.prepared)
 			case "n":
 				m.prepared.Cleanup()
@@ -193,6 +315,11 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		} else if m.screen == result && key == "enter" {
 			m.screen = home
+			m.resultSummary = ""
+			m.resultNext = ""
+			m.showTechLog = false
+			m.fault = ""
+			m.log = ""
 		}
 	case preparedMsg:
 		if msg.err != nil {
@@ -265,7 +392,13 @@ func (m model) pageSize() int {
 
 func (m model) lines() []string {
 	log := crtText(m.log)
-	if m.fault != "" {
+	if m.screen == updateScreen {
+		log = crtText(m.updateReport.Summary)
+		if strings.TrimSpace(log) == "" {
+			log = "No hay notas adicionales para esta release."
+		}
+	}
+	if m.fault != "" && m.screen != updateScreen {
 		log = crtText(m.fault) + "\n" + log
 	}
 	if m.width > 0 && (m.screen == preview || m.screen == integrationPreview) {
@@ -299,7 +432,20 @@ func Run(mgr manager.Manager, version string) error {
 	if err != nil {
 		return err
 	}
-	initial := model{mgr: mgr, managerVersion: version, installed: installed, screen: home}
+	statuses := mgr.DetectClients()
+	initial := model{
+		mgr:                 mgr,
+		managerVersion:      version,
+		installed:           installed,
+		statuses:            statuses,
+		screen:              home,
+		savedProfileIdx:     -1,
+		skillsDraftDisabled: map[string]bool{},
+	}
+	initial.reloadSavedProfiles()
+	if servers, err := initial.integrationService().ListConfigured(context.Background()); err == nil {
+		initial.configuredMCPs = servers
+	}
 	final, err := tea.NewProgram(initial).Run()
 	if finalModel, ok := final.(model); ok {
 		finalModel.prepared.Cleanup()

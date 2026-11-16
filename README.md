@@ -51,7 +51,7 @@ go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.
 go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
 ```
 
-Después ejecutá `chuli`: en la consola CRT podés elegir tu cliente (**OpenAI Codex**, **Claude Code** o **AGY CLI**), seleccionar un **preset rápido** o configurar qué modelo y esfuerzo usa cada uno de los **7 agentes**, revisar la vista previa y confirmar. El Manager descarga la última release, comprueba su `SHA-256` y aplica el perfil en tu entorno (`~/.codex`, `~/.claude` o `~/.gemini/config`).
+Después ejecutá `chuli`: la consola CRT te recibe con un menú directo de 6 acciones (**Instalar**, **Actualizar**, **Gestionar versiones**, **Perfiles de AI**, **MCPs** y **Skills**) y te avisa si salió una nueva release. En **Instalar**, elegís una o varias plataformas (**OpenAI Codex**, **Claude Code** o **AGY CLI**), seleccionás un preset o personalizás tus modelos, confirmás un resumen simple y Chuli aplica todo con respaldo automático SHA-256 sin llenarte la pantalla de texto técnico.
 
 ### Sin Go (instalador Windows o descarga portable)
 
