@@ -22,6 +22,13 @@ func TestCRTResponsiveHome(t *testing.T) {
 					t.Fatalf("missing %q in\n%s", want, text)
 				}
 			}
+			if width >= 60 {
+				for _, art := range []string{"▄█████▄", "▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄", "▄▄▄▄▄▄▄████▄▄▄▄▄▄▄"} {
+					if !strings.Contains(text, art) {
+						t.Fatalf("missing pixel logo token %q at width %d:\n%s", art, width, text)
+					}
+				}
+			}
 			for _, line := range strings.Split(text, "\n") {
 				if lipgloss.Width(line) > width {
 					t.Fatalf("line exceeds %d columns: %q", width, line)
@@ -109,12 +116,55 @@ func TestCRTRejectsTerminalControls(t *testing.T) {
 
 func TestCRTHeightKeepsControlsVisible(t *testing.T) {
 	for _, size := range [][2]int{{40, 24}, {80, 24}, {120, 32}} {
-		for _, screen := range []string{home, busy, preview, conflict, result, about, integrationList, integrationPreview, integrationDetail, integrationResult} {
+		for _, screen := range []string{home, modelsScreen, busy, preview, conflict, result, about, integrationList, integrationPreview, integrationDetail, integrationResult} {
 			m := model{screen: screen, width: size[0], height: size[1], integrationID: "exa", mgr: manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)}, log: strings.Repeat("cambio revisable largo ", 100), fault: "un error recuperable"}
 			content := m.renderCRT().Content
 			if rows := lipgloss.Height(content); rows > size[1] {
 				t.Errorf("%s %dx%d used %d rows", screen, size[0], size[1], rows)
 			}
+		}
+	}
+}
+
+func TestModelsConfiguratorAndClientSwitch(t *testing.T) {
+	m := model{screen: home, width: 100, height: 28, mgr: manager.Manager{Home: "/temporary/codex", Target: "codex"}}
+	next, _ := m.Update(tea.KeyPressMsg{Code: 'm', Text: "m"})
+	m = next.(model)
+	if m.screen != modelsScreen {
+		t.Fatalf("expected models screen, got %s", m.screen)
+	}
+	next, _ = m.Update(tea.KeyPressMsg{Code: '2', Text: "2"})
+	m = next.(model)
+	if m.mgr.Target != "claude" || m.mgr.Preset != "claude-balanced" {
+		t.Fatalf("expected claude-balanced, got %s / %s", m.mgr.Target, m.mgr.Preset)
+	}
+	if m.mgr.RoleModels["solution_architect"].Model != "claude-fable-5-2" {
+		t.Fatalf("unexpected architect model: %+v", m.mgr.RoleModels["solution_architect"])
+	}
+	next, _ = m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
+	m = next.(model)
+	if m.mgr.Preset != "claude-fable-max" || m.mgr.RoleModels["orchestrator"].Model != "claude-fable-5-2" {
+		t.Fatalf("preset cycle failed: %s / %+v", m.mgr.Preset, m.mgr.RoleModels["orchestrator"])
+	}
+	next, _ = m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
+	m = next.(model)
+	if m.mgr.Preset != "custom" || m.mgr.RoleModels["orchestrator"].Model != "claude-opus-5-5" {
+		t.Fatalf("role model cycle failed: %s / %+v", m.mgr.Preset, m.mgr.RoleModels["orchestrator"])
+	}
+	next, _ = m.Update(tea.KeyPressMsg{Code: 'e', Text: "e"})
+	m = next.(model)
+	if m.mgr.RoleModels["orchestrator"].Effort != "low" {
+		t.Fatalf("role effort cycle failed: %+v", m.mgr.RoleModels["orchestrator"])
+	}
+	next, _ = m.Update(tea.KeyPressMsg{Code: '3', Text: "3"})
+	m = next.(model)
+	if m.mgr.Target != "agy" || m.mgr.Preset != "agy-balanced" || m.mgr.RoleModels["orchestrator"].Model != "orchestrator-argon" {
+		t.Fatalf("expected agy-balanced, got %s / %s", m.mgr.Target, m.mgr.Preset)
+	}
+	text := ansi.Strip(m.renderCRT().Content)
+	for _, want := range []string{"Modelos y Presets", "3:AGY", "agy-balanced", "orchestrator-argon"} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("missing %q in models screen:\n%s", want, text)
 		}
 	}
 }

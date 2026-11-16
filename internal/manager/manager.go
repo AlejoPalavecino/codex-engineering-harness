@@ -30,10 +30,13 @@ var releaseTag = regexp.MustCompile("^v[0-9]+\\.[0-9]+\\.[0-9]+$")
 var version = regexp.MustCompile("^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
 
 type Manager struct {
-	Home     string
-	Source   string
-	Client   *http.Client
-	cacheDir string // resolved by New; private user configuration, outside the working directory
+	Home       string
+	Source     string
+	Client     *http.Client
+	Target     string
+	Preset     string
+	RoleModels map[string]RoleModel
+	cacheDir   string // resolved by New; private user configuration, outside the working directory
 }
 
 type Release struct {
@@ -50,21 +53,19 @@ type Prepared struct {
 	archive            *profileArchive
 	stateID            [sha256.Size]byte
 	adoptGentleRouting bool
+	preset             string
+	roleModelsJSON     string
 }
 
 func New(source string) (Manager, error) {
-	home := os.Getenv("CODEX_HOME")
-	if home == "" {
-		user, err := os.UserHomeDir()
-		if err != nil {
-			return Manager{}, err
-		}
-		home = filepath.Join(user, ".codex")
+	return NewForClient(source, "codex")
+}
+
+func NewForClient(source, target string) (Manager, error) {
+	if target == "" {
+		target = "codex"
 	}
-	if !filepath.IsAbs(home) {
-		return Manager{}, errors.New("CODEX_HOME debe ser una ruta absoluta")
-	}
-	full, err := filepath.Abs(home)
+	full, err := ResolveClientHome(target)
 	if err != nil {
 		return Manager{}, err
 	}
@@ -81,7 +82,14 @@ func New(source string) (Manager, error) {
 			return Manager{}, err
 		}
 	}
-	return Manager{Home: full, Source: source, cacheDir: filepath.Join(config, "chuli", "profiles")}, nil
+	return Manager{Home: full, Source: source, Target: target, cacheDir: filepath.Join(config, "chuli", "profiles")}, nil
+}
+
+func (m Manager) effectiveTarget() string {
+	if m.Target == "" {
+		return "codex"
+	}
+	return m.Target
 }
 
 func Compare(a, b string) (int, error) {
@@ -108,6 +116,9 @@ func Compare(a, b string) (int, error) {
 type installationState struct {
 	id                    [sha256.Size]byte
 	Version               string                     `json:"version"`
+	Client                string                     `json:"client"`
+	Preset                string                     `json:"preset"`
+	RoleModels            map[string]RoleModel       `json:"role_models"`
 	ManagedFiles          map[string]string          `json:"managed_files"`
 	ManagedConfig         map[string]json.RawMessage `json:"managed_config"`
 	SchemaVersion         int                        `json:"schema_version"`
@@ -176,14 +187,29 @@ func (m Manager) Profile() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if state.Version == "" {
-		return "Perfil Chuli para Codex: sin instalar", nil
+	targetName := "Codex"
+	if c, ok := FindClient(m.effectiveTarget()); ok && m.effectiveTarget() != "codex" {
+		targetName = c.Name
 	}
-	lines := []string{"Perfil Chuli para Codex " + state.Version, "Datos del manifiesto de instalación"}
-	for _, item := range []struct{ key, label string }{{"model", "Modelo registrado"}, {"model_reasoning_effort", "Esfuerzo registrado"}} {
+	if state.Version == "" {
+		return "Perfil Chuli para " + targetName + ": sin instalar", nil
+	}
+	lines := []string{"Perfil Chuli para " + targetName + " " + state.Version, "Datos del manifiesto de instalación"}
+	if state.Preset != "" {
+		lines = append(lines, "Preset registrado: "+state.Preset)
+	}
+	for _, item := range []struct{ key, label string }{{"model", "Modelo registrado"}, {"model_reasoning_effort", "Esfuerzo registrado"}, {"env.CLAUDE_CODE_EFFORT_LEVEL", "Esfuerzo registrado"}} {
 		var value string
-		if raw := state.ManagedConfig[item.key]; raw != nil && json.Unmarshal(raw, &value) == nil && component.MatchString(value) && len(value) <= 100 {
+		if raw := state.ManagedConfig[item.key]; raw != nil && json.Unmarshal(raw, &value) == nil && len(value) <= 100 {
 			lines = append(lines, item.label+": "+value)
+		}
+	}
+	if len(state.RoleModels) > 0 {
+		lines = append(lines, "Modelos por rol:")
+		for _, r := range Roles() {
+			if rm, ok := state.RoleModels[r.ID]; ok && rm.Model != "" {
+				lines = append(lines, fmt.Sprintf("  %s: %s (%s)", r.ID, rm.Model, rm.Effort))
+			}
 		}
 	}
 	if state.ManagedFiles != nil {
@@ -192,9 +218,19 @@ func (m Manager) Profile() (string, error) {
 			parts := strings.Split(path, "/")
 			if len(parts) == 3 && parts[0] == "skills" && parts[2] == "SKILL.md" && component.MatchString(parts[1]) {
 				skills = append(skills, parts[1])
+			} else if len(parts) == 5 && parts[0] == "plugins" && parts[1] == "chuli" && parts[2] == "skills" && parts[4] == "SKILL.md" && component.MatchString(parts[3]) {
+				skills = append(skills, parts[3])
 			}
-			if len(parts) == 2 && parts[0] == "agents" && strings.HasSuffix(parts[1], ".toml") && component.MatchString(parts[1]) {
-				agents = append(agents, strings.TrimSuffix(parts[1], ".toml"))
+			if len(parts) == 2 && parts[0] == "agents" && (strings.HasSuffix(parts[1], ".toml") || strings.HasSuffix(parts[1], ".md")) {
+				name := strings.TrimSuffix(strings.TrimSuffix(parts[1], ".toml"), ".md")
+				if component.MatchString(name) {
+					agents = append(agents, name)
+				}
+			} else if len(parts) == 4 && parts[0] == "plugins" && parts[1] == "chuli" && parts[2] == "agents" && strings.HasSuffix(parts[3], ".md") {
+				name := strings.TrimSuffix(parts[3], ".md")
+				if component.MatchString(name) {
+					agents = append(agents, name)
+				}
 			}
 		}
 		sort.Strings(agents)
@@ -307,7 +343,10 @@ func trunc(b []byte) string {
 	return string(b)
 }
 
-type scriptOptions struct{ apply, adoptGentleRouting bool }
+type scriptOptions struct {
+	apply, adoptGentleRouting bool
+	preset, roleModelsJSON    string
+}
 
 func (m Manager) script(ctx context.Context, root, file string, opts scriptOptions) (string, error) {
 	if file != "install.ps1" && file != "rollback.ps1" && file != "verify.ps1" {
@@ -321,6 +360,18 @@ func (m Manager) script(ctx context.Context, root, file string, opts scriptOptio
 		return "", err
 	}
 	args := []string{"-NoProfile", "-NonInteractive", "-File", filepath.Join(root, "scripts", file), "-CodexHome", m.Home}
+	target := m.effectiveTarget()
+	if target != "codex" {
+		args = append(args, "-Client", target)
+	}
+	if file == "install.ps1" {
+		if opts.preset != "" {
+			args = append(args, "-Preset", opts.preset)
+		}
+		if opts.roleModelsJSON != "" {
+			args = append(args, "-RoleModelsJson", opts.roleModelsJSON)
+		}
+	}
 	if opts.adoptGentleRouting {
 		if file != "install.ps1" {
 			return "", errors.New("la adopción solo se permite durante instalación o actualización")
@@ -459,7 +510,17 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 		}
 	}
 	p.adoptGentleRouting = adoptGentleRouting
-	if err == nil && sameVersion {
+	p.preset = m.Preset
+	if len(m.RoleModels) > 0 {
+		encoded, encErr := EncodeRoleModels(m.RoleModels)
+		if encErr != nil {
+			p.Cleanup()
+			return Prepared{}, encErr
+		}
+		p.roleModelsJSON = encoded
+	}
+	hasModelSelection := p.preset != "" || p.roleModelsJSON != ""
+	if err == nil && sameVersion && !hasModelSelection {
 		// An unchanged release may be reapplied only to reconcile a recognized
 		// conflict. Ask the installer, which owns the exact marker grammar.
 		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{})
@@ -472,7 +533,7 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 		}
 	}
 	if err == nil {
-		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{adoptGentleRouting: adoptGentleRouting})
+		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{adoptGentleRouting: adoptGentleRouting, preset: p.preset, roleModelsJSON: p.roleModelsJSON})
 	}
 	if err != nil && p.Action == "install" && !adoptGentleRouting && strings.Contains(p.Preview, "CHULI_GENTLE_CONFLICT") {
 		err = fmt.Errorf("%w: %w", ErrGentleConflict, err)
@@ -512,7 +573,7 @@ func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
 		defer fresh.Cleanup()
 		p.Root = fresh.Root
 	}
-	log, err := m.script(ctx, p.Root, file, scriptOptions{apply: true, adoptGentleRouting: p.adoptGentleRouting})
+	log, err := m.script(ctx, p.Root, file, scriptOptions{apply: true, adoptGentleRouting: p.adoptGentleRouting, preset: p.preset, roleModelsJSON: p.roleModelsJSON})
 	if err != nil {
 		return log, err
 	}

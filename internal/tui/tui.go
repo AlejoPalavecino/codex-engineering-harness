@@ -39,7 +39,14 @@ func choices(mgr manager.Manager) []menuItem {
 	if mgr.Source != "" {
 		items = append(items, menuItem{"Instalar desde --source", "local"})
 	}
-	return append(items, menuItem{"Integraciones: configurar herramientas", "integrations"}, menuItem{"Ver modelos, agentes y skills registrados", "profile"}, menuItem{"Verificar el perfil instalado", "doctor"}, menuItem{"Restaurar la instalación anterior", "rollback"}, menuItem{"Acerca de Chuli", "about"})
+	return append(items,
+		menuItem{"Modelos y presets: configurar agentes", "models"},
+		menuItem{"Integraciones: configurar herramientas", "integrations"},
+		menuItem{"Ver modelos, agentes y skills registrados", "profile"},
+		menuItem{"Verificar el perfil instalado", "doctor"},
+		menuItem{"Restaurar la instalación anterior", "rollback"},
+		menuItem{"Acerca de Chuli", "about"},
+	)
 }
 
 type model struct {
@@ -47,6 +54,7 @@ type model struct {
 	integrationID     string
 	integrationCursor int
 	integrationPlan   integrations.Plan
+	roleCursor        int
 	height, offset    int
 	mgr               manager.Manager
 	managerVersion    string
@@ -74,6 +82,9 @@ func (m model) Init() tea.Cmd { return nil }
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	if next, cmd, handled := m.updateIntegrations(message); handled {
+		return next, cmd
+	}
+	if next, cmd, handled := m.updateModels(message); handled {
 		return next, cmd
 	}
 	switch msg := message.(type) {
@@ -114,6 +125,18 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		if m.screen == home {
 			options := choices(m.mgr)
 			switch key {
+			case "tab":
+				m.nextClient()
+			case "1":
+				m.switchClient("codex")
+			case "2":
+				m.switchClient("claude")
+			case "3":
+				m.switchClient("agy")
+			case "m":
+				m.ensureModelState()
+				m.screen = modelsScreen
+				return m, nil
 			case "up", "k":
 				if m.cursor > 0 {
 					m.cursor--
@@ -131,6 +154,11 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 				m.log = ""
 				if choice.action == "about" {
 					m.screen = about
+					return m, nil
+				}
+				if choice.action == "models" {
+					m.ensureModelState()
+					m.screen = modelsScreen
 					return m, nil
 				}
 				if choice.action == "integrations" {

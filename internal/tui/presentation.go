@@ -8,14 +8,106 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
+	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
 	"github.com/charmbracelet/x/ansi"
 )
 
 var (
-	crtGreen = lipgloss.NewStyle().Foreground(lipgloss.Color("#9BE79B")).Bold(true)
-	crtBeige = lipgloss.NewStyle().Foreground(lipgloss.Color("#E6D8B8"))
-	crtWhite = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2F4EB")).Background(lipgloss.Color("#101713"))
+	crtGreen    = lipgloss.NewStyle().Foreground(lipgloss.Color("#9BE79B")).Bold(true)
+	crtNeon     = lipgloss.NewStyle().Foreground(lipgloss.Color("#5CE63C")).Bold(true)
+	crtShadow   = lipgloss.NewStyle().Foreground(lipgloss.Color("#2D6E36"))
+	crtAmber    = lipgloss.NewStyle().Foreground(lipgloss.Color("#F4C97A")).Bold(true)
+	crtCyan     = lipgloss.NewStyle().Foreground(lipgloss.Color("#79CFFF"))
+	crtBeige    = lipgloss.NewStyle().Foreground(lipgloss.Color("#E6D8B8"))
+	crtCaseSide = lipgloss.NewStyle().Foreground(lipgloss.Color("#B89768"))
+	crtWhite    = lipgloss.NewStyle().Foreground(lipgloss.Color("#F2F4EB")).Background(lipgloss.Color("#101713"))
 )
+
+func colorBlockShadow(line string) string {
+	var out strings.Builder
+	var run strings.Builder
+	mode := byte(0) // 0=space, 1=neon, 2=shadow
+	flush := func() {
+		if run.Len() == 0 {
+			return
+		}
+		switch mode {
+		case 1:
+			out.WriteString(crtNeon.Render(run.String()))
+		case 2:
+			out.WriteString(crtShadow.Render(run.String()))
+		default:
+			out.WriteString(run.String())
+		}
+		run.Reset()
+	}
+	for _, r := range line {
+		next := byte(1)
+		if r == ' ' {
+			next = 0
+		} else if r == '░' {
+			next = 2
+		}
+		if next != mode {
+			flush()
+			mode = next
+		}
+		run.WriteRune(r)
+	}
+	flush()
+	return out.String()
+}
+
+func renderClientTabs(activeID string) string {
+	var tabs []string
+	for idx, c := range manager.Clients() {
+		label := fmt.Sprintf("%d:%s", idx+1, c.Short)
+		if c.ID == activeID {
+			tabs = append(tabs, crtNeon.Render("[● "+label+"]"))
+		} else {
+			tabs = append(tabs, crtBeige.Render("[○ "+label+"]"))
+		}
+	}
+	return strings.Join(tabs, "  ")
+}
+
+func renderChuliLogo(clientID, version string) string {
+	ver := crtText(version)
+	if ver == "" {
+		ver = "2.0.0"
+	}
+	if lipgloss.Width(ver) > 11 {
+		ver = ansi.Truncate(ver, 11, "")
+	}
+	// Each PC row is 20 visible columns wide to align with the 20-col chassis and
+	// leave room for the 37-col CHULI block wordmark inside a 60-col terminal.
+	pc := []string{
+		"  " + crtBeige.Render("▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄") + crtCaseSide.Render("░") + " ",
+		"  " + crtBeige.Render("██") + "  " + crtNeon.Render("▀▄") + "        " + crtBeige.Render("██") + crtCaseSide.Render("░") + " ",
+		"  " + crtBeige.Render("██") + "  " + crtNeon.Render("▄▀ ▄▄▄") + "    " + crtBeige.Render("██") + crtCaseSide.Render("░") + " ",
+		"  " + crtBeige.Render("▀█▄▄▄▄▄▄▄▄▄▄▄▄█▀") + crtCaseSide.Render("░") + " ",
+		" " + crtBeige.Render("▄▄▄▄▄▄▄████▄▄▄▄▄▄▄") + crtCaseSide.Render("░"),
+		" " + crtBeige.Render("███▄▄▄██████▀▀▀███") + crtCaseSide.Render("░"),
+		" " + crtBeige.Render("▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀") + " ",
+	}
+	right := []string{
+		crtNeon.Render("●") + " " + crtAmber.Render("MULTI-CLIENT HARNESS") + crtBeige.Render(" · ") + crtCyan.Render("v"+ver),
+		colorBlockShadow("▄█████▄ ██░ ██░ ██░ ██░ ██░    █████░"),
+		colorBlockShadow("██░  ▀▀ ██░ ██░ ██░ ██░ ██░     ▐█▌░ "),
+		colorBlockShadow("██░     ██████░ ██░ ██░ ██░     ▐█▌░ "),
+		colorBlockShadow("██░  ▄▄ ██░ ██░ ██░ ██░ ██░     ▐█▌░ "),
+		colorBlockShadow("▀█████▀ ██░ ██░ ▀████▀░ █████░ █████░"),
+		renderClientTabs(clientID),
+	}
+	var out strings.Builder
+	for i := range pc {
+		out.WriteString(pc[i] + "  " + right[i])
+		if i < len(pc)-1 {
+			out.WriteByte('\n')
+		}
+	}
+	return out.String()
+}
 
 // crtText removes terminal commands before untrusted content enters the layout.
 // Newlines remain meaningful for logs; other control characters cannot move the
@@ -63,20 +155,37 @@ func (m model) crtFrame(page string) string {
 	if installed == "" {
 		installed = "No instalado"
 	}
+	clientSpec, ok := manager.FindClient(m.mgr.Target)
+	if !ok {
+		clientSpec, _ = manager.FindClient("codex")
+	}
+	presetLabel := m.mgr.Preset
+	if presetLabel == "" {
+		presetLabel = clientSpec.DefaultPreset
+	}
 	var b strings.Builder
 	if m.screen == home && width >= 60 && (m.height == 0 || m.height >= 24) {
-		b.WriteString(crtBeige.Render("  .------------.\n  |   CHULI    |\n  |____________|\n    /________\\") + "\n")
+		b.WriteString(renderChuliLogo(clientSpec.ID, m.managerVersion) + "\n")
 	} else if m.screen == home {
-		b.WriteString(crtGreen.Render("[ CHULI ]") + "\n")
+		b.WriteString(crtNeon.Render("▐▛▀▜▌") + " " + crtGreen.Render("[ ● CHULI ]") + "\n")
 	}
-	b.WriteString(crtGreen.Render("CHULI") + " / " + crtBeige.Render("Manager: "+crtText(m.managerVersion)) + "\n")
+	headerLine := crtGreen.Render("CHULI") + " / " + crtBeige.Render("Manager: "+crtText(m.managerVersion))
+	if width >= 68 {
+		headerLine += " · " + crtAmber.Render("Cliente: "+clientSpec.Short) + " (" + crtCyan.Render(presetLabel) + ")"
+	}
+	b.WriteString(headerLine + "\n")
 	b.WriteString("Perfil: " + installed + "\n")
 	homeLabel := m.mgr.Home
-	if lipgloss.Width(homeLabel) > width-12 {
-		homeLabel = ansi.TruncateLeft(homeLabel, max(1, width-12), "…")
+	keep := max(1, width-12)
+	if w := lipgloss.Width(homeLabel); w > keep {
+		if keep <= 1 {
+			homeLabel = "…"
+		} else {
+			homeLabel = ansi.TruncateLeft(homeLabel, w-keep+1, "…")
+		}
 	}
 	b.WriteString("CODEX_HOME: " + homeLabel + "\n")
-	b.WriteString(crtBeige.Render(strings.Repeat("─", min(width, 76))) + "\n")
+	b.WriteString(crtBeige.Render(strings.Repeat("━", min(width, 76))) + "\n")
 	body, keys := m.crtBody(width, page)
 	b.WriteString(body)
 	if keys != "" {
@@ -93,7 +202,13 @@ func (m model) crtBody(width int, page string) (string, string) {
 	}
 	switch m.screen {
 	case home:
-		return m.crtHome(width), "↑↓ / j k navegar · Enter elegir · q salir"
+		keys := "↑↓ / j k navegar · Enter elegir · Tab cliente · M modelos · q salir"
+		if width < 68 {
+			keys = "↑↓ / j k navegar · Enter elegir · q salir"
+		}
+		return m.crtHome(width), keys
+	case modelsScreen:
+		return m.crtModels(width)
 	case busy:
 		return crtGreen.Render("EN CURSO") + "\n" + m.title + "\n\nEjecutando comprobaciones.\nNo cierres la terminal durante una escritura.", ""
 	case preview:
@@ -103,44 +218,150 @@ func (m model) crtBody(width int, page string) (string, string) {
 	case result:
 		return m.crtOutcome() + "\n" + m.title + "\n\n" + page, "Enter / Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
 	case about:
-		return crtGreen.Render("Acerca de Chuli") + "\n\nChuli es el perfil de ingeniería para Codex.\nChuli Manager instala y actualiza ese perfil en CODEX_HOME.\nDespués de instalar, abrí Codex como siempre.\n\nEl paquete oficial se verifica con SHA-256 y se conserva para recuperación.\nRequisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).", "Esc volver · q salir"
+		return crtGreen.Render("Acerca de Chuli") + "\n\nChuli es el harness de ingeniería para Codex, Claude Code y AGY CLI.\nChuli Manager instala, personaliza modelos por agente y actualiza el perfil.\nDespués de instalar, abrí tu cliente habitual (codex, claude o agy).\n\nEl paquete oficial se verifica con SHA-256 y se conserva para recuperación.\nRequisitos: Python 3.11+ y PowerShell (pwsh en Linux y macOS).", "Esc volver · q salir"
 	}
 	return "", "Esc volver · q salir"
 }
 
+func effortTag(effort string) string {
+	short := strings.ToUpper(effort)
+	switch short {
+	case "MEDIUM":
+		short = "MED"
+	case "XHIGH":
+		short = "XHIGH"
+	}
+	tag := "[" + short + "]"
+	switch effort {
+	case "high", "xhigh":
+		return crtAmber.Render(tag)
+	case "medium":
+		return crtCyan.Render(tag)
+	default:
+		return crtBeige.Render(tag)
+	}
+}
+
+func renderTeamCard(clientSpec manager.ClientSpec, presetID string, roles map[string]manager.RoleModel, cardWidth int, compact bool) string {
+	if compact {
+		return "\n\n" + crtAmber.Render("◆ Equipo activo: "+clientSpec.Name) + "\n" +
+			crtBeige.Render("Preset: "+presetID) + "\n" +
+			fmt.Sprintf("• Orquestador: %s (%s)\n", roles["orchestrator"].Model, roles["orchestrator"].Effort) +
+			fmt.Sprintf("• Arquitecto:  %s (%s)\n", roles["solution_architect"].Model, roles["solution_architect"].Effort) +
+			fmt.Sprintf("• Worker:      %s (%s)\n", roles["chuli_worker"].Model, roles["chuli_worker"].Effort) +
+			fmt.Sprintf("• Explorer:    %s (%s)", roles["chuli_explorer"].Model, roles["chuli_explorer"].Effort)
+	}
+	outer := min(50, max(44, cardWidth))
+	inner := outer - 4
+	title := "◆ Equipo activo · " + clientSpec.Short + " "
+	fill := max(1, inner+2-lipgloss.Width(title)-1)
+	top := crtBeige.Render("╭─ ") + crtAmber.Render(title) + crtBeige.Render(strings.Repeat("─", fill)+"╮")
+	bottom := crtBeige.Render("╰" + strings.Repeat("─", outer-2) + "╯")
+
+	roleRows := []struct {
+		id    string
+		label string
+	}{
+		{"orchestrator", "Orquestador"},
+		{"solution_architect", "Arquitecto"},
+		{"quality_reviewer", "Revisor QA"},
+		{"chuli_worker", "Worker"},
+		{"test_engineer", "Tester"},
+		{"product_designer", "Diseñador"},
+		{"chuli_explorer", "Explorer"},
+	}
+
+	var b strings.Builder
+	b.WriteString("\n\n" + top + "\n")
+	presetLine := "Preset: " + presetID
+	padPreset := max(0, inner-lipgloss.Width(presetLine))
+	b.WriteString(crtBeige.Render("│ ") + crtCyan.Render(presetLine) + strings.Repeat(" ", padPreset) + crtBeige.Render(" │") + "\n")
+	for _, rr := range roleRows {
+		rm := roles[rr.id]
+		tag := effortTag(rm.Effort)
+		tagW := lipgloss.Width(ansi.Strip(tag))
+		leftPart := fmt.Sprintf("• %-11s %-19s", rr.label, ansi.Truncate(rm.Model, 19, "…"))
+		gap := max(1, inner-lipgloss.Width(leftPart)-tagW)
+		b.WriteString(crtBeige.Render("│ ") + leftPart + strings.Repeat(" ", gap) + tag + crtBeige.Render(" │") + "\n")
+	}
+	b.WriteString(bottom)
+	return b.String()
+}
+
 func (m model) crtHome(width int) string {
 	var menu strings.Builder
-	menu.WriteString(crtGreen.Render("Seleccioná una acción") + "\n\n")
-	for index, item := range choices(m.mgr) {
+	items := choices(m.mgr)
+	compactHeight := m.height > 0 && m.height <= 25
+	gap := "\n\n"
+	if width < 60 || compactHeight {
+		gap = "\n"
+	}
+	menu.WriteString(crtGreen.Render("Seleccioná una acción") + gap)
+	for index, item := range items {
 		name := item.label
 		if width < 60 {
-			name = map[string]string{"latest": "Instalar o actualizar", "local": "Instalar desde --source", "integrations": "Integraciones", "profile": "Modelos, agentes y skills", "doctor": "Comprobar perfil", "rollback": "Restaurar instalación", "about": "Acerca de Chuli"}[item.action]
+			name = map[string]string{
+				"latest":       "Instalar o actualizar",
+				"local":        "Instalar desde --source",
+				"models":       "Modelos y presets",
+				"integrations": "Integraciones",
+				"profile":      "Modelos, agentes y skills",
+				"doctor":       "Comprobar perfil",
+				"rollback":     "Restaurar instalación",
+				"about":        "Acerca de Chuli",
+			}[item.action]
 		}
 		label := fmt.Sprintf("%d. %s", index+1, name)
 		if index == m.cursor {
-			menu.WriteString(crtGreen.Render("› "+label) + "\n")
+			marker := "› "
+			if width >= 100 {
+				marker = "▎› "
+			}
+			menu.WriteString(crtNeon.Render(marker+label) + "\n")
 		} else {
-			menu.WriteString("  " + label + "\n")
+			prefix := "  "
+			if width >= 100 {
+				prefix = "   "
+			}
+			menu.WriteString(prefix + label + "\n")
 		}
 	}
 	explanations := map[string]string{
 		"latest":       "Instalá el perfil y seguí trabajando en Codex.\nRevisás el plan antes de escribir.",
 		"local":        "Instalá desde el checkout elegido con --source.\nRevisás el plan antes de escribir.",
+		"models":       "Elegí el cliente (Codex, Claude Code o AGY CLI), un preset rápido\no el modelo y esfuerzo de cada uno de los 7 agentes.",
 		"integrations": "Conectá documentación, memoria y herramientas.\nElegís cada conexión y confirmás su configuración.",
 		"profile":      "Consultá los modelos, agentes y skills registrados.\nLos datos vienen del manifiesto de instalación.",
 		"doctor":       "Comprobá el perfil instalado y sus recursos.\nEl resultado distingue fallos y límites.",
 		"rollback":     "Revisá el plan para restaurar el perfil anterior.\nLa reversión necesita tu confirmación.",
 		"about":        "Conocé Chuli Manager y sus requisitos.\nEl trabajo de ingeniería se realiza en Codex.",
 	}
-	items := choices(m.mgr)
 	explanation := explanations[items[max(0, min(m.cursor, len(items)-1))].action]
 	if width >= 100 {
-		leftWidth := 58
+		clientSpec, ok := manager.FindClient(m.mgr.Target)
+		if !ok {
+			clientSpec, _ = manager.FindClient("codex")
+		}
+		presetID := m.mgr.Preset
+		if presetID == "" {
+			presetID = clientSpec.DefaultPreset
+		}
+		roles := m.mgr.RoleModels
+		if len(roles) == 0 {
+			_, roles, _ = manager.DefaultRolesForPreset(clientSpec.ID, presetID)
+		}
+		leftWidth := 52
+		rightWidth := width - leftWidth - 2
+		card := renderTeamCard(clientSpec, presetID, roles, rightWidth, compactHeight)
 		left := lipgloss.NewStyle().Width(leftWidth).Render(menu.String())
-		right := lipgloss.NewStyle().Width(width - leftWidth - 3).Render("\n\n" + explanation)
-		return lipgloss.JoinHorizontal(lipgloss.Top, left, "   ", right)
+		right := lipgloss.NewStyle().Width(rightWidth).Render(gap + explanation + card)
+		return lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right)
 	}
-	return menu.String() + "\n" + explanation
+	separator := "\n"
+	if compactHeight && len(items) > 7 {
+		separator = ""
+	}
+	return menu.String() + separator + explanation
 }
 
 func (m model) crtOutcome() string {

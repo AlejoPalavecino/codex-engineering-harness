@@ -17,7 +17,7 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
 
-var version = "1.1.2-dev"
+var version = "2.0.0-dev"
 
 func currentVersion() string {
 	info, ok := debug.ReadBuildInfo()
@@ -41,9 +41,10 @@ func effectiveVersion(configured string, info *debug.BuildInfo, ok bool) string 
 
 func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")
+	client := flag.String("client", "codex", "Cliente objetivo: codex, claude o agy")
 	showVersion := flag.Bool("version", false, "Mostrar versión del gestor")
 	flag.Usage = func() {
-		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--source RUTA] [tui|install|update|status|doctor|rollback|version|eval|integrations]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo. install y update admiten --adopt-gentle-routing para respaldar el routing de Gentle y usar Chuli.")
+		fmt.Fprintln(flag.CommandLine.Output(), "Uso: chuli [--client codex|claude|agy] [--source RUTA] [tui|install|update|models|status|doctor|rollback|version|eval|integrations]\ninstall, update y rollback muestran un plan. Agregá --apply al subcomando para aplicarlo. install y update admiten --preset, --role ROL=MODELO[:ESFUERZO] y --adopt-gentle-routing.")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -52,7 +53,7 @@ func main() {
 		fmt.Println("Chuli Manager", v)
 		return
 	}
-	m, err := manager.New(*source)
+	m, err := manager.NewForClient(*source, *client)
 	if err != nil {
 		fail(err)
 	}
@@ -69,6 +70,10 @@ func main() {
 			fail(err)
 		}
 		fmt.Printf("Chuli Manager %s\nCODEX_HOME: %s\n%s\n", v, m.Home, summary)
+	case "models":
+		if err := modelsCLI(m, flag.Args()[1:], os.Stdout); err != nil {
+			fail(err)
+		}
 	case "eval":
 		if err := eval.CLI(flag.Args()[1:], *source, os.Stdout); err != nil {
 			fail(err)
@@ -99,19 +104,98 @@ func fail(err error) {
 	os.Exit(1)
 }
 
+type roleFlag []string
+
+func (r *roleFlag) String() string { return strings.Join(*r, ",") }
+func (r *roleFlag) Set(value string) error {
+	*r = append(*r, value)
+	return nil
+}
+
+func modelsCLI(m manager.Manager, args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "list" || args[0] == "presets") {
+		args = args[1:]
+	}
+	if len(args) > 0 && args[0] == "set" {
+		return manage(m, append([]string{"install"}, args[1:]...), out)
+	}
+	flags := flag.NewFlagSet("models", flag.ContinueOnError)
+	flags.SetOutput(out)
+	subClient := flags.String("client", "", "Cliente objetivo: codex, claude o agy")
+	preset := flags.String("preset", "", "Preset de modelos para el cliente")
+	var roleSpecs roleFlag
+	flags.Var(&roleSpecs, "role", "Asignar modelo a un rol: ROL=MODELO[:ESFUERZO]")
+	apply := flags.Bool("apply", false, "Aplicar el plan")
+	adopt := flags.Bool("adopt-gentle-routing", false, "Respaldar el enrutamiento reconocido de Gentle y usar Chuli")
+	if err := flags.Parse(args); err != nil {
+		return err
+	}
+	if *preset != "" || len(roleSpecs) > 0 || *apply || *adopt {
+		return manage(m, append([]string{"install"}, args...), out)
+	}
+	target := m.Target
+	if *subClient != "" {
+		target = *subClient
+	}
+	c, ok := manager.FindClient(target)
+	if !ok {
+		return fmt.Errorf("cliente inválido %q (esperado codex, claude o agy)", target)
+	}
+	fmt.Fprintf(out, "Cliente: %s (%s)\nModelos: %s\nEsfuerzos: %s\n\nPresets:\n", c.Name, c.ID, strings.Join(c.Models, ", "), strings.Join(c.Efforts, ", "))
+	for _, p := range c.Presets {
+		fmt.Fprintf(out, "  %s — %s\n    %s\n", p.ID, p.Name, p.Description)
+		for _, r := range manager.Roles() {
+			rm := p.Roles[r.ID]
+			fmt.Fprintf(out, "    - %-18s %s (%s)\n", r.ID, rm.Model, rm.Effort)
+		}
+	}
+	return nil
+}
+
 func manage(m manager.Manager, args []string, out io.Writer) error {
 	flags := flag.NewFlagSet(args[0], flag.ContinueOnError)
 	flags.SetOutput(out)
+	subClient := flags.String("client", "", "Cliente objetivo: codex, claude o agy")
 	apply := flags.Bool("apply", false, "Aplicar el plan")
 	adopt := flags.Bool("adopt-gentle-routing", false, "Respaldar el enrutamiento reconocido de Gentle y usar Chuli")
+	preset := flags.String("preset", "", "Preset de modelos para el cliente")
+	var roleSpecs roleFlag
+	flags.Var(&roleSpecs, "role", "Asignar modelo a un rol: ROL=MODELO[:ESFUERZO]")
 	if err := flags.Parse(args[1:]); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
 		return errors.New("argumento inesperado")
 	}
+	if *subClient != "" && *subClient != m.Target {
+		next, err := manager.NewForClient(m.Source, *subClient)
+		if err != nil {
+			return err
+		}
+		m = next
+	} else if *subClient != "" {
+		if _, ok := manager.FindClient(*subClient); !ok {
+			return fmt.Errorf("cliente inválido %q (esperado codex, claude o agy)", *subClient)
+		}
+	}
 	if *adopt && args[0] == "rollback" {
 		return errors.New("rollback no admite --adopt-gentle-routing")
+	}
+	if (*preset != "" || len(roleSpecs) > 0) && args[0] == "rollback" {
+		return errors.New("rollback no admite --preset ni --role")
+	}
+	if *preset != "" {
+		if _, _, err := manager.DefaultRolesForPreset(m.Target, *preset); err != nil {
+			return err
+		}
+		m.Preset = *preset
+	}
+	if len(roleSpecs) > 0 {
+		roles, err := manager.ParseRoleModelSpecs(m.Target, *preset, roleSpecs)
+		if err != nil {
+			return err
+		}
+		m.RoleModels = roles
 	}
 	action := args[0]
 	if action != "rollback" {
