@@ -41,7 +41,21 @@ Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar e
 
 **Necesitás Python 3.11 o posterior y PowerShell para aplicar el perfil.**
 
-1. **Descargá el Manager** desde la [última release estable](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest).
+### Con un comando (Go 1.26+, Windows / Linux / macOS)
+
+```sh
+# Stable channel: the latest release (v1.1.2)
+go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2
+
+# Or always install the latest tagged release
+go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@latest
+```
+
+Después ejecutá `chuli`, elegí **Instalar o actualizar el perfil oficial**, revisá el destino y el plan, y confirmá. El Manager descarga la última release, comprueba su `SHA-256` y deja listo el perfil en `CODEX_HOME` (`~/.codex`). Por último, abrí una sesión nueva de Codex en tu proyecto.
+
+### Sin Go (instalador Windows o descarga portable)
+
+1. **Descargá el Manager** desde la [última release estable](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest) (o usá `install-chuli-windows.ps1` en Windows).
 2. **Extraé y abrí el ejecutable:** `chuli.exe` en Windows o `chuli` en Linux/macOS.
 3. **Elegí instalar desde la última release.** Revisá el destino y los cambios, y confirmá. El Manager descarga el perfil y verifica su SHA-256.
 4. **Abrí una sesión nueva de Codex** en tu proyecto y empezá con una tarea concreta.
@@ -155,7 +169,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 1.1.1](docs/releases/v1.1.1.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 1.1.2](docs/releases/v1.1.2.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 

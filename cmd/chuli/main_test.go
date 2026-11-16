@@ -6,11 +6,70 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
 )
+
+func TestEffectiveVersion(t *testing.T) {
+	cases := []struct {
+		name       string
+		configured string
+		info       *debug.BuildInfo
+		ok         bool
+		want       string
+	}{
+		{
+			name:       "go install tagged module overrides -dev",
+			configured: "1.1.2-dev",
+			info:       &debug.BuildInfo{Main: debug.Module{Version: "v1.1.2"}},
+			ok:         true,
+			want:       "1.1.2",
+		},
+		{
+			name:       "ldflags release version wins over build info",
+			configured: "1.1.2",
+			info:       &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}},
+			ok:         true,
+			want:       "1.1.2",
+		},
+		{
+			name:       "local devel build keeps -dev",
+			configured: "1.1.2-dev",
+			info:       &debug.BuildInfo{Main: debug.Module{Version: "(devel)"}},
+			ok:         true,
+			want:       "1.1.2-dev",
+		},
+		{
+			name:       "dirty module version keeps -dev",
+			configured: "1.1.2-dev",
+			info:       &debug.BuildInfo{Main: debug.Module{Version: "v1.1.2+dirty"}},
+			ok:         true,
+			want:       "1.1.2-dev",
+		},
+		{
+			name:       "pseudo-version keeps -dev",
+			configured: "1.1.2-dev",
+			info:       &debug.BuildInfo{Main: debug.Module{Version: "v1.1.2-0.20261116000000-abcdef123456"}},
+			ok:         true,
+			want:       "1.1.2-dev",
+		},
+		{
+			name:       "missing build info keeps configured",
+			configured: "1.1.2-dev",
+			info:       nil,
+			ok:         false,
+			want:       "1.1.2-dev",
+		},
+	}
+	for _, tc := range cases {
+		if got := effectiveVersion(tc.configured, tc.info, tc.ok); got != tc.want {
+			t.Errorf("%s: effectiveVersion() = %q, want %q", tc.name, got, tc.want)
+		}
+	}
+}
 
 func TestCLIAdoptionRequiresExplicitApply(t *testing.T) {
 	if _, err := exec.LookPath("pwsh"); err != nil {

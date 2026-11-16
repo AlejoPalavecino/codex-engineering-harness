@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2] — 2026-11-16
+
+- Instalación multiplataforma con un comando mediante `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2` (o `@latest`) y detección automática de la versión del módulo desde `runtime/debug.ReadBuildInfo()`.
+- Fijación de `LF` para `tests/fixtures/**` en `.gitattributes` y ejecución de `tests/validate_repository.py` en el job de Windows en CI para asegurar validación nativa con `core.autocrlf=true`.
+- Reintentos acotados en `scripts/install-manager.ps1` (`Restore-ManagerFile`) ante bloqueos transitorios `IO.IOException` durante el rollback, con detalle de error en advertencia y prueba determinista en `tests/windows-manager-install.ps1`.
+- Limpieza de `.github/workflows/release.yml` retirando el disparador residual `workflow_run` y el valor por defecto `'1.0.0'`, conservando únicamente `workflow_dispatch`.
+
 ## [1.1.1] — 2026-11-09
 
 - Instalador opcional de Chuli Manager para Windows por usuario: descarga oficial, SHA-256, registro de `chuli` en PATH y vista previa/confirmación (#58, issue #57).

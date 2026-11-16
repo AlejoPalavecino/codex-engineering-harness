@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
+	"strings"
 	"time"
 
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/eval"
@@ -15,7 +17,27 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
 )
 
-var version = "1.1.1-dev"
+var version = "1.1.2-dev"
+
+func currentVersion() string {
+	info, ok := debug.ReadBuildInfo()
+	return effectiveVersion(version, info, ok)
+}
+
+func effectiveVersion(configured string, info *debug.BuildInfo, ok bool) string {
+	if !strings.HasSuffix(configured, "-dev") {
+		return configured
+	}
+	if ok && info != nil {
+		tag := strings.TrimPrefix(strings.TrimSpace(info.Main.Version), "v")
+		if tag != "" && !strings.ContainsAny(tag, "-+") {
+			if _, err := manager.Compare(tag, tag); err == nil {
+				return tag
+			}
+		}
+	}
+	return configured
+}
 
 func main() {
 	source := flag.String("source", "", "Checkout local para instalar, verificar o restaurar")
@@ -25,8 +47,9 @@ func main() {
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+	v := currentVersion()
 	if *showVersion {
-		fmt.Println("Chuli Manager", version)
+		fmt.Println("Chuli Manager", v)
 		return
 	}
 	m, err := manager.New(*source)
@@ -35,17 +58,17 @@ func main() {
 	}
 	switch flag.Arg(0) {
 	case "", "tui":
-		if err := tui.Run(m, version); err != nil {
+		if err := tui.Run(m, v); err != nil {
 			fail(err)
 		}
 	case "version":
-		fmt.Println("Chuli Manager", version)
+		fmt.Println("Chuli Manager", v)
 	case "status":
 		summary, err := m.Profile()
 		if err != nil {
 			fail(err)
 		}
-		fmt.Printf("Chuli Manager %s\nCODEX_HOME: %s\n%s\n", version, m.Home, summary)
+		fmt.Printf("Chuli Manager %s\nCODEX_HOME: %s\n%s\n", v, m.Home, summary)
 	case "eval":
 		if err := eval.CLI(flag.Args()[1:], *source, os.Stdout); err != nil {
 			fail(err)

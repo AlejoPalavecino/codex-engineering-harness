@@ -1,6 +1,6 @@
 # Chuli Manager 1.1
 
-El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paquete del repositorio oficial, muestra el plan y espera confirmación para instalarlo. Una actualización del perfil puede incorporar skills, recursos o modelos. Para cambiar de versión del ejecutable descargá el nuevo Manager.
+El menú se abre con `chuli` o `chuli.exe`. La acción de release obtiene el paquete del repositorio oficial, muestra el plan y espera confirmación para instalarlo. Una actualización del perfil puede incorporar skills, recursos o modelos. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v1.1.2` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
 
 Para usar `chuli` desde cualquier carpeta en Windows, desde v1.1.1 podés descargar `install-chuli-windows.ps1` de la release (fuente: `scripts/install-manager.ps1`): revisá su vista previa y ejecutalo con `-Apply` para instalarlo y registrarlo en el PATH de tu usuario. [Instalación del comando](INSTALLATION.md#comando-chuli-en-windows). El ZIP del Manager sigue disponible como alternativa portable.
 
