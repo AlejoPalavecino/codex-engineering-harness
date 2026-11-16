@@ -82,6 +82,31 @@ try {
     if ([IO.File]::ReadAllText((Join-Path $managerRollback.Destination 'chuli.exe')) -cne $managerBeforeExe -or
         [IO.File]::ReadAllText((Join-Path $managerRollback.Destination 'manager-install.json')) -cne $managerBeforeRecord -or
         $env:Path -cne $managerOriginalPath) { throw 'Failed installation did not restore previous state.' }
+    $managerLocked = @{} + $managerArguments
+    $managerLocked.Destination = Join-Path $managerTestRoot 'locked-rollback'
+    Install-ChuliManagerPackage @managerLocked -Apply | Out-Null
+    $managerLocked.Archive = $managerUpgradeArchive
+    $managerLocked.Sha256 = $managerRollback.Sha256
+    $managerLocked.ReleaseVersion = '1.1.1'
+    $env:Path = $managerOriginalPath
+    $script:managerLockStream = $null
+    $managerWarnings = @()
+    $managerSavedSetter = (Get-Item Function:Set-ChuliPath).ScriptBlock
+    function Set-ChuliPath {
+        param($Value,$Target)
+        $script:managerLockStream = [IO.File]::Open((Join-Path $managerLocked.Destination 'manager-install.json'),[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+        throw 'Simulated PATH failure'
+    }
+    try {
+        $managerFailed = $false
+        try { Install-ChuliManagerPackage @managerLocked -Apply -WarningVariable managerWarnings 3>$null | Out-Null } catch { $managerFailed = $true }
+        if (-not $managerFailed) { throw 'Locked rollback test did not fail on PATH.' }
+    } finally {
+        Set-Item Function:Set-ChuliPath $managerSavedSetter
+        if ($script:managerLockStream) { $script:managerLockStream.Dispose(); $script:managerLockStream = $null }
+    }
+    if (-not ($managerWarnings -match 'No se pudo restaurar todo \(')) { throw 'Missing detailed warning when rollback could not restore a locked file.' }
+    if (-not (Get-ChildItem -LiteralPath $managerLocked.Destination -Filter '.chuli-backup-*')) { throw 'Backup files were deleted after incomplete rollback.' }
     $managerRawPath = 'C:\Existing;%LOCALAPPDATA%\Programs\Chuli'
     if ((Get-ChuliPathPlan $managerRawPath (Join-Path $env:LOCALAPPDATA 'Programs/Chuli')) -cne $managerRawPath) { throw 'Expanded PATH entry duplicated.' }
     Write-Output 'OK: preview, install, idempotent PATH, checksums, archive, preservation and rollback after PATH failure.'

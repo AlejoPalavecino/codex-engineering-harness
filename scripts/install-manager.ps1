@@ -83,6 +83,19 @@ function Get-ChuliPathPlan([string]$Current, [string]$Destination) {
     return $Current + ';' + $Destination
 }
 
+function Restore-ManagerFile([string]$Backup, [string]$Target, [bool]$Existed) {
+    for ($managerAttempt = 1; $managerAttempt -le 5; $managerAttempt++) {
+        try {
+            if ($Existed) { [IO.File]::Replace($Backup,$Target,[NullString]::Value) }
+            elseif (Test-Path -LiteralPath $Target) { [IO.File]::Delete($Target) }
+            return
+        } catch [IO.IOException] {
+            if ($managerAttempt -eq 5) { throw }
+            Start-Sleep -Milliseconds 40
+        }
+    }
+}
+
 function Install-ChuliManagerPackage {
     [CmdletBinding()]
     param([string]$Archive, [string]$Sha256, [string]$ReleaseVersion, [string]$Destination,
@@ -164,18 +177,12 @@ function Install-ChuliManagerPackage {
     } catch {
         $managerFailure = $_
         try {
-            if ($managerWroteRecord) {
-                if ($managerPrevious) { [IO.File]::Replace($managerBackupRecord,$managerRecord,[NullString]::Value) }
-                else { [IO.File]::Delete($managerRecord) }
-            }
-            if ($managerWroteExe) {
-                if ($managerPrevious) { [IO.File]::Replace($managerBackupExe,$managerExe,[NullString]::Value) }
-                else { [IO.File]::Delete($managerExe) }
-            }
+            if ($managerWroteRecord) { Restore-ManagerFile $managerBackupRecord $managerRecord ([bool]$managerPrevious) }
+            if ($managerWroteExe) { Restore-ManagerFile $managerBackupExe $managerExe ([bool]$managerPrevious) }
             if ($managerNewPath -cne $managerOldPath -and (Get-ChuliPath $PathTarget) -ceq $managerNewPath) {
                 Set-ChuliPath $managerOldPath $PathTarget
             }
-        } catch { $managerRestored = $false; Write-Warning 'No se pudo restaurar todo. Conserva los archivos .chuli-backup para recuperacion.' }
+        } catch { $managerRestored = $false; Write-Warning ('No se pudo restaurar todo (' + $_.Exception.Message + '). Conserva los archivos .chuli-backup para recuperacion.') }
         throw $managerFailure
     } finally {
         $managerCleanup = @($managerNewExe,$managerNewRecord)

@@ -1,10 +1,6 @@
 name: Publish validated Chuli profile
 
 on:
-  workflow_run:
-    workflows: ["Validate harness"]
-    types: [completed]
-    branches: [main]
   workflow_dispatch:
     inputs:
       validation_run:
@@ -26,20 +22,14 @@ concurrency:
 
 jobs:
   release:
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.event == 'push' &&
-       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     steps:
       - name: Verify workflow identity and the exact current main
         id: approval
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.event.workflow_run.id || inputs.validation_run }}
-          # One-time automatic publication requested for v1.0.0.
-          VERSION_APPROVED: ${{ inputs.version || '1.0.0' }}
+          RUN_ID: ${{ inputs.validation_run }}
+          VERSION_APPROVED: ${{ inputs.version }}
         run: |
           set -euo pipefail
           [[ "$RUN_ID" =~ ^[0-9]+$ ]]
@@ -50,10 +40,7 @@ jobs:
           head=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
           [[ "$head" == "$sha" ]]
           version=$(gh api "repos/$GITHUB_REPOSITORY/contents/VERSION?ref=$sha" --jq .content | base64 -d | tr -d '\r\n')
-          if [[ "$version" != "$VERSION_APPROVED" ]]; then
-            [[ "$GITHUB_EVENT_NAME" == "workflow_run" ]] && exit 0
-            exit 1
-          fi
+          [[ "$version" == "$VERSION_APPROVED" ]]
           if gh release view "v$version" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exit 0; fi
           echo "publish=true" >> "$GITHUB_OUTPUT"
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
@@ -67,7 +54,7 @@ jobs:
         if: steps.approval.outputs.publish == 'true'
         with:
           github-token: ${{ github.token }}
-          run-id: ${{ github.event.workflow_run.id || inputs.validation_run }}
+          run-id: ${{ inputs.validation_run }}
           pattern: release-*
           path: dist
           merge-multiple: true
@@ -77,7 +64,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.approval.outputs.version }}
           SHA: ${{ steps.approval.outputs.sha }}
-          RUN_ID: ${{ github.event.workflow_run.id || inputs.validation_run }}
+          RUN_ID: ${{ inputs.validation_run }}
         run: |
           set -euo pipefail
           git fetch origin main --tags
