@@ -107,3 +107,31 @@ class IntegrationsConfig(unittest.TestCase):
         with patch.object(Path, "lstat", return_value=info):
             with self.assertRaisesRegex(ValueError, "Ruta simbólica"):
                 self.helper.safe_path(self.config)
+
+    def test_agy_and_claude_mcp_json_preserve_existing_and_support_custom_undo(self):
+        agy_cfg = self.home / "mcp_config.json"
+        agy_cfg.write_text(json.dumps({"mcpServers": {"pi-bridge": {"serverUrl": "http://127.0.0.1:64512/mcp"}}}), encoding="utf-8")
+        prev = self.helper.execute(dict(home=str(self.home), client="agy", id="my-custom", entry={"url": "https://mcp.example.test/mcp"}, action="inspect"))
+        self.assertFalse(prev["exists"])
+        self.helper.execute(dict(home=str(self.home), client="agy", id="my-custom", entry={"url": "https://mcp.example.test/mcp"}, action="configure", expected=prev["revision"]))
+        saved = json.loads(agy_cfg.read_text(encoding="utf-8"))
+        self.assertIn("pi-bridge", saved["mcpServers"])
+        self.assertEqual(saved["mcpServers"]["my-custom"]["url"], "https://mcp.example.test/mcp")
+        listed = self.helper.execute(dict(home=str(self.home), client="agy", action="list"))
+        self.assertEqual({s["id"] for s in listed["servers"]}, {"pi-bridge", "my-custom"})
+        cur = self.helper.execute(dict(home=str(self.home), client="agy", id="my-custom", entry={"url": "https://mcp.example.test/mcp"}, action="inspect"))
+        self.assertTrue(cur["managed"])
+        self.helper.execute(dict(home=str(self.home), client="agy", id="my-custom", entry={"url": "https://mcp.example.test/mcp"}, action="undo", expected=cur["revision"]))
+        after = json.loads(agy_cfg.read_text(encoding="utf-8"))
+        self.assertNotIn("my-custom", after["mcpServers"])
+        self.assertIn("pi-bridge", after["mcpServers"])
+
+        claude_home = self.home / "claude-sandbox"
+        claude_home.mkdir()
+        claude_json = claude_home / ".claude.json"
+        claude_json.write_text(json.dumps({"theme": "dark", "mcpServers": {}}), encoding="utf-8")
+        cprev = self.helper.execute(dict(home=str(claude_home), client="claude", id="exa", entry={"url": "https://mcp.exa.ai/mcp"}, action="inspect"))
+        self.helper.execute(dict(home=str(claude_home), client="claude", id="exa", entry={"url": "https://mcp.exa.ai/mcp"}, action="configure", expected=cprev["revision"]))
+        csaved = json.loads(claude_json.read_text(encoding="utf-8"))
+        self.assertEqual(csaved["theme"], "dark")
+        self.assertEqual(csaved["mcpServers"]["exa"]["url"], "https://mcp.exa.ai/mcp")

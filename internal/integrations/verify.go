@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 )
 
@@ -47,4 +48,27 @@ func (s Service) Verify(ctx context.Context, id string) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("Conexión MCP comprobada: initialize y tools/list respondieron (%d herramientas en la primera página).\nNo se ejecutaron herramientas. Esto no comprueba permisos para operar sobre tus datos. Abrí una sesión nueva de Codex y revisá su panel MCP.", count), nil
+}
+
+func (s Service) VerifyConfigured(ctx context.Context, srv ConfiguredServer) (string, error) {
+	if item, ok := Find(srv.ID); ok {
+		return s.Verify(ctx, item.ID)
+	}
+	if srv.Transport == "http" {
+		ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+		defer cancel()
+		count, err := probe(ctx, http.DefaultClient, srv.Target, "")
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("Conexión MCP %s comprobada (%d herramientas disponibles).", srv.ID, count), nil
+	}
+	parts := strings.Fields(srv.Target)
+	if len(parts) == 0 {
+		return "", errors.New("comando vacío")
+	}
+	if _, err := exec.LookPath(parts[0]); err != nil {
+		return "", fmt.Errorf("comando %s no encontrado en PATH", parts[0])
+	}
+	return "Comando local disponible en PATH: " + parts[0], nil
 }

@@ -79,7 +79,7 @@ func main() {
 			fail(err)
 		}
 	case "integrations":
-		if err := (integrations.Service{Home: m.Home}).CLI(flag.Args()[1:], os.Stdout); err != nil {
+		if err := (integrations.Service{Home: m.Home, Client: m.Target}).CLI(flag.Args()[1:], os.Stdout); err != nil {
 			fail(err)
 		}
 	case "doctor":
