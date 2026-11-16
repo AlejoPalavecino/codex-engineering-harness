@@ -1,4 +1,4 @@
-module github.com/AlejoPalavecino/codex-engineering-harness
+module github.com/AlejoPalavecino/codex-engineering-harness/v2
 
 go 1.26.0
 

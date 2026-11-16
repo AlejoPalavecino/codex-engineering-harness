@@ -3,7 +3,7 @@ package tui
 import (
 	tea "charm.land/bubbletea/v2"
 	"context"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/integrations"
 	"time"
 )
 

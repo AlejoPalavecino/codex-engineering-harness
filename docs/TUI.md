@@ -1,6 +1,6 @@
 # Chuli Manager 2.0
 
-El menú se abre con `chuli` o `chuli.exe`. Permite administrar el perfil en **OpenAI Codex (`codex`)**, **Claude Code (`claude`)** y **AGY CLI (`agy`)**, elegir presets rápidos o personalizar el modelo y esfuerzo de cada uno de los 7 roles. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v2.0.0` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
+El menú se abre con `chuli` o `chuli.exe`. Permite administrar el perfil en **OpenAI Codex (`codex`)**, **Claude Code (`claude`)** y **AGY CLI (`agy`)**, elegir presets rápidos o personalizar el modelo y esfuerzo de cada uno de los 7 roles. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.0` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
 
 Para usar `chuli` desde cualquier carpeta en Windows, desde v1.1.1 podés descargar `install-chuli-windows.ps1` de la release (fuente: `scripts/install-manager.ps1`): revisá su vista previa y ejecutalo con `-Apply` para instalarlo y registrarlo en el PATH de tu usuario. [Instalación del comando](INSTALLATION.md#comando-chuli-en-windows). El ZIP del Manager sigue disponible como alternativa portable.
 

@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/manager"
 )
 
 const modelsScreen = "models"

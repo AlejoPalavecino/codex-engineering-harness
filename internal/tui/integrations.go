@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/integrations"
 )
 
 func (m model) updateIntegrations(message tea.Msg) (model, tea.Cmd, bool) {

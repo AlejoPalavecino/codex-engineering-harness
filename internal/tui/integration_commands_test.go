@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/manager"
 )
 
 func TestIntegrationCommandPreparesWithoutWriting(t *testing.T) {

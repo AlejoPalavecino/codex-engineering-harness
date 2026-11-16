@@ -45,10 +45,10 @@ Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar e
 
 ```sh
 # Stable channel: the latest release (v2.0.0)
-go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v2.0.0
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.0
 
 # Or always install the latest tagged release
-go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@latest
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
 ```
 
 Después ejecutá `chuli`: en la consola CRT podés elegir tu cliente (**OpenAI Codex**, **Claude Code** o **AGY CLI**), seleccionar un **preset rápido** o configurar qué modelo y esfuerzo usa cada uno de los **7 agentes**, revisar la vista previa y confirmar. El Manager descarga la última release, comprueba su `SHA-256` y aplica el perfil en tu entorno (`~/.codex`, `~/.claude` o `~/.gemini/config`).

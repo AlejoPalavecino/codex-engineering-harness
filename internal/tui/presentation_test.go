@@ -7,7 +7,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/manager"
 	"github.com/charmbracelet/x/ansi"
 )
 

@@ -14,10 +14,10 @@ Con Go 1.26 o posterior instalado y el directorio `bin` de Go en tu `PATH`, pod�
 
 ```sh
 # Stable channel: the latest release (v2.0.0)
-go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@v2.0.0
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.0
 
 # O siempre la última release estable etiquetada
-go install github.com/AlejoPalavecino/codex-engineering-harness/cmd/chuli@latest
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
 ```
 
 El binario queda en `$(go env GOBIN)` o `$(go env GOPATH)/bin` y detecta automáticamente la versión etiquetada del módulo. Luego ejecutá `chuli` para abrir la TUI CRT (o usá `chuli --client codex|claude|agy install --preset <preset> --apply` por CLI) para descargar la última release oficial del perfil, verificar su `SHA-256` contra `SHA256SUMS.txt` y aplicarla en `~/.codex`, `~/.claude` o `~/.gemini/config`. En Windows, elegí `go install` o `install-chuli-windows.ps1` (no ambos a la vez) para evitar dos `chuli.exe` en el `PATH`.

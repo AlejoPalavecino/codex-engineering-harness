@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/eval"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/integrations"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/manager"
-	"github.com/AlejoPalavecino/codex-engineering-harness/internal/tui"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/eval"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/integrations"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/manager"
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/tui"
 )
 
 var version = "2.0.0-dev"
