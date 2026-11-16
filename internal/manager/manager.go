@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"os/exec"
@@ -30,18 +29,14 @@ var releaseTag = regexp.MustCompile("^v[0-9]+\\.[0-9]+\\.[0-9]+$")
 var version = regexp.MustCompile("^v?([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
 
 type Manager struct {
-	Home       string
-	Source     string
-	Client     *http.Client
-	Target     string
-	Preset     string
-	RoleModels map[string]RoleModel
-	cacheDir   string // resolved by New; private user configuration, outside the working directory
-}
-
-type Release struct {
-	Tag string
-	URL string
+	Home           string
+	Source         string
+	Client         *http.Client
+	Target         string
+	Preset         string
+	RoleModels     map[string]RoleModel
+	DisabledSkills []string
+	cacheDir       string // resolved by New; private user configuration, outside the working directory
 }
 
 type Prepared struct {
@@ -53,8 +48,10 @@ type Prepared struct {
 	archive            *profileArchive
 	stateID            [sha256.Size]byte
 	adoptGentleRouting bool
+	configureModels    bool
 	preset             string
 	roleModelsJSON     string
+	disabledSkills     []string
 }
 
 func New(source string) (Manager, error) {
@@ -119,6 +116,7 @@ type installationState struct {
 	Client                string                     `json:"client"`
 	Preset                string                     `json:"preset"`
 	RoleModels            map[string]RoleModel       `json:"role_models"`
+	DisabledSkills        []string                   `json:"disabled_skills"`
 	ManagedFiles          map[string]string          `json:"managed_files"`
 	ManagedConfig         map[string]json.RawMessage `json:"managed_config"`
 	SchemaVersion         int                        `json:"schema_version"`
@@ -257,36 +255,6 @@ func validateRollbackCompatibility(sourceVersion string, schema int) error {
 	return nil
 }
 
-func (m Manager) Latest(ctx context.Context) (Release, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", githubAPI, nil)
-	if err != nil {
-		return Release{}, err
-	}
-	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "Chuli-Manager")
-	resp, err := m.httpClient().Do(req)
-	if err != nil {
-		return Release{}, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return Release{}, fmt.Errorf("GitHub Releases: HTTP %d", resp.StatusCode)
-	}
-	var v struct {
-		Tag        string `json:"tag_name"`
-		URL        string `json:"html_url"`
-		Draft      bool   `json:"draft"`
-		Prerelease bool   `json:"prerelease"`
-	}
-	if err := json.NewDecoder(io.LimitReader(resp.Body, 65536)).Decode(&v); err != nil {
-		return Release{}, err
-	}
-	if !releaseTag.MatchString(v.Tag) || v.Draft || v.Prerelease {
-		return Release{}, errors.New("release no estable o tag no permitido")
-	}
-	return Release{v.Tag, v.URL}, nil
-}
-
 func ValidateSource(root string) (string, error) {
 	for _, file := range []string{"scripts/install.ps1", "scripts/verify.ps1", "scripts/rollback.ps1", "VERSION"} {
 		info, err := os.Stat(filepath.Join(root, filepath.FromSlash(file)))
@@ -344,8 +312,9 @@ func trunc(b []byte) string {
 }
 
 type scriptOptions struct {
-	apply, adoptGentleRouting bool
-	preset, roleModelsJSON    string
+	apply, adoptGentleRouting, configureModels bool
+	preset, roleModelsJSON                     string
+	disabledSkills                             []string
 }
 
 func (m Manager) script(ctx context.Context, root, file string, opts scriptOptions) (string, error) {
@@ -370,6 +339,26 @@ func (m Manager) script(ctx context.Context, root, file string, opts scriptOptio
 		}
 		if opts.roleModelsJSON != "" {
 			args = append(args, "-RoleModelsJson", opts.roleModelsJSON)
+		}
+		if opts.configureModels {
+			args = append(args, "-ConfigureModels")
+		}
+		if len(opts.disabledSkills) > 0 {
+			tmpFile, err := os.CreateTemp("", "chuli-disabled-skills-*.json")
+			if err != nil {
+				return "", err
+			}
+			tmpPath := tmpFile.Name()
+			_ = tmpFile.Close()
+			defer os.Remove(tmpPath)
+			encoded, err := json.Marshal(opts.disabledSkills)
+			if err != nil {
+				return "", err
+			}
+			if err := os.WriteFile(tmpPath, encoded, 0600); err != nil {
+				return "", err
+			}
+			args = append(args, "-DisabledSkillsFile", tmpPath)
 		}
 	}
 	if opts.adoptGentleRouting {
@@ -431,7 +420,23 @@ func (m Manager) Doctor(ctx context.Context) (string, error) {
 	return m.script(ctx, p.Root, "verify.ps1", scriptOptions{})
 }
 
+type PrepareOptions struct {
+	Action             string
+	AdoptGentleRouting bool
+	AllowDowngrade     bool
+	ConfigureModels    bool
+}
+
 func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting bool) (Prepared, error) {
+	return m.PrepareWithOptions(ctx, PrepareOptions{
+		Action:             action,
+		AdoptGentleRouting: adoptGentleRouting,
+	})
+}
+
+func (m Manager) PrepareWithOptions(ctx context.Context, opts PrepareOptions) (Prepared, error) {
+	action := opts.Action
+	adoptGentleRouting := opts.AdoptGentleRouting
 	state, err := m.readInstallationState()
 	if err != nil {
 		return Prepared{}, err
@@ -439,13 +444,31 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 	var p Prepared
 	var sameVersion bool
 	script := "install.ps1"
-	switch action {
-	case "local":
+	switch {
+	case action == "local":
 		if m.Source == "" {
 			return Prepared{}, errors.New("instalación local requiere --source RUTA")
 		}
 		p, err = m.executor("")
-	case "latest":
+	case action == "apply-local":
+		if m.Source != "" {
+			p, err = m.executor("")
+		} else if state.Version == "" {
+			return Prepared{}, errors.New("no existe instalación registrada; usá Instalar primero")
+		} else {
+			tag := "v" + strings.TrimPrefix(state.Version, "v")
+			a, e := m.cached(tag)
+			if errors.Is(e, os.ErrNotExist) {
+				a, e = m.download(ctx, tag)
+			}
+			if e != nil {
+				err = e
+			} else {
+				p, err = a.unpack()
+			}
+		}
+		sameVersion = true
+	case action == "latest":
 		rel, e := m.Latest(ctx)
 		if e != nil {
 			return Prepared{}, e
@@ -471,7 +494,30 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 			return Prepared{}, e
 		}
 		p, err = a.unpack()
-	case "rollback":
+	case strings.HasPrefix(action, "tag:"):
+		tag := strings.TrimPrefix(action, "tag:")
+		if !releaseTag.MatchString(tag) {
+			return Prepared{}, fmt.Errorf("tag de release inválido: %q", tag)
+		}
+		if state.Version != "" {
+			cmp, e := Compare(tag, state.Version)
+			if e != nil {
+				return Prepared{}, e
+			}
+			sameVersion = cmp == 0
+			if cmp < 0 && !opts.AllowDowngrade {
+				return Prepared{}, errors.New("versión anterior a la instalada; activá cambio explícito o usá rollback")
+			}
+		}
+		a, e := m.cached(tag)
+		if errors.Is(e, os.ErrNotExist) {
+			a, e = m.download(ctx, tag)
+		}
+		if e != nil {
+			return Prepared{}, e
+		}
+		p, err = a.unpack()
+	case action == "rollback":
 		if adoptGentleRouting {
 			return Prepared{}, errors.New("rollback no admite adopción de Gentle")
 		}
@@ -504,12 +550,13 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 		}
 		if state.Version != "" && err == nil {
 			cmp, err = Compare(p.Version, state.Version)
-			if err == nil && cmp < 0 {
+			if err == nil && cmp < 0 && !opts.AllowDowngrade {
 				err = errors.New("versión anterior a la instalada; utilizá rollback")
 			}
 		}
 	}
 	p.adoptGentleRouting = adoptGentleRouting
+	p.configureModels = opts.ConfigureModels
 	p.preset = m.Preset
 	if len(m.RoleModels) > 0 {
 		encoded, encErr := EncodeRoleModels(m.RoleModels)
@@ -519,8 +566,11 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 		}
 		p.roleModelsJSON = encoded
 	}
-	hasModelSelection := p.preset != "" || p.roleModelsJSON != ""
-	if err == nil && sameVersion && !hasModelSelection {
+	if len(m.DisabledSkills) > 0 {
+		p.disabledSkills = append([]string(nil), m.DisabledSkills...)
+	}
+	hasSelection := p.preset != "" || p.roleModelsJSON != "" || len(p.disabledSkills) > 0 || opts.AllowDowngrade || action == "apply-local"
+	if err == nil && sameVersion && !hasSelection {
 		// An unchanged release may be reapplied only to reconcile a recognized
 		// conflict. Ask the installer, which owns the exact marker grammar.
 		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{})
@@ -533,7 +583,13 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 		}
 	}
 	if err == nil {
-		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{adoptGentleRouting: adoptGentleRouting, preset: p.preset, roleModelsJSON: p.roleModelsJSON})
+		p.Preview, err = m.script(ctx, p.Root, script, scriptOptions{
+			adoptGentleRouting: adoptGentleRouting,
+			configureModels:    p.configureModels,
+			preset:             p.preset,
+			roleModelsJSON:     p.roleModelsJSON,
+			disabledSkills:     p.disabledSkills,
+		})
 	}
 	if err != nil && p.Action == "install" && !adoptGentleRouting && strings.Contains(p.Preview, "CHULI_GENTLE_CONFLICT") {
 		err = fmt.Errorf("%w: %w", ErrGentleConflict, err)
@@ -546,6 +602,15 @@ func (m Manager) Prepare(ctx context.Context, action string, adoptGentleRouting 
 }
 
 func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
+	return m.ApplyWithProgress(ctx, p, nil)
+}
+
+func (m Manager) ApplyWithProgress(ctx context.Context, p Prepared, onStage func(stage, label string)) (string, error) {
+	report := func(stage, label string) {
+		if onStage != nil {
+			onStage(stage, label)
+		}
+	}
 	current, err := m.readInstallationState()
 	if err != nil {
 		return "", err
@@ -560,6 +625,7 @@ func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
 		return "", errors.New("acción no soportada")
 	}
 	if p.archive != nil {
+		report("cache", "Guardando copia de seguridad del paquete oficial...")
 		if p.Action == "install" {
 			if err := m.remember(p.archive); err != nil {
 				return "", fmt.Errorf("no se pudo guardar el paquete para recuperación: %w", err)
@@ -573,17 +639,27 @@ func (m Manager) Apply(ctx context.Context, p Prepared) (string, error) {
 		defer fresh.Cleanup()
 		p.Root = fresh.Root
 	}
-	log, err := m.script(ctx, p.Root, file, scriptOptions{apply: true, adoptGentleRouting: p.adoptGentleRouting, preset: p.preset, roleModelsJSON: p.roleModelsJSON})
+	report("apply", "Aplicando configuración, especialistas y skills...")
+	log, err := m.script(ctx, p.Root, file, scriptOptions{
+		apply:              true,
+		adoptGentleRouting: p.adoptGentleRouting,
+		configureModels:    p.configureModels,
+		preset:             p.preset,
+		roleModelsJSON:     p.roleModelsJSON,
+		disabledSkills:     p.disabledSkills,
+	})
 	if err != nil {
 		return log, err
 	}
 	if p.Action == "install" {
+		report("verify", "Verificando integridad del perfil instalado...")
 		out, e := m.script(ctx, p.Root, "verify.ps1", scriptOptions{})
 		log += "\n--- Verificación ---\n" + out
 		if e != nil {
 			return log, fmt.Errorf("instalado pero verificación fallida: %w", e)
 		}
 	}
+	report("done", "Operación completada")
 	return log, nil
 }
 
