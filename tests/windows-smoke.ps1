@@ -1,8 +1,9 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $repo = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $homePath = Join-Path ([IO.Path]::GetTempPath()) ('codex-harness-smoke-' + [guid]::NewGuid().ToString('N'))
+. (Join-Path $repo 'scripts/profile.ps1')
 function Assert-That([bool]$ok,[string]$message) {
     if (-not $ok) { throw $message }
 }
@@ -13,9 +14,9 @@ try {
     [IO.File]::WriteAllText((Join-Path $homePath 'AGENTS.md'),'anterior')
     New-Item -ItemType Directory -Path (Join-Path $homePath 'agents') | Out-Null
     [IO.File]::WriteAllText((Join-Path $homePath 'agents/other_agent.toml'),'custom = true')
-    $before = (Get-FileHash -LiteralPath (Join-Path $homePath 'config.toml') -Algorithm SHA256).Hash
+    $before = Get-ChuliFileSha256 (Join-Path $homePath 'config.toml')
     & (Join-Path $repo 'scripts/install.ps1') -CodexHome $homePath
-    Assert-That (((Get-FileHash -LiteralPath (Join-Path $homePath 'config.toml') -Algorithm SHA256).Hash) -eq $before) 'Dry-run cambio config.'
+    Assert-That ((Get-ChuliFileSha256 (Join-Path $homePath 'config.toml')) -eq $before) 'Dry-run cambio config.'
     & (Join-Path $repo 'scripts/install.ps1') -CodexHome $homePath -Apply -ConfigureModels
     Assert-That (Test-Path (Join-Path $homePath 'agents/product_designer.toml')) 'Falta agente.'
     Assert-That (Test-Path (Join-Path $homePath 'skills/harness-discovery/SKILL.md')) 'Falta skill.'

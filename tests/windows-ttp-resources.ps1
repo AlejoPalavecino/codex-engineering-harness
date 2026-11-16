@@ -1,4 +1,4 @@
-#Requires -Version 5.1
+﻿#Requires -Version 5.1
 # Integration contract: real installer/rollback, synthetic homes only; no network.
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -20,9 +20,10 @@ function Write-Fixture([string]$path, [string]$text) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $path) -Force | Out-Null
     [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding($false)))
 }
+. (Join-Path $repo 'scripts/profile.ps1')
 function Hash([string]$path) {
     Assert-That (Test-Path -LiteralPath $path -PathType Leaf) ('Falta recurso: ' + $path)
-    return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+    return Get-ChuliFileSha256 $path
 }
 function Snapshot([string]$directory) {
     if (-not (Test-Path -LiteralPath $directory)) { return '<absent>' }

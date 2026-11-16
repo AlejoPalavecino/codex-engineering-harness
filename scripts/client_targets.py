@@ -36,6 +36,15 @@ AGY_EFFORT_LABELS = {
     "high": "High",
     "xhigh": "Extra",
 }
+AGY_VALID_AGENT_TIERS = {"inherit", "flash", "flash_lite", "pro"}
+AGY_AGENT_TIERS = {
+    "orchestrator-carbon": "pro",
+    "orchestrator-argon": "pro",
+    "gemini-4-carbon": "pro",
+    "gemini-4-argon": "pro",
+    "gemini-4-hydrogen": "flash",
+    "inherit": "inherit",
+}
 
 
 def load_catalog() -> dict:
@@ -48,6 +57,17 @@ def load_catalog() -> dict:
 def role_ids(catalog: dict | None = None) -> list[str]:
     cat = catalog or load_catalog()
     return [entry["id"] for entry in cat["roles"]]
+
+
+def agy_agent_tier(model: str, effort: str) -> str:
+    norm = (model or "").strip().lower()
+    if norm in AGY_VALID_AGENT_TIERS:
+        return norm
+    if norm == "gemini-4-hydrogen" and (effort or "").strip().lower() == "low":
+        return "flash_lite"
+    if norm == "gemini-4-argon" and (effort or "").strip().lower() == "low":
+        return "flash"
+    return AGY_AGENT_TIERS.get(norm, "inherit")
 
 
 def format_agy_model(model: str, effort: str) -> str:
@@ -166,7 +186,7 @@ def render_claude_agent(agent: dict, model: str, effort: str) -> bytes:
 
 def render_agy_agent(agent: dict, model: str, effort: str) -> bytes:
     role = agent["name"]
-    agy_model = format_agy_model(model, effort)
+    agy_tier = agy_agent_tier(model, effort)
     if role == "chuli_explorer":
         tools = "[read_file, search_web]"
     elif role in EXEC_READONLY_ROLES:
@@ -179,7 +199,7 @@ def render_agy_agent(agent: dict, model: str, effort: str) -> bytes:
         f"description: {json.dumps(agent['description'], ensure_ascii=False)}",
         "subagent: true",
         "mainAgent: false",
-        f"model: {json.dumps(agy_model, ensure_ascii=False)}",
+        f"model: {agy_tier}",
         f"effort: {effort}",
         f"tools: {tools}",
         "---",
@@ -350,11 +370,13 @@ def main(argv: list[str] | None = None) -> int:
     p_resolve.add_argument("--client", choices=("codex", "claude", "agy"), default="codex")
     p_resolve.add_argument("--preset", default="")
     p_resolve.add_argument("--role-models-json", default="")
+    p_resolve.add_argument("--role-models-file", type=Path)
 
     p_stage = sub.add_parser("stage-agents")
     p_stage.add_argument("--client", choices=("codex", "claude", "agy"), default="codex")
     p_stage.add_argument("--preset", default="")
     p_stage.add_argument("--role-models-json", default="")
+    p_stage.add_argument("--role-models-file", type=Path)
     p_stage.add_argument("--output-dir", type=Path, required=True)
 
     p_json = sub.add_parser("json-config")
@@ -366,19 +388,24 @@ def main(argv: list[str] | None = None) -> int:
     p_json.add_argument("--manifest", type=Path)
     p_json.add_argument("--preset", default="")
     p_json.add_argument("--role-models-json", default="")
+    p_json.add_argument("--role-models-file", type=Path)
     p_json.add_argument("--configure-models", action="store_true")
     p_json.add_argument("--replace-managed", action="store_true")
 
     args = parser.parse_args(argv)
     try:
+        raw_role_models = getattr(args, "role_models_json", "")
+        role_models_file = getattr(args, "role_models_file", None)
+        if role_models_file is not None:
+            raw_role_models = role_models_file.read_text(encoding="utf-8-sig")
+        overrides = json.loads(raw_role_models) if raw_role_models else None
+
         if args.action == "resolve":
-            overrides = json.loads(args.role_models_json) if args.role_models_json else None
             preset, roles = resolve_role_models(args.client, args.preset, overrides)
             print(json.dumps({"client": args.client, "preset": preset, "role_models": roles}, ensure_ascii=False))
             return 0
 
         if args.action == "stage-agents":
-            overrides = json.loads(args.role_models_json) if args.role_models_json else None
             preset, roles = resolve_role_models(args.client, args.preset, overrides)
             agents = load_source_agents()
             args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -420,13 +447,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.action == "json-config":
             raw = args.input.read_bytes() if args.input.is_file() else b""
             if args.mode == "prepare":
-                overrides = json.loads(args.role_models_json) if args.role_models_json else None
                 _, roles = resolve_role_models(args.client, args.preset, overrides)
                 updated, report = prepare_json_settings(
                     raw,
                     args.client,
                     roles,
-                    configure_models=args.configure_models or bool(args.preset or args.role_models_json),
+                    configure_models=args.configure_models or bool(args.preset or raw_role_models),
                     replace_managed=args.replace_managed,
                 )
                 args.output.write_bytes(updated)

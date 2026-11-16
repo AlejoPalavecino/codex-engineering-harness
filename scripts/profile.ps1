@@ -29,10 +29,11 @@ function Invoke-ProfilePython {
     return $output
 }
 
-function Get-ProfileInventory($Runtime, [string]$Action, [string]$ProfileHome, [switch]$AdoptGentleRouting, [string]$Client = 'codex') {
+function Get-ProfileInventory($Runtime, [string]$Action, [string]$ProfileHome, [switch]$AdoptGentleRouting, [string]$Client = 'codex', [string]$DisabledSkillsFile = '') {
     $tool = Join-Path $PSScriptRoot 'profile_resources.py'
     $arguments = @($tool,$Action,'--home',$ProfileHome,'--client',$Client)
     if ($AdoptGentleRouting) { $arguments += '--adopt-gentle-routing' }
+    if ($DisabledSkillsFile) { $arguments += @('--disabled-skills-file', $DisabledSkillsFile) }
     $json = Invoke-ProfilePython $Runtime $arguments
     return ($json | ConvertFrom-Json)
 }
@@ -55,6 +56,57 @@ function New-PrivateDirectory($Runtime, [string]$Path) {
     } else {
         $null = Invoke-ProfilePython $Runtime @('-c','import pathlib,sys; pathlib.Path(sys.argv[1]).mkdir(mode=448,parents=True)', $Path)
     }
+}
+
+function Get-ChuliFileSha256([string]$Path) {
+    if (-not $Path -or -not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try {
+            return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToUpperInvariant()
+        } finally {
+            $stream.Dispose()
+        }
+    } finally {
+        $sha.Dispose()
+    }
+}
+
+function Assert-ChuliSafeRegularTarget([string]$Path) {
+    $cursor = $Path
+    $isLeaf = $true
+    while ($cursor) {
+        if (Test-Path -LiteralPath $cursor) {
+            $item = Get-Item -LiteralPath $cursor -Force
+            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+                throw ('Symbolic link or reparse point rejected: ' + $cursor)
+            }
+            if ($isLeaf -and $item.PSIsContainer) {
+                throw ('Expected regular file: ' + $cursor)
+            }
+            if (-not $isLeaf -and -not $item.PSIsContainer) {
+                throw ('Expected directory: ' + $cursor)
+            }
+        }
+        $isLeaf = $false
+        $parent = Split-Path -Parent $cursor
+        if (-not $parent -or $parent -eq $cursor) { break }
+        $cursor = $parent
+    }
+}
+
+function Resolve-AgyCliSettingsPath([string]$HomePath, [string]$Client = 'codex') {
+    if ($Client -ne 'agy' -or -not $HomePath) { return $null }
+    $full = [IO.Path]::GetFullPath($HomePath).TrimEnd('\','/')
+    $leaf = Split-Path -Leaf $full
+    $parent = Split-Path -Parent $full
+    if (-not $parent) { return $null }
+    $parentLeaf = Split-Path -Leaf $parent
+    if ($leaf -ne 'config' -or $parentLeaf -ne '.gemini') { return $null }
+    $cliDir = Join-Path $parent 'antigravity-cli'
+    if (-not (Test-Path -LiteralPath $cliDir -PathType Container)) { return $null }
+    return (Join-Path $cliDir 'settings.json')
 }
 
 function Resolve-ProfileHome([string]$Requested, [string]$Client = 'codex') {

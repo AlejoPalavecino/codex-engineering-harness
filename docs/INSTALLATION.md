@@ -4,7 +4,7 @@
 
 Instalá Codex CLI o la app de escritorio con Codex local, Python 3.11 o posterior y PowerShell. En Windows se admite PowerShell 7 o Windows PowerShell 5.1. En Linux y macOS se usa `pwsh`. La release distribuye el Manager para Windows x64, Linux x64 y macOS ARM64. Para la instalación desde la release basta con el ejecutable de Chuli y estos requisitos.
 
-El perfil se instala bajo `CODEX_HOME`, con `~/.codex` como valor habitual. En Windows suele corresponder a `%USERPROFILE%\.codex`. Las reglas del proyecto y los permisos efectivos que administre el cliente también aplican a la sesión.
+El perfil se instala según tu cliente: `~/.codex` (`CODEX_HOME`), `~/.claude` (`CLAUDE_CONFIG_DIR`) o `~/.gemini/config` (`AGY_HOME`, sincronizando el modelo del CLI en `~/.gemini/antigravity-cli/settings.json`). Las reglas del proyecto y los permisos efectivos que administre el cliente también aplican a la sesión.
 
 ## Primera instalación
 

@@ -8,8 +8,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Get-Hash([string]$Path) {
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    return Get-ChuliFileSha256 $Path
 }
 function Get-LegacyManagedHash([object]$Baselines, [string]$Version, [string]$Relative) {
     foreach ($versionEntry in $Baselines.PSObject.Properties) {
@@ -52,7 +51,18 @@ $instrRel = Get-ClientInstructionPath $effectiveClient
 $configRel = Get-ClientConfigPath $effectiveClient
 $root = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $python = Get-Python
-$inventory = Get-ProfileInventory $python 'verify' $homePath -Client $effectiveClient
+$disabledTempFile = ''
+try {
+    if (($state.PSObject.Properties.Name -contains 'disabled_skills') -and $null -ne $state.disabled_skills -and @($state.disabled_skills).Count -gt 0) {
+        $disabledTempFile = Join-Path ([IO.Path]::GetTempPath()) ('chuli-verify-disabled-' + [guid]::NewGuid().ToString('N') + '.json')
+        [IO.File]::WriteAllText($disabledTempFile, (ConvertTo-Json -InputObject @($state.disabled_skills) -Compress), (New-Object System.Text.UTF8Encoding($false)))
+    }
+    $inventory = Get-ProfileInventory $python 'verify' $homePath -Client $effectiveClient -DisabledSkillsFile $disabledTempFile
+} finally {
+    if ($disabledTempFile -and (Test-Path -LiteralPath $disabledTempFile -PathType Leaf)) {
+        Remove-Item -LiteralPath $disabledTempFile -Force -ErrorAction SilentlyContinue
+    }
+}
 Write-Output ('Orchestrator: Chuli, ' + (Join-Path $homePath $instrRel))
 $configPath = Join-Path $homePath $configRel
 
@@ -106,6 +116,24 @@ $allArgs = @($python.prefix) + $params
 $result = & $command @allArgs 2>&1
 Write-Output (($result | Out-String).Trim())
 if ($LASTEXITCODE -ne 0) { $errors++ }
+if ($effectiveClient -eq 'agy') {
+    $agyCliStatePath = Join-Path $homePath 'harness-install/agy-cli-settings.json'
+    if (Test-Path -LiteralPath $agyCliStatePath -PathType Leaf) {
+        $cliMeta = Get-Content -LiteralPath $agyCliStatePath -Encoding UTF8 -Raw | ConvertFrom-Json
+        $expectedCliTarget = Resolve-AgyCliSettingsPath $homePath 'agy'
+        if (-not $expectedCliTarget -or $cliMeta.target -ne $expectedCliTarget) {
+            Write-Warning 'Meta de antigravity-cli/settings.json fuera del destino esperado.'
+            $errors++
+        } else {
+            Assert-ChuliSafeRegularTarget $expectedCliTarget
+            $cliValParams = @((Join-Path $root 'scripts/client_targets.py'),'json-config','validate','--client','agy','--input',$expectedCliTarget,'--manifest',$agyCliStatePath)
+            $cliValArgs = @($python.prefix) + $cliValParams
+            $cliValOut = & $command @cliValArgs 2>&1
+            Write-Output ('antigravity-cli/settings.json: ' + (($cliValOut | Out-String).Trim()))
+            if ($LASTEXITCODE -ne 0) { $errors++ }
+        }
+    }
+}
 foreach ($entry in $inventory.PSObject.Properties) {
     $name = $entry.Name
     if ($name -notmatch '^agents/[^/]+\.toml$') { continue }

@@ -11,7 +11,7 @@ try {
     [IO.File]::WriteAllText((Join-Path $managerPackageDir 'chuli.exe'),'MZtest-payload-one')
     $managerArchive = Join-Path $managerTestRoot 'manager.zip'
     [IO.Compression.ZipFile]::CreateFromDirectory($managerPackageDir,$managerArchive)
-    $managerDigest = (Get-FileHash -LiteralPath $managerArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+    $managerDigest = (Get-ChuliManagerSha256 $managerArchive).ToLowerInvariant()
     $managerDestination = Join-Path $managerTestRoot 'installed'
     $managerArguments = @{Archive=$managerArchive;Sha256=$managerDigest;ReleaseVersion='1.1.0';Destination=$managerDestination;PathTarget='Process'}
     Install-ChuliManagerPackage @managerArguments | Out-Null
@@ -43,7 +43,7 @@ try {
     $managerBadArchive = Join-Path $managerTestRoot 'extra.zip'
     [IO.Compression.ZipFile]::CreateFromDirectory($managerPackageDir,$managerBadArchive)
     $managerBad.Archive = $managerBadArchive
-    $managerBad.Sha256 = (Get-FileHash -LiteralPath $managerBadArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+    $managerBad.Sha256 = (Get-ChuliManagerSha256 $managerBadArchive).ToLowerInvariant()
     $managerFailed = $false
     try { Install-ChuliManagerPackage @managerBad -Apply | Out-Null } catch { $managerFailed = $true }
     if (-not $managerFailed) { throw 'Unexpected archive files accepted.' }
@@ -69,7 +69,7 @@ try {
     $managerUpgradeArchive = Join-Path $managerTestRoot 'upgrade.zip'
     [IO.Compression.ZipFile]::CreateFromDirectory($managerUpgradeDir,$managerUpgradeArchive)
     $managerRollback.Archive = $managerUpgradeArchive
-    $managerRollback.Sha256 = (Get-FileHash -LiteralPath $managerUpgradeArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+    $managerRollback.Sha256 = (Get-ChuliManagerSha256 $managerUpgradeArchive).ToLowerInvariant()
     $managerRollback.ReleaseVersion = '1.1.1'
     $env:Path = $managerOriginalPath
     $managerSavedSetter = (Get-Item Function:Set-ChuliPath).ScriptBlock

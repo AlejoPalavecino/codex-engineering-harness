@@ -24,9 +24,9 @@ El catálogo [`config/models.json`](../config/models.json) y `scripts/client_tar
 
 - **OpenAI Codex (`codex`):** genera `agents/*.toml` y actualiza `model` / `model_reasoning_effort` en `config.toml` (presets `codex-balanced`, `codex-astra-max`, `codex-fast`).
 - **Claude Code (`claude`):** genera `.claude/agents/*.md` con frontmatter YAML (`model`, `effort`, `tools`, `disallowedTools`) y actualiza `.claude/settings.json` (presets `claude-balanced`, `claude-fable-max`, `claude-fast`).
-- **Google Antigravity CLI (`agy`):** empaqueta `.gemini/config/plugins/chuli/` (`plugin.json`, `rules/AGENTS.md`, `agents/*.md` con `subagent: true`, `mainAgent: false` y `tools` nativas) y actualiza `.gemini/settings.json` con el formato `"Orchestrator (Argon)"` / `"Gemini 4 Carbon (High)"` (presets `agy-balanced`, `agy-carbon-max`, `agy-hydrogen-fast`).
+- **Google Antigravity CLI (`agy`):** empaqueta `.gemini/config/plugins/chuli/` (`plugin.json`, `rules/AGENTS.md`, `agents/*.md` con `subagent: true`, `mainAgent: false`, `model` mapeado al tier AGY `pro`/`flash`/`flash_lite`/`inherit` y `tools` nativas) y sincroniza `.gemini/antigravity-cli/settings.json` (o `settings.json` en perfiles aislados) con el formato `"Orchestrator (Argon)"` / `"Gemini 4 Carbon (High)"` (presets `agy-balanced`, `agy-carbon-max`, `agy-hydrogen-fast`).
 
-También podés personalizar modelo y esfuerzo rol por rol desde la pantalla `Modelos y presets` (`M`) de la TUI o mediante `--preset` y `--role <rol>=<modelo>[:<esfuerzo>]`.
+También podés personalizar modelo y esfuerzo rol por rol o guardar perfiles propios desde la pantalla `Perfiles de AI` (`M`) de la TUI o mediante `--preset` y `--role <rol>=<modelo>[:<esfuerzo>]`.
 
 ## Procedimientos
 

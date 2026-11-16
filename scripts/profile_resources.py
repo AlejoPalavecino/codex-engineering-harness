@@ -69,7 +69,30 @@ def config_rel(client: str = "codex") -> str:
     return "config.toml"
 
 
-def inventory(root: Path, client: str = "codex") -> dict[str, str]:
+def normalize_disabled_skills(items: object) -> set[str]:
+    if items is None:
+        return set()
+    if not isinstance(items, list):
+        raise ValueError("disabled_skills must be a list of skill folder names")
+    disabled: set[str] = set()
+    for entry in items:
+        if not isinstance(entry, str) or "/" in entry or "\\" in entry or entry == "_shared" or not valid_relative(entry):
+            raise ValueError(f"Unsafe or invalid disabled skill name: {entry!r}")
+        disabled.add(entry)
+    return disabled
+
+
+def load_disabled_skills(file_path: Path | None) -> set[str]:
+    if file_path is None:
+        return set()
+    raw = file_path.read_text(encoding="utf-8-sig").strip()
+    if not raw:
+        return set()
+    return normalize_disabled_skills(json.loads(raw))
+
+
+def inventory(root: Path, client: str = "codex", disabled_skills: set[str] | None = None) -> dict[str, str]:
+    disabled = disabled_skills or set()
     instr = instruction_rel(client)
     result = {instr: "config/AGENTS.md", "harness/bin/taskboard.py": "scripts/taskboard.py",
               "harness/templates/feature-tasks.md": "templates/feature-tasks.md",
@@ -97,6 +120,10 @@ def inventory(root: Path, client: str = "codex") -> dict[str, str]:
                 if folder == "agents" and path.suffix != ".toml":
                     continue
                 relative = path.relative_to(base).as_posix()
+                if folder == "skills":
+                    skill_name = relative.split("/", 1)[0]
+                    if skill_name in disabled and skill_name != "_shared":
+                        continue
                 if not valid_relative(relative):
                     raise ValueError(f"Unsafe source name: {relative}")
                 if folder == "agents" and client in ("claude", "agy"):
@@ -111,13 +138,15 @@ def inventory(root: Path, client: str = "codex") -> dict[str, str]:
     return dict(sorted(result.items()))
 
 
-def preflight(home: Path, action: str, adopt_gentle: bool = False, client: str = "codex") -> dict[str, str]:
+def preflight(home: Path, action: str, adopt_gentle: bool = False, client: str = "codex",
+              disabled_skills: set[str] | None = None) -> dict[str, str]:
     if not home.is_absolute() or ".." in home.parts or home == home.parent:
         raise ValueError("Expected an absolute profile directory below the filesystem root")
     if home == ROOT or home.is_relative_to(ROOT) or ROOT.is_relative_to(home):
         raise ValueError("Profile and source checkout must be separate directories")
-    resources = inventory(ROOT, client)
-    allowed = set(resources) | LEGACY_AGENTS | {config_rel(client)}
+    full_resources = inventory(ROOT, client)
+    resources = inventory(ROOT, client, disabled_skills) if disabled_skills else full_resources
+    allowed = set(full_resources) | LEGACY_AGENTS | {config_rel(client)}
     safe_path(home, directory=True)
     for name in (*allowed, "harness-install/state.json", "AGENTS.override.md"):
         safe_path(home / name)
@@ -365,17 +394,23 @@ def main() -> None:
     parser.add_argument("--client", choices=("codex", "claude", "agy"), default="codex")
     parser.add_argument("--preset", default="")
     parser.add_argument("--role-models-json", default="")
+    parser.add_argument("--role-models-file", type=Path)
+    parser.add_argument("--disabled-skills-file", type=Path)
     args = parser.parse_args()
     if args.action == "instructions":
+        role_models_raw = args.role_models_json
+        if args.role_models_file is not None:
+            role_models_raw = args.role_models_file.read_text(encoding="utf-8-sig")
         result = prepare_instructions(
             args.home, args.output, args.replace, args.adopt_gentle_routing,
-            args.client, args.preset, args.role_models_json,
+            args.client, args.preset, role_models_raw,
         )
     elif args.action == "undo-instructions":
         undo_instructions(args.home, args.output, args.client)
         return
     else:
-        result = preflight(args.home, args.action, args.adopt_gentle_routing, args.client)
+        disabled = load_disabled_skills(args.disabled_skills_file)
+        result = preflight(args.home, args.action, args.adopt_gentle_routing, args.client, disabled_skills=disabled)
     print(json.dumps(result, ensure_ascii=True))
 
 

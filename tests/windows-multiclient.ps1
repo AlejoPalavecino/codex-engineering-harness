@@ -54,6 +54,31 @@ try {
     Assert-That (-not (Test-Path (Join-Path $agyHome 'plugins/chuli/plugin.json'))) 'AGY rollback did not remove plugin.json.'
     Assert-That ([IO.File]::ReadAllText((Join-Path $agyHome 'settings.json')) -eq $agySettings) 'AGY rollback did not restore settings.json.'
 
+    # 2b. AGY real layout (.gemini/config + .gemini/antigravity-cli/settings.json) and valid agent tiers
+    $geminiRoot = Join-Path $sandbox '.gemini'
+    $agyConfigHome = Join-Path $geminiRoot 'config'
+    $agyCliDir = Join-Path $geminiRoot 'antigravity-cli'
+    New-Item -ItemType Directory -Path $agyConfigHome -Force | Out-Null
+    New-Item -ItemType Directory -Path $agyCliDir -Force | Out-Null
+    $agyCliOriginal = '{"colorScheme":"tokyo night","trustedWorkspaces":["C:\\work"]}'
+    $agyCliSettings = Join-Path $agyCliDir 'settings.json'
+    [IO.File]::WriteAllText($agyCliSettings, $agyCliOriginal)
+    & $install -CodexHome $agyConfigHome -Client 'agy' -Preset 'agy-balanced' -Apply | Out-Null
+    $updatedAgyCli = [IO.File]::ReadAllText($agyCliSettings) | ConvertFrom-Json
+    Assert-That ($updatedAgyCli.model -eq 'Orchestrator (Argon)') 'AGY CLI settings.json model not updated.'
+    Assert-That ($updatedAgyCli.colorScheme -eq 'tokyo night') 'AGY CLI colorScheme lost.'
+    $archAgent = [IO.File]::ReadAllText((Join-Path $agyConfigHome 'plugins/chuli/agents/solution_architect.md'))
+    Assert-That ($archAgent.Contains('model: pro')) 'AGY agent tier must be valid (pro).'
+    & $verify -CodexHome $agyConfigHome -Client 'agy' | Out-Null
+    if (Get-Command agy -ErrorAction SilentlyContinue) {
+        $agyJson = (& agy plugin validate (Join-Path $agyConfigHome 'plugins/chuli') --json | Out-String) | ConvertFrom-Json
+        Assert-That ($agyJson.components.agents -eq 6) 'agy plugin validate did not load all 6 Chuli agents.'
+        $agyErrors = @($agyJson.findings | Where-Object { $_.severity -eq 'error' })
+        Assert-That ($agyErrors.Count -eq 0) ('agy plugin validate returned errors: ' + ($agyErrors | ConvertTo-Json -Compress))
+    }
+    & $rollback -CodexHome $agyConfigHome -Client 'agy' -Apply | Out-Null
+    Assert-That ([IO.File]::ReadAllText($agyCliSettings) -eq $agyCliOriginal) 'AGY rollback did not restore antigravity-cli/settings.json.'
+
     # 3. Codex installation with preset and custom role model
     $codexHome = Join-Path $sandbox 'codex'
     New-Item -ItemType Directory -Path $codexHome -Force | Out-Null

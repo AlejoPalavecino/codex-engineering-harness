@@ -16,8 +16,7 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Get-Hash([string]$Path) {
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    return Get-ChuliFileSha256 $Path
 }
 function Save-Text([string]$Path, [string]$Value) {
     New-Item -ItemType Directory -Path (Split-Path -Parent $Path) -Force | Out-Null
@@ -146,6 +145,32 @@ foreach ($item in @($state.files)) {
     $restore.Add(@{path=[string]$item.path;target=$target;saved=$saved;existed=[bool]$item.existed;current=$currentHash;merge=$mergeInstructions})
 }
 
+$agyCliStatePath = Join-Path $homePath 'harness-install/agy-cli-settings.json'
+$cliMeta = $null
+$cliBackupFile = Join-Path $backup '_agy_cli_settings.json'
+$previousCliStateBackup = Join-Path $backup '_previous_agy_cli_settings.json'
+if (Test-Path -LiteralPath $agyCliStatePath -PathType Leaf) {
+    $cliMeta = [IO.File]::ReadAllText($agyCliStatePath) | ConvertFrom-Json
+    $expectedCliTarget = Resolve-AgyCliSettingsPath $homePath $effectiveClient
+    if (-not $expectedCliTarget -or $cliMeta.target -ne $expectedCliTarget) {
+        throw 'Ruta inválida en agy-cli-settings.json; rollback detenido.'
+    }
+    Assert-ChuliSafeRegularTarget $expectedCliTarget
+    if ($cliMeta.changed) {
+        if ((Get-Hash $expectedCliTarget) -ne $cliMeta.installed_sha256) {
+            throw 'antigravity-cli/settings.json modificado o ausente después de la instalación. Sin cambios.'
+        }
+        if ($cliMeta.existed) {
+            if (-not (Test-Path -LiteralPath $cliBackupFile -PathType Leaf)) {
+                throw 'Falta backup de antigravity-cli/settings.json. Rollback cancelado SIN modificar archivos.'
+            }
+            if ($cliMeta.backup_sha256 -and (Get-Hash $cliBackupFile) -ne $cliMeta.backup_sha256) {
+                throw 'Hash de backup incorrecto: antigravity-cli/settings.json. Sin cambios.'
+            }
+        }
+    }
+}
+
 # For an unexpected I/O failure during rollback, preserve the current state for compensation.
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-rollback-' + [guid]::NewGuid().ToString('N'))
 $mutating = $false
@@ -171,6 +196,14 @@ try {
             if ((Get-Hash $snapshot) -ne $item.current) { throw ('Snapshot inválido: ' + $item.path) }
         }
     }
+    $cliSnapshot = Join-Path $staging '_agy_cli_settings.json'
+    $cliExistedBeforeRollback = $false
+    if ($null -ne $cliMeta -and $cliMeta.changed -and (Test-Path -LiteralPath $cliMeta.target -PathType Leaf)) {
+        $cliExistedBeforeRollback = $true
+        Copy-Item -LiteralPath $cliMeta.target -Destination $cliSnapshot
+        if ((Get-Hash $cliSnapshot) -ne $cliMeta.installed_sha256) { throw 'Snapshot inválido: antigravity-cli/settings.json' }
+    }
+    $rawCliState = if ($null -ne $cliMeta -and (Test-Path -LiteralPath $agyCliStatePath -PathType Leaf)) { [IO.File]::ReadAllText($agyCliStatePath) } else { $null }
     $mutating = $true
     foreach ($item in $restore) {
         if ($item.merge) {
@@ -191,6 +224,20 @@ try {
     } else {
         Remove-Item -LiteralPath $statePath -Force
     }
+    if ($null -ne $cliMeta) {
+        if ($cliMeta.changed) {
+            if ($cliMeta.existed) {
+                Copy-Item -LiteralPath $cliBackupFile -Destination $cliMeta.target -Force
+            } elseif (Test-Path -LiteralPath $cliMeta.target) {
+                Remove-Item -LiteralPath $cliMeta.target -Force
+            }
+        }
+        if ($cliMeta.previous_state_existed -and (Test-Path -LiteralPath $previousCliStateBackup -PathType Leaf)) {
+            Copy-Item -LiteralPath $previousCliStateBackup -Destination $agyCliStatePath -Force
+        } elseif (Test-Path -LiteralPath $agyCliStatePath) {
+            Remove-Item -LiteralPath $agyCliStatePath -Force
+        }
+    }
     Write-Output 'ROLLBACK OK. Respaldo preservado. Reiniciá Codex.'
 } catch {
     $cause = $_.Exception.Message
@@ -210,6 +257,19 @@ try {
             }
         }
         try { Save-Text $statePath $rawState } catch { $problems.Add(('state.json: ' + $_.Exception.Message)) }
+        if ($null -ne $cliMeta) {
+            try {
+                if ($cliMeta.changed) {
+                    if ($cliExistedBeforeRollback) {
+                        if ((Get-Hash $cliSnapshot) -ne $cliMeta.installed_sha256) { throw 'Snapshot de recuperación no coincide' }
+                        Copy-Item -LiteralPath $cliSnapshot -Destination $cliMeta.target -Force
+                    } elseif (Test-Path -LiteralPath $cliMeta.target) {
+                        Remove-Item -LiteralPath $cliMeta.target -Force
+                    }
+                }
+                if ($null -ne $rawCliState) { Save-Text $agyCliStatePath $rawCliState }
+            } catch { $problems.Add(('antigravity-cli/settings.json: ' + $_.Exception.Message)) }
+        }
     }
     if ($problems.Count -gt 0) {
         throw ('ROLLBACK FALLÓ: ' + $cause + '. Recuperación incompleta: ' + ($problems -join '; ') + '. Guardá los backups.')

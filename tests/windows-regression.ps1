@@ -6,8 +6,9 @@ $homePath = Join-Path ([IO.Path]::GetTempPath()) ('codex-harness-regression-' + 
 function Assert-That([bool]$condition, [string]$message) {
     if (-not $condition) { throw $message }
 }
+. (Join-Path $repo 'scripts/profile.ps1')
 function Hash([string]$path) {
-    return (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash
+    return Get-ChuliFileSha256 $path
 }
 $install = Join-Path $repo 'scripts/install.ps1'
 $rollback = Join-Path $repo 'scripts/rollback.ps1'
@@ -30,7 +31,7 @@ try {
     $config = [IO.File]::ReadAllText($configFile)
     Assert-That (([regex]::Matches($config,'(?m)^\[tools\.update_plan\]')).Count -eq 1) 'Duplicated TOML table.'
     Assert-That ($config.Contains('enabled = false')) 'Explicit local override was lost.'
-    & python -c 'import tomllib,sys; tomllib.load(open(sys.argv[1],"rb"))' $configFile
+    & python -c 'import pathlib,tomllib,sys; tomllib.loads(pathlib.Path(sys.argv[1]).read_bytes().decode())' $configFile
     Assert-That ($LASTEXITCODE -eq 0) 'Candidate TOML invalid.'
     $merged = [IO.File]::ReadAllText($agentFile)
     Assert-That ($merged.Contains('CES argentino personalizado') -and $merged.Contains('<!-- chuli:orchestrator -->')) 'Managed instructions must preserve personal AGENTS content.'
@@ -61,7 +62,14 @@ try {
     $agentBefore = Hash $agentFile
     $configBefore = Hash $configFile
     $stateBefore = Hash $statePath
-    & pwsh -NoProfile -File $rollback -CodexHome $homePath -Apply *> $null
+    $engine = (Get-Process -Id $PID).Path
+    $prevPref = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $engine -NoProfile -ExecutionPolicy Bypass -File $rollback -CodexHome $homePath -Apply 2>&1 | Out-Null
+    } finally {
+        $ErrorActionPreference = $prevPref
+    }
     Assert-That ($LASTEXITCODE -ne 0) 'Incomplete backup should have prevented rollback.'
     Assert-That ((Hash $agentFile) -eq $agentBefore) 'Rollback changed AGENTS before preflight completed.'
     Assert-That ((Hash $configFile) -eq $configBefore) 'Rollback changed config before preflight completed.'
@@ -74,7 +82,13 @@ try {
     $invalid = '[tools.update_plan]' + $nl + 'enabled = true' + $nl +
         '[tools.update_plan]' + $nl + 'enabled = false'
     [IO.File]::WriteAllText($configFile,$invalid)
-    & pwsh -NoProfile -File $verify -CodexHome $homePath *> $null
+    $prevPref = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    try {
+        & $engine -NoProfile -ExecutionPolicy Bypass -File $verify -CodexHome $homePath 2>&1 | Out-Null
+    } finally {
+        $ErrorActionPreference = $prevPref
+    }
     Assert-That ($LASTEXITCODE -ne 0) 'Invalid TOML was not rejected.'
     # Expected failure cases ran in child pwsh; clear inherited exit code.
     $global:LASTEXITCODE = 0

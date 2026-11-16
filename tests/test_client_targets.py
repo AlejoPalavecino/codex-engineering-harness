@@ -57,6 +57,11 @@ class ClientTargetsTests(unittest.TestCase):
         self.assertEqual(ct.format_agy_model("gemini-4-carbon", "high"), "Gemini 4 Carbon (High)")
         self.assertEqual(ct.format_agy_model("gemini-4-argon", "medium"), "Gemini 4 Argon (Medium)")
         self.assertEqual(ct.format_agy_model("gemini-4-hydrogen", "xhigh"), "Gemini 4 Hydrogen (Extra)")
+        self.assertEqual(ct.agy_agent_tier("gemini-4-carbon", "high"), "pro")
+        self.assertEqual(ct.agy_agent_tier("gemini-4-argon", "medium"), "pro")
+        self.assertEqual(ct.agy_agent_tier("gemini-4-hydrogen", "high"), "flash")
+        self.assertEqual(ct.agy_agent_tier("gemini-4-hydrogen", "low"), "flash_lite")
+        self.assertEqual(ct.agy_agent_tier("inherit", "medium"), "inherit")
 
     def test_render_agents_for_codex_claude_and_agy(self):
         agents = ct.load_source_agents()
@@ -77,8 +82,12 @@ class ClientTargetsTests(unittest.TestCase):
         agy_arch = ct.render_agy_agent(agents["solution_architect"], "gemini-4-carbon", "high").decode("utf-8")
         self.assertIn("subagent: true", agy_arch)
         self.assertIn("mainAgent: false", agy_arch)
-        self.assertIn('model: "Gemini 4 Carbon (High)"', agy_arch)
+        self.assertIn("model: pro", agy_arch)
+        self.assertNotIn("Gemini 4 Carbon", agy_arch)
         self.assertIn("tools: [read_file, run_command, manage_task, search_web]", agy_arch)
+
+        agy_explorer = ct.render_agy_agent(agents["chuli_explorer"], "gemini-4-hydrogen", "low").decode("utf-8")
+        self.assertIn("model: flash_lite", agy_explorer)
 
     def test_json_settings_preserves_bom_and_unrelated_keys(self):
         _, claude_roles = ct.resolve_role_models("claude", "claude-balanced")

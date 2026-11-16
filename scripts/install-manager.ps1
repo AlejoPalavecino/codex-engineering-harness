@@ -6,6 +6,20 @@ Installs Chuli Manager for the current Windows user. Preview unless -Apply.
 [CmdletBinding()]
 param([switch]$Apply, [string]$InstallDir, [string]$Version)
 
+function Get-ChuliManagerSha256([string]$Path) {
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $stream = [IO.File]::OpenRead($Path)
+        try {
+            return ([BitConverter]::ToString($sha.ComputeHash($stream))).Replace('-', '').ToUpperInvariant()
+        } finally {
+            $stream.Dispose()
+        }
+    } finally {
+        $sha.Dispose()
+    }
+}
+
 function Test-ManagerAbsolutePath([string]$Destination) {
     if ($Destination.StartsWith('\\?\') -or $Destination.StartsWith('\\.\')) { return $false }
     return ($Destination -match '^[A-Za-z]:[\\/]' -or $Destination -match '^\\\\[^\\/:*?"<>|]+\\[^\\/:*?"<>|]+(?:[\\/]|$)')
@@ -108,7 +122,7 @@ function Install-ChuliManagerPackage {
     $managerExe = Join-Path $Destination 'chuli.exe'
     $managerRecord = Join-Path $Destination 'manager-install.json'
     Assert-ManagerFiles @($managerExe,$managerRecord)
-    if ((Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash -ne $Sha256) { throw 'SHA-256 incorrecto; no se modifico la instalacion.' }
+    if ((Get-ChuliManagerSha256 $Archive) -ne $Sha256) { throw 'SHA-256 incorrecto; no se modifico la instalacion.' }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
     $managerZip = [IO.Compression.ZipFile]::OpenRead($Archive)
     try {
@@ -124,9 +138,9 @@ function Install-ChuliManagerPackage {
     if (Test-Path -LiteralPath $managerExe) {
         if (-not (Test-Path -LiteralPath $managerRecord)) { throw 'Existe un chuli.exe ajeno al instalador; no se reemplazo.' }
         $managerPrevious = [IO.File]::ReadAllText($managerRecord) | ConvertFrom-Json
-        $managerPreviousRecordHash = (Get-FileHash -LiteralPath $managerRecord -Algorithm SHA256).Hash
+        $managerPreviousRecordHash = Get-ChuliManagerSha256 $managerRecord
         if ($managerPrevious.schema -ne 1 -or $managerPrevious.version -notmatch '^\d+\.\d+\.\d+$' -or
-            $managerPrevious.sha256 -ne (Get-FileHash -LiteralPath $managerExe -Algorithm SHA256).Hash) { throw 'La instalacion fue modificada; revisala antes de actualizar.' }
+            $managerPrevious.sha256 -ne (Get-ChuliManagerSha256 $managerExe)) { throw 'La instalacion fue modificada; revisala antes de actualizar.' }
         if ([version]$ReleaseVersion -lt [version]$managerPrevious.version) { throw 'No se admite bajar de version con este instalador.' }
     } elseif (Test-Path -LiteralPath $managerRecord) { throw 'Registro sin ejecutable; requiere revision manual.' }
     $managerOldPath = Get-ChuliPath $PathTarget
@@ -151,18 +165,18 @@ function Install-ChuliManagerPackage {
         Assert-ManagerLocation $Destination
         Assert-ManagerFiles @($managerExe,$managerRecord)
         New-Item -ItemType Directory -Path $Destination -Force | Out-Null
-        if ($managerPrevious -and (Get-FileHash -LiteralPath $managerRecord -Algorithm SHA256).Hash -ne $managerPreviousRecordHash) { throw 'El registro cambio; revisa otra vista previa.' }
+        if ($managerPrevious -and (Get-ChuliManagerSha256 $managerRecord) -ne $managerPreviousRecordHash) { throw 'El registro cambio; revisa otra vista previa.' }
         $managerZip = [IO.Compression.ZipFile]::OpenRead($Archive)
         try {
-            if ((Get-FileHash -LiteralPath $Archive -Algorithm SHA256).Hash -ne $Sha256) { throw 'El paquete cambio antes de extraerlo.' }
+            if ((Get-ChuliManagerSha256 $Archive) -ne $Sha256) { throw 'El paquete cambio antes de extraerlo.' }
             [IO.Compression.ZipFileExtensions]::ExtractToFile($managerZip.Entries[0],$managerNewExe,$false)
         }
         finally { $managerZip.Dispose() }
-        $managerNewDigest = (Get-FileHash -LiteralPath $managerNewExe -Algorithm SHA256).Hash.ToLowerInvariant()
+        $managerNewDigest = (Get-ChuliManagerSha256 $managerNewExe).ToLowerInvariant()
         $managerJson = @{schema=1;version=$ReleaseVersion;sha256=$managerNewDigest} | ConvertTo-Json
         [IO.File]::WriteAllText($managerNewRecord,$managerJson,(New-Object Text.UTF8Encoding($false)))
         if ($managerPrevious) {
-            if ((Get-FileHash -LiteralPath $managerExe -Algorithm SHA256).Hash -ne $managerPrevious.sha256) { throw 'El ejecutable cambio; revisa otra vista previa.' }
+            if ((Get-ChuliManagerSha256 $managerExe) -ne $managerPrevious.sha256) { throw 'El ejecutable cambio; revisa otra vista previa.' }
             [IO.File]::Replace($managerNewExe,$managerExe,$managerBackupExe)
         } else { [IO.File]::Move($managerNewExe,$managerExe) }
         $managerWroteExe = $true

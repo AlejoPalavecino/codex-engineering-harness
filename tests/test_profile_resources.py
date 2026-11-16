@@ -135,3 +135,22 @@ class ProfileTests(unittest.TestCase):
         os.link(external, self.home / "config.toml")
         with self.assertRaisesRegex(ValueError, "one link"):
             profile.preflight(self.home, "install")
+
+    def test_disabled_skills_excluded_from_active_inventory_but_allowed_for_rollback(self):
+        disabled_file = self.home.parent / "disabled.json"
+        disabled_file.write_text(json.dumps(["gentle-ai-bench", "hermes-ephemeral-delegation"]), encoding="utf-8")
+        full = profile.inventory(profile.ROOT, "codex")
+        filtered = profile.inventory(profile.ROOT, "codex", disabled_skills={"gentle-ai-bench"})
+        self.assertIn("skills/gentle-ai-bench/SKILL.md", full)
+        self.assertNotIn("skills/gentle-ai-bench/SKILL.md", filtered)
+        self.assertIn("skills/_shared/README.md", filtered)
+        backup_dir = self.home / "backups/harness/20261116-120000-abcdef12"
+        backup_dir.mkdir(parents=True)
+        manifest = self.home / "harness-install/state.json"
+        manifest.parent.mkdir(parents=True)
+        manifest.write_text(json.dumps({
+            "version": "2.0.0",
+            "backup_dir": str(backup_dir),
+            "files": [{"path": "skills/gentle-ai-bench/SKILL.md", "existed": False}],
+        }), encoding="utf-8")
+        profile.preflight(self.home, "rollback", False, "codex", disabled_skills={"gentle-ai-bench"})

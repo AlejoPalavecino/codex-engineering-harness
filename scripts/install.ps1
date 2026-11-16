@@ -18,14 +18,14 @@ param(
     [string]$CodexHome,
     [ValidateSet('codex','claude','agy')][string]$Client = 'codex',
     [string]$Preset = '',
-    [string]$RoleModelsJson = ''
+    [string]$RoleModelsJson = '',
+    [string]$DisabledSkillsFile = ''
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 function Get-Hash([string]$Path) {
-    if (-not (Test-Path -LiteralPath $Path -PathType Leaf)) { return $null }
-    return (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+    return Get-ChuliFileSha256 $Path
 }
 function Save-Text([string]$Path, [string]$Value) {
     $parent = Split-Path -Parent $Path
@@ -50,7 +50,6 @@ if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
 }
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
 $python = Get-Python
-$inventory = Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting -Client $Client
 $previous = $null
 $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
@@ -87,15 +86,43 @@ $changes = New-Object 'System.Collections.Generic.List[object]'
 $preserved = New-Object 'System.Collections.Generic.List[string]'
 $modified = New-Object 'System.Collections.Generic.List[object]'
 $applied = $false
+$cliApplied = $false
 $backup = $null
 
 try {
     New-PrivateDirectory $python $staging
+    $disabledSkillsList = @()
+    $effectiveDisabledFile = ''
+    if ($DisabledSkillsFile) {
+        $rawDisabled = [IO.File]::ReadAllText($DisabledSkillsFile)
+        if ($rawDisabled.Trim()) {
+            $parsedDisabled = $rawDisabled | ConvertFrom-Json
+            $disabledSkillsList = @($parsedDisabled | ForEach-Object { [string]$_ })
+        }
+        $effectiveDisabledFile = $DisabledSkillsFile
+    } elseif ($null -ne $previous -and ($previous.PSObject.Properties.Name -contains 'disabled_skills') -and $null -ne $previous.disabled_skills) {
+        $disabledSkillsList = @($previous.disabled_skills | ForEach-Object { [string]$_ })
+        if ($disabledSkillsList.Count -gt 0) {
+            $effectiveDisabledFile = Join-Path $staging 'disabled-skills.json'
+            Save-Text $effectiveDisabledFile (ConvertTo-Json -InputObject @($disabledSkillsList) -Compress)
+        }
+    }
+    $inventory = Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting -Client $Client -DisabledSkillsFile $effectiveDisabledFile
+    $fullInventory = if ($disabledSkillsList.Count -gt 0) {
+        Get-ProfileInventory $python 'install' $homePath -AdoptGentleRouting:$AdoptGentleRouting -Client $Client
+    } else {
+        $inventory
+    }
+    $roleModelsFile = $null
+    if ($RoleModelsJson) {
+        $roleModelsFile = Join-Path $staging 'role-models.json'
+        Save-Text $roleModelsFile $RoleModelsJson
+    }
     $items = New-Object 'System.Collections.Generic.List[object]'
     $instructionsPath = Join-Path $staging 'AGENTS.md'
     $instructionArgs = @((Join-Path $PSScriptRoot 'profile_resources.py'), 'instructions', '--home', $homePath, '--output', $instructionsPath, '--client', $Client)
     if ($Preset) { $instructionArgs += @('--preset', $Preset) }
-    if ($RoleModelsJson) { $instructionArgs += @('--role-models-json', $RoleModelsJson) }
+    if ($roleModelsFile) { $instructionArgs += @('--role-models-file', $roleModelsFile) }
     if ($ReplaceCustomized) { $instructionArgs += '--replace' }
     if ($AdoptGentleRouting) { $instructionArgs += '--adopt-gentle-routing' }
     $instructions = (Invoke-ProfilePython $python $instructionArgs) | ConvertFrom-Json
@@ -117,7 +144,7 @@ try {
         $stagedAgentsDir = Join-Path $staging 'staged-agents'
         $stageArgs = @((Join-Path $PSScriptRoot 'client_targets.py'), 'stage-agents', '--client', $Client, '--output-dir', $stagedAgentsDir)
         if ($Preset) { $stageArgs += @('--preset', $Preset) }
-        if ($RoleModelsJson) { $stageArgs += @('--role-models-json', $RoleModelsJson) }
+        if ($roleModelsFile) { $stageArgs += @('--role-models-file', $roleModelsFile) }
         $stageInfo = (Invoke-ProfilePython $python $stageArgs) | ConvertFrom-Json
         foreach ($prop in $stageInfo.staged.PSObject.Properties) { $stagedMap[$prop.Name] = [string]$prop.Value }
         $orchModel = [string]$stageInfo.role_models.orchestrator.model
@@ -128,6 +155,15 @@ try {
     }
     foreach ($entry in $inventory.PSObject.Properties) {
         $items.Add(@{path=$entry.Name; source=[string]$entry.Value; kind='copy'})
+    }
+    if ($disabledSkillsList.Count -gt 0) {
+        $activeNames = @{}
+        foreach ($entry in $inventory.PSObject.Properties) { $activeNames[$entry.Name] = $true }
+        foreach ($entry in $fullInventory.PSObject.Properties) {
+            if (-not $activeNames.ContainsKey($entry.Name) -and $managedFiles.ContainsKey($entry.Name)) {
+                $items.Add(@{path=$entry.Name; source=''; kind='remove'})
+            }
+        }
     }
     if ($RemoveLegacyAgents -and $Client -eq 'codex') {
         foreach ($name in @('architect','explorer','reviewer','slice_worker','test_runner')) {
@@ -202,7 +238,7 @@ try {
         $args = @((Join-Path $root 'scripts/client_targets.py'), 'json-config', 'prepare', '--client', $Client,
             '--input', $inputPath, '--output', $candidatePath, '--report', $reportPath)
         if ($Preset) { $args += @('--preset', $Preset) }
-        if ($RoleModelsJson) { $args += @('--role-models-json', $RoleModelsJson) }
+        if ($roleModelsFile) { $args += @('--role-models-file', $roleModelsFile) }
         if ($wantModelUpdate) { $args += '--configure-models' }
         if ($ReplaceCustomized) { $args += '--replace-managed' }
         $reportOutput = Invoke-ProfilePython $python $args
@@ -213,6 +249,35 @@ try {
     $newConfigHash = Get-Hash $candidatePath
     $configAction = if ($oldConfigHash -eq $newConfigHash) { 'UNCHANGED' } elseif ($null -eq $oldConfigHash) { 'CREATE' } else { 'UPDATE-VALIDATED' }
     $changes.Add([ordered]@{path=$configRel;kind='config';action=$configAction;original=$oldConfigHash;source=$candidatePath})
+
+    $cliSettingsPath = Resolve-AgyCliSettingsPath $homePath $Client
+    $cliInputPath = Join-Path $staging 'original-agy-cli-settings.json'
+    $cliCandidatePath = Join-Path $staging 'candidate-agy-cli-settings.json'
+    $cliReportPath = Join-Path $staging 'agy-cli-config-report.json'
+    $cliReport = $null
+    $oldCliHash = $null
+    $newCliHash = $null
+    $cliConfigAction = $null
+    if ($null -ne $cliSettingsPath) {
+        Assert-ChuliSafeRegularTarget $cliSettingsPath
+        if (Test-Path -LiteralPath $cliSettingsPath -PathType Leaf) {
+            Copy-Item -LiteralPath $cliSettingsPath -Destination $cliInputPath
+        } else {
+            Save-Text $cliInputPath ''
+        }
+        $cliArgs = @((Join-Path $root 'scripts/client_targets.py'), 'json-config', 'prepare', '--client', 'agy',
+            '--input', $cliInputPath, '--output', $cliCandidatePath, '--report', $cliReportPath)
+        if ($Preset) { $cliArgs += @('--preset', $Preset) }
+        if ($roleModelsFile) { $cliArgs += @('--role-models-file', $roleModelsFile) }
+        if ($wantModelUpdate) { $cliArgs += '--configure-models' }
+        if ($ReplaceCustomized) { $cliArgs += '--replace-managed' }
+        $null = Invoke-ProfilePython $python $cliArgs
+        $cliReport = Get-Content -LiteralPath $cliReportPath -Raw | ConvertFrom-Json
+        foreach ($key in @($cliReport.preserved)) { $preserved.Add(('antigravity-cli/settings.json -> ' + $key)) }
+        $oldCliHash = Get-Hash $cliSettingsPath
+        $newCliHash = Get-Hash $cliCandidatePath
+        $cliConfigAction = if ($oldCliHash -eq $newCliHash) { 'UNCHANGED' } elseif ($null -eq $oldCliHash) { 'CREATE' } else { 'UPDATE-VALIDATED' }
+    }
 
     Write-Output ('Codex home: ' + $homePath)
     Write-Output ('Client: ' + $Client + ' (preset: ' + $resolvedPreset + ')')
@@ -225,6 +290,9 @@ try {
     Write-Output ('ReplaceCustomized requested: ' + [bool]$ReplaceCustomized)
     foreach ($entry in $changes) {
         Write-Output ('  ' + $entry.action.PadRight(20) + ' ' + $entry.path)
+    }
+    if ($null -ne $cliConfigAction) {
+        Write-Output ('  ' + $cliConfigAction.PadRight(20) + ' ../antigravity-cli/settings.json')
     }
     if ($preserved.Count -gt 0) {
         Write-Output 'Personalizaciones conservadas (no se sobrescriben):'
@@ -241,6 +309,25 @@ try {
     New-PrivateDirectory $python $backup
     if ($null -ne $previous) {
         Copy-Item -LiteralPath $statePath -Destination (Join-Path $backup '_previous_state.json')
+    }
+    $agyCliStatePath = Join-Path $homePath 'harness-install/agy-cli-settings.json'
+    $previousAgyCliStateExisted = Test-Path -LiteralPath $agyCliStatePath -PathType Leaf
+    if ($previousAgyCliStateExisted) {
+        Copy-Item -LiteralPath $agyCliStatePath -Destination (Join-Path $backup '_previous_agy_cli_settings.json')
+    }
+    $cliBackupPath = Join-Path $backup '_agy_cli_settings.json'
+    $cliExisted = [bool]($null -ne $oldCliHash)
+    $cliChanged = ($null -ne $cliSettingsPath -and $cliConfigAction -ne 'UNCHANGED')
+    if ($cliChanged) {
+        if ((Get-Hash $cliSettingsPath) -ne $oldCliHash) {
+            throw 'antigravity-cli/settings.json cambió durante el preflight'
+        }
+        if ($cliExisted) {
+            Copy-Item -LiteralPath $cliSettingsPath -Destination $cliBackupPath
+            if ((Get-Hash $cliBackupPath) -ne $oldCliHash) {
+                throw 'Backup corrupto antes de aplicar: antigravity-cli/settings.json'
+            }
+        }
     }
     foreach ($entry in $changes) {
         if ($entry.action -in @('UNCHANGED','PRESERVE-CUSTOMIZED')) { continue }
@@ -310,8 +397,31 @@ try {
         preserved_files=$preservedFiles
         preserved_customizations=@($preserved.ToArray())
         managed_config=$tracked
+        disabled_skills=@($disabledSkillsList)
     }
     Save-Text $statePath (ConvertTo-Json -InputObject $state -Depth 12)
+    if ($null -ne $cliSettingsPath) {
+        if ($cliChanged) {
+            if ([IO.File]::Exists($cliSettingsPath)) {
+                [IO.File]::WriteAllBytes($cliSettingsPath, [IO.File]::ReadAllBytes($cliCandidatePath))
+            } else {
+                [IO.File]::Copy($cliCandidatePath, $cliSettingsPath)
+            }
+            $cliApplied = $true
+        }
+        $cliTracked = @{}
+        foreach ($property in $cliReport.tracked.PSObject.Properties) { $cliTracked[$property.Name] = $property.Value }
+        $cliMeta = [ordered]@{
+            target=$cliSettingsPath
+            existed=$cliExisted
+            changed=$cliChanged
+            backup_sha256=$oldCliHash
+            installed_sha256=(Get-Hash $cliSettingsPath)
+            previous_state_existed=$previousAgyCliStateExisted
+            managed_config=$cliTracked
+        }
+        Save-Text $agyCliStatePath (ConvertTo-Json -InputObject $cliMeta -Depth 8)
+    }
     Write-Output 'INSTALACION OK. Respaldo creado y configuración validada.'
     Write-Output ('Backup: ' + $backup)
     Write-Output 'Ejecutá chuli doctor y abrí una sesión de Codex con este perfil.'
@@ -334,6 +444,22 @@ try {
                 $recoveryErrors.Add(($entry.path + ': ' + $_.Exception.Message))
             }
         }
+    }
+    if ($cliApplied) {
+        try {
+            if ($cliExisted) {
+                if ((Get-Hash $cliBackupPath) -ne $oldCliHash) { throw 'Backup no coincide con SHA esperado' }
+                Copy-Item -LiteralPath $cliBackupPath -Destination $cliSettingsPath -Force
+            } elseif (Test-Path -LiteralPath $cliSettingsPath) {
+                Remove-Item -LiteralPath $cliSettingsPath -Force
+            }
+            $oldCliState = Join-Path $backup '_previous_agy_cli_settings.json'
+            if ($previousAgyCliStateExisted -and (Test-Path -LiteralPath $oldCliState -PathType Leaf)) {
+                Copy-Item -LiteralPath $oldCliState -Destination $agyCliStatePath -Force
+            } elseif (-not $previousAgyCliStateExisted -and (Test-Path -LiteralPath $agyCliStatePath -PathType Leaf)) {
+                Remove-Item -LiteralPath $agyCliStatePath -Force
+            }
+        } catch { $recoveryErrors.Add(('antigravity-cli/settings.json: ' + $_.Exception.Message)) }
     }
     if ($applied) {
         try {
