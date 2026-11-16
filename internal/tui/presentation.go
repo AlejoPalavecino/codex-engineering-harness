@@ -74,7 +74,7 @@ func renderClientTabs(activeID string) string {
 func renderChuliLogo(clientID, version string) string {
 	ver := crtText(version)
 	if ver == "" {
-		ver = "2.0.0"
+		ver = "2.0.1"
 	}
 	if lipgloss.Width(ver) > 11 {
 		ver = ansi.Truncate(ver, 11, "")

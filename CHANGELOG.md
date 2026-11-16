@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1] — 2026-11-16
+
+- Consola CRT renovada en `chuli` preservando el banner retro de la PC y bloque `CHULI`, con menú de 6 accesos directos (**Instalar**, **Actualizar**, **Gestionar versiones**, **Perfiles de AI**, **MCPs** y **Skills**) y alerta no bloqueante cuando hay una nueva release.
+- Asistente guiado de instalación en 4 pasos (`1/4` detección y selección de plataformas, `2/4` preset o configuración de modelos proveedor por proveedor y rol por rol con flechas y `Enter`, `3/4` confirmación y `4/4` animación limpia que oculta los logs crudos del instalador).
+- Pantalla **Actualizar** con resumen de novedades de la release y búsqueda cancelable con `Esc`/`q`, junto con **Gestionar versiones** para cambiar o restaurar (`rollback`) versiones en caché o publicadas.
+- Gestión de **Perfiles de AI** guardados por proveedor en `~/.chuli/`, soporte multi-cliente para servidores **MCP** (incluidos servidores personalizados en Codex, Claude Code y AGY) y gestión de **Skills** con activación/desactivación y alta de skills propias.
+- Corrección de tiers de subagentes AGY (`pro`, `flash`, `flash_lite`, `inherit`), sincronización de `~/.gemini/antigravity-cli/settings.json` con backup/rollback y cálculo SHA-256 portátil entre PowerShell 5.1 y PowerShell 7+.
+
 ## [2.0.0] — 2026-11-16
 
 - Soporte multi-cliente completo para **OpenAI Codex (`~/.codex`)**, **Claude Code (`~/.claude`)** y **AGY CLI (`~/.gemini/config`)** desde una única fuente canónica (`config/models.json` y `scripts/client_targets.py`).
