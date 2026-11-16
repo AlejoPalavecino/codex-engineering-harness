@@ -935,7 +935,7 @@ func (m model) crtWizard(width int, page string) (string, string) {
 		}
 		customLine := customMark + " ⚙ Personalizar cada rol a gusto →"
 		if m.wizardProfileCursor == len(spec.Presets) {
-			b.WriteString(crtNeon.Render("› " + customLine) + "\n")
+			b.WriteString(crtNeon.Render("› "+customLine) + "\n")
 		} else {
 			b.WriteString("  " + customLine + "\n")
 		}
