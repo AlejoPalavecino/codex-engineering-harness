@@ -42,7 +42,7 @@ class SafeTomlTests(unittest.TestCase):
         parsed = tomllib.loads(updated)
         self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
         self.assertEqual(parsed["agents"]["solution_architect"]["description"],
-                         tomllib.loads((ROOT / "agents/solution_architect.toml").read_text())["description"])
+                         tomllib.loads((ROOT / "agents/solution_architect.toml").read_text(encoding="utf-8"))["description"])
 
     def test_new_profile_uses_defaults_but_individual_overrides_survive(self):
         current, report = mod.prepare('model = "personal"\n')

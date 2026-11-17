@@ -22,7 +22,8 @@ const (
 )
 
 type progressTracker struct {
-	ch chan progressEvent
+	ch    chan progressEvent
+	retry func(*progressTracker) tea.Cmd
 }
 
 type progressEvent struct {
@@ -38,13 +39,13 @@ type wizardStageMsg struct {
 }
 
 type wizardBatchResultMsg struct {
-	title        string
-	summary      string
-	techLog      string
-	nextSteps    string
-	err          error
-	gentleTarget string
-	statuses     []manager.ClientStatus
+	title     string
+	summary   string
+	techLog   string
+	nextSteps string
+	err       error
+	statuses  []manager.ClientStatus
+	retry     func(*progressTracker) tea.Cmd
 }
 
 type updatesLoadedMsg struct {
@@ -252,13 +253,18 @@ func presetFriendlyName(p manager.PresetSpec) string {
 }
 
 func runInstallBatchCmd(mgr manager.Manager, ids []string, configs map[string]wizardClientConfig, action string, useLocal, adoptGentle, allowDowngrade bool, tr *progressTracker) tea.Cmd {
+	return runInstallBatchRemainingCmd(mgr, ids, configs, action, useLocal, adoptGentle, allowDowngrade, tr, nil, "")
+}
+
+func runInstallBatchRemainingCmd(mgr manager.Manager, ids []string, configs map[string]wizardClientConfig, action string, useLocal, adoptGentle, allowDowngrade bool, tr *progressTracker, completed []string, previousLog string) tea.Cmd {
 	return func() tea.Msg {
 		defer close(tr.ch)
 		ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 		defer cancel()
 
 		var logs strings.Builder
-		var installedNames []string
+		logs.WriteString(previousLog)
+		installedNames := append([]string(nil), completed...)
 		var installedVersion string
 		totalSteps := len(ids) * 4
 		send := func(step int, label string) {
@@ -267,6 +273,34 @@ func runInstallBatchCmd(mgr manager.Manager, ids []string, configs map[string]wi
 			default:
 			}
 		}
+		failed := func(i int, err error) wizardBatchResultMsg {
+			var summary strings.Builder
+			for _, name := range installedNames {
+				fmt.Fprintf(&summary, "%s: completado\n", name)
+			}
+			for j, id := range ids[i:] {
+				spec, ok := manager.FindClient(id)
+				name := spec.Short
+				if !ok {
+					name = id
+				}
+				state := "pendiente (sin ejecutar)"
+				if j == 0 {
+					state = "fallido (revisá el motivo y el detalle técnico)"
+					if errors.Is(err, manager.ErrGentleConflict) {
+						state = "pendiente (conflicto Gentle; sin aplicar)"
+					}
+				}
+				fmt.Fprintf(&summary, "%s: %s\n", name, state)
+			}
+			msg := wizardBatchResultMsg{err: err, summary: strings.TrimSpace(summary.String()), techLog: logs.String(), statuses: mgr.DetectClients(), nextSteps: "Revisá el motivo antes de volver a instalar las plataformas pendientes."}
+			if errors.Is(err, manager.ErrGentleConflict) {
+				msg.retry = func(next *progressTracker) tea.Cmd {
+					return runInstallBatchRemainingCmd(mgr, ids[i:], configs, action, useLocal, true, allowDowngrade, next, installedNames, logs.String())
+				}
+			}
+			return msg
+		}
 
 		for i, id := range ids {
 			spec, _ := manager.FindClient(id)
@@ -274,7 +308,7 @@ func runInstallBatchCmd(mgr manager.Manager, ids []string, configs map[string]wi
 			send(base+1, fmt.Sprintf("[%s] Descargando y comprobando paquete oficial...", spec.Short))
 			cm, err := mgr.ForTarget(id)
 			if err != nil {
-				return wizardBatchResultMsg{err: err, techLog: logs.String()}
+				return failed(i, err)
 			}
 			if !useLocal {
 				cm.Source = ""
@@ -299,22 +333,12 @@ func runInstallBatchCmd(mgr manager.Manager, ids []string, configs map[string]wi
 			}
 			p, err := cm.PrepareWithOptions(ctx, manager.PrepareOptions{
 				Action:             act,
-				AdoptGentleRouting: adoptGentle,
+				AdoptGentleRouting: adoptGentle && i == 0,
 				AllowDowngrade:     allowDowngrade,
 				ConfigureModels:    true,
 			})
 			if err != nil {
-				if errors.Is(err, manager.ErrGentleConflict) {
-					return wizardBatchResultMsg{
-						err:          err,
-						gentleTarget: spec.Short,
-						techLog:      logs.String(),
-					}
-				}
-				return wizardBatchResultMsg{
-					err:     fmt.Errorf("%s: %w", spec.Short, err),
-					techLog: logs.String(),
-				}
+				return failed(i, fmt.Errorf("%s: %w", spec.Short, err))
 			}
 
 			send(base+2, fmt.Sprintf("[%s] Creando respaldo de seguridad...", spec.Short))
@@ -330,10 +354,7 @@ func runInstallBatchCmd(mgr manager.Manager, ids []string, configs map[string]wi
 			p.Cleanup()
 			logs.WriteString("=== " + spec.Name + " ===\n" + out + "\n")
 			if err != nil {
-				return wizardBatchResultMsg{
-					err:     fmt.Errorf("%s: %w", spec.Short, err),
-					techLog: logs.String(),
-				}
+				return failed(i, fmt.Errorf("%s: %w", spec.Short, err))
 			}
 			installedNames = append(installedNames, spec.Short)
 		}
@@ -366,7 +387,10 @@ func runSingleActionCmd(mgr manager.Manager, action string, opts manager.Prepare
 		p, err := mgr.PrepareWithOptions(ctx, opts)
 		if err != nil {
 			if errors.Is(err, manager.ErrGentleConflict) {
-				return wizardBatchResultMsg{err: err, gentleTarget: spec.Short}
+				return wizardBatchResultMsg{err: err, summary: spec.Short + ": pendiente de confirmación", retry: func(next *progressTracker) tea.Cmd {
+					opts.AdoptGentleRouting = true
+					return runSingleActionCmd(mgr, action, opts, successTitle, next)
+				}}
 			}
 			return wizardBatchResultMsg{err: err}
 		}
@@ -469,7 +493,6 @@ func (m model) updateWizard(message tea.Msg) (model, tea.Cmd, bool) {
 			m.updateCheckErr = ""
 			m.updateReport = msg.report
 			m.releases = msg.releases
-			m.log = msg.report.Summary
 		} else {
 			m.updateCheckErr = msg.err.Error()
 		}
@@ -506,18 +529,20 @@ func (m model) updateWizard(message tea.Msg) (model, tea.Cmd, bool) {
 		if installed, err := m.mgr.Installed(); err == nil {
 			m.installed = installed
 		}
+		m.resultSummary = msg.summary
+		m.resultNext = msg.nextSteps
+		m.log = msg.techLog
 		if msg.err != nil {
 			if errors.Is(msg.err, manager.ErrGentleConflict) {
 				m.screen = installGentleScreen
 				m.fault = msg.err.Error()
-				m.log = msg.gentleTarget
+				m.activeTracker = &progressTracker{retry: msg.retry}
 				m.offset = 0
 				return m, nil, true
 			}
 			m.screen = result
 			m.title = "No se pudo completar"
 			m.fault = msg.err.Error()
-			m.log = msg.techLog
 			m.showTechLog = false
 			m.offset = 0
 			return m, nil, true
@@ -525,9 +550,6 @@ func (m model) updateWizard(message tea.Msg) (model, tea.Cmd, bool) {
 		m.screen = result
 		m.title = msg.title
 		m.fault = ""
-		m.resultSummary = msg.summary
-		m.resultNext = msg.nextSteps
-		m.log = msg.techLog
 		m.showTechLog = false
 		m.offset = 0
 		return m, checkUpdatesCmd(m.mgr, m.managerVersion), true
@@ -666,6 +688,13 @@ func (m model) updateWizard(message tea.Msg) (model, tea.Cmd, bool) {
 			return m, nil, true
 		case "a", "enter", "s":
 			m.adoptGentle = true
+			if m.activeTracker != nil && m.activeTracker.retry != nil {
+				retry := m.activeTracker.retry
+				m = m.startWizardInstall(true)
+				tr := &progressTracker{ch: make(chan progressEvent, 16)}
+				m.activeTracker = tr
+				return m, tea.Batch(retry(tr), waitProgressCmd(tr), animTickCmd()), true
+			}
 			return m.startWizardInstall(true), tea.Batch(m.startWizardInstallCmd(true), animTickCmd()), true
 		}
 		return m, nil, true
@@ -970,7 +999,10 @@ func (m model) crtWizard(width int, page string) (string, string) {
 
 	case installGentleScreen:
 		b.WriteString(crtAmber.Render("Atención · Encontramos instrucciones anteriores de Gentle AI") + "\n\n")
-		b.WriteString("Para no pisar nada sin avisarte, Chuli se detuvo antes de escribir.\n")
+		b.WriteString("La plataforma en conflicto se detuvo antes de aplicar cambios.\n")
+		if m.resultSummary != "" {
+			b.WriteString("\n" + crtText(m.resultSummary) + "\n\n")
+		}
 		b.WriteString("Si aceptás, guardamos un respaldo completo de lo anterior y activamos Chuli.\n")
 		return strings.TrimRight(b.String(), "\n"), "A / Enter respaldar y activar Chuli · Esc cancelar"
 
