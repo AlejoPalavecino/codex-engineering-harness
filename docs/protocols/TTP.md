@@ -51,9 +51,14 @@ Una tarea debe representar **comportamiento o entregable verificable**, no opera
 - **Owner:** rol que ejecuta; el orquestador es el **único editor** del tablero.
 - **Acceptance:** criterio observable acordado.
 - **Evidence:** comandos y resultados, pruebas, diff/commit o comprobaciones que demuestran el cierre.
+- **Scope:** en tableros nuevos, array JSON de archivos del candidato, relativos a la raíz del proyecto, con `/`.
 - **Blocker:** razón concreta y la decisión que falta, si está bloqueada.
 
 Usá la [plantilla](../../templates/feature-tasks.md). No dupliques el mismo plan en Engram: guardá allí solo decisiones y resúmenes de continuidad.
+
+Cada tarea entrega una capacidad observable completa: incluye sus pruebas,
+implementación y verificación. Evitá una cadena de tareas «escribir tests →
+implementar → revisar»: esas son actividades internas de cada resultado.
 
 ## Estados persistentes
 
@@ -95,10 +100,61 @@ python scripts/taskboard.py check odd/tasks/mi-funcionalidad.md
 python scripts/taskboard.py show odd/tasks/mi-funcionalidad.md
 python scripts/taskboard.py set odd/tasks/mi-funcionalidad.md TASK-001 IN_PROGRESS --expect READY
 python scripts/taskboard.py set odd/tasks/mi-funcionalidad.md TASK-001 VERIFYING --expect IN_PROGRESS
-python scripts/taskboard.py set odd/tasks/mi-funcionalidad.md TASK-001 DONE --expect VERIFYING --evidence "pytest -q: 14 passed; commit abc123"
+python scripts/taskboard.py fingerprint odd/tasks/mi-funcionalidad.md TASK-001 --root .
 ```
 
 El instalador coloca también una copia en `~/.codex/harness/bin/taskboard.py`. Si no hay Python instalado, Codex puede editar el Markdown respetando estas reglas y el usuario puede inspeccionar el diff. El script valida **estructura y transiciones**, no puede garantizar que una prueba se ejecutó ni impedir escrituras fuera del sandbox.
+
+### Evidencia del candidato
+
+Los tableros nuevos conservan `Evidence mode: candidate-v1` de la plantilla.
+Para DONE, `Evidence` es un objeto JSON de una línea con `command`, `result`
+y `candidate`. Command identifica el comando realmente ejecutado; result registra
+el resultado observado (cantidad de pruebas, salida relevante y límites).
+Candidate es la huella `sha256:...` obtenida sobre Scope. El validador nunca
+ejecuta esos textos ni certifica que su contenido sea verdadero.
+
+1. Terminá implementación y declará en Scope todos los archivos que sostienen
+   el criterio, incluidas pruebas, configuración y contratos relevantes.
+2. **Antes de ejecutar las verificaciones**, capturá `fingerprint` del candidato.
+3. Ejecutá los comandos de aceptación sobre esos mismos archivos. Si hay
+   correcciones o cambios, capturá una nueva huella y repetí lo afectado.
+4. Registrá comando, resultado observado y la huella capturada; al cerrar,
+   `set ... DONE` coteja esa huella y las de sus dependencias transitivas DONE
+   con los archivos actuales antes de escribir. Si una dependencia cambió,
+   rechazá el cierre hasta revalidarla; una tarea ajena a esa cadena no lo bloquea.
+5. Al retomar o verificar el cierre actual, usá `check ... --current --root .`.
+
+Por ejemplo, desde PowerShell (reemplazá los textos por resultados reales):
+
+```powershell
+$candidate = python scripts/taskboard.py fingerprint odd/tasks/mi-funcionalidad.md TASK-001 --root .
+if ($LASTEXITCODE -ne 0) { throw 'No se pudo identificar el candidato' }
+python -m unittest discover -s tests
+if ($LASTEXITCODE -ne 0) { throw 'Falló la verificación; no cerrar' }
+$evidence = @{ command = 'python -m unittest discover -s tests'; result = '14 tests OK'; candidate = $candidate } | ConvertTo-Json -Compress
+python scripts/taskboard.py set odd/tasks/mi-funcionalidad.md TASK-001 DONE --expect VERIFYING --evidence $evidence --root .
+python scripts/taskboard.py check odd/tasks/mi-funcionalidad.md --current --root .
+```
+
+Scope usa archivos explícitos existentes, sin glob, directorios, `..`, rutas
+absolutas ni escapes por enlaces simbólicos. El tablero queda excluido para que
+registrar evidencia no cambie su propia huella. Se incluyen nombres y contenidos
+ordenados: texto UTF-8 sin NUL normaliza CRLF a LF; los demás bytes se conservan.
+`--root` es la raíz del proyecto (por defecto el directorio actual) y debe
+contener el tablero. Una eliminación o un cambio de archivos invalida el cotejo;
+archivos agregados fuera de Scope requieren ampliar el alcance y repetirlo.
+
+`check` sin `--current` valida estructura y sirve para CI y registros archivados:
+un cambio legítimo posterior no invalida la historia. Los tableros históricos
+sin Evidence mode mantienen el formato anterior; no migrarlos inventando
+evidencia pasada. Para trabajo nuevo o reabierto adoptá candidate-v1 y completá
+Scope de cada tarea. `show` tampoco compara archivos actuales.
+
+La huella relaciona la declaración con archivos específicos; no prueba ejecución,
+completitud de Scope, aprobación humana ni ausencia de cambios concurrentes durante
+las pruebas. Un orquestador sigue siendo propietario del tablero y debe revisar
+el diff y el alcance. No es una firma ni un sandbox.
 
 El registro de tareas debe vivir **en el repositorio del proyecto**, no en la carpeta global del harness. No versionar secretos ni datos de clientes.
 

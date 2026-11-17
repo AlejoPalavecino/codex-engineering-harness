@@ -9,7 +9,7 @@ description: "Convertir alcance y diseño aprobados en especificaciones verifica
 2. Describir comportamientos por unidad de valor: actor, disparador, entradas, validaciones, permisos, efectos, resultados y errores.
 3. Escribir criterios observables y trazarlos a pruebas o inspecciones reproducibles.
 4. Identificar dependencias y superficies de edición para evitar colisiones entre escritores.
-5. Planificar tareas pequeñas que puedan implementarse, verificar y retomar.
+5. Planificar tareas por resultado de la persona usuaria. Reunir en cada unidad la entrada, el efecto observable y su comprobación. Preguntarse qué necesitaría otra sesión para retomar desde el diff.
 6. Incluir riesgos, supuestos y decisiones pendientes; no inventar detalles bloqueantes.
 7. Crear documentos de ODD/ADR/UML únicamente cuando aporten continuidad y comprensión.
 8. En mantenimiento del harness, especificar migraciones entre versiones, integridad del manifiesto y condiciones de rollback antes de dar por segura una actualización.

@@ -11,6 +11,8 @@ La unidad de trabajo es un cambio de comportamiento que se puede verificar y rev
 
 ## Del objetivo al candidato
 
+Para decidir el corte, imaginá que mañana otra sesión abre el repositorio. Si el diff, los criterios y las pruebas le alcanzan para continuar el cambio autorizado, resolvelo en línea. Si necesita recuperar decisiones o coordinar entregas, dejá esa información en el tablero. Por ejemplo, «puedo seleccionar un modelo nuevo y verlo en el perfil instalado» recorre catálogo, selector e instalación. Es una unidad que se puede probar desde la entrada del usuario. Si otro comportamiento puede entregarse por separado, dale su propia tarea.
+
 1. Expresá el resultado como algo que otro pueda observar. Para «corregir devolución de préstamos», un criterio podría ser «la segunda devolución informa que el préstamo está cerrado y conserva el saldo anterior».
 2. Identificá el punto de entrada, el contrato consumido y la prueba más cercana. Buscá primero decisiones vigentes y datos técnicos recuperables. Si falta una decisión de producto, preguntá únicamente por esa decisión y explicá qué cambia con la respuesta. Conservá la autorización de ejecución para corregir y verificar dentro del alcance; continuá trabajo independiente autorizado mientras esperás. Los límites se detallan en [EWP](EWP.md). Si existe una definición aprobada, guardá su ruta.
 3. Escribí primero el caso que falla por el motivo esperado cuando exista un runner. Implementá el mínimo para que pase y verificá el comportamiento anterior. Al refactorizar, mantené las pruebas verdes. Para texto pasivo, verificá lectura, estructura y enlaces. Declarar «RED» requiere haber observado el fallo.
@@ -18,6 +20,8 @@ La unidad de trabajo es un cambio de comportamiento que se puede verificar y rev
 5. Identificá el candidato por commit o por diff reproducible. Terminá los formateadores y generadores antes de verificar. Si luego cambia el candidato, repetí la comprobación afectada.
 
 ## Revisión y tamaño
+
+En tableros nuevos, declarar el alcance incluye las fuentes, pruebas, configuración y dependencias locales que determinan el resultado. Seguí la secuencia de captura, comprobación y cierre de [TTP](TTP.md). Un cambio posterior en uno de esos archivos requiere volver a comprobar la tarea afectada. Conservá la evidencia anterior para explicar qué se verificó en su momento.
 
 Usá unas **400 líneas de autoría** por entrega como presupuesto de atención. Sumá altas y bajas por unidad, incluyendo código, tests y documentación escritos para el cambio. Por ejemplo, 180 líneas nuevas más 70 eliminadas suman 250. Contá aparte código vendorizado, lockfiles y salidas generadas, e informá su impacto. Para cambios preparados usá `git diff --cached --numstat`; para un candidato versionado, `git diff --numstat BASE...HEAD`. Un diff omite archivos nuevos sin agregar: inventarialos al proyectar.
 
