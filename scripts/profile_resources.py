@@ -95,8 +95,12 @@ def inventory(root: Path, client: str = "codex", disabled_skills: set[str] | Non
     disabled = disabled_skills or set()
     instr = instruction_rel(client)
     result = {instr: "config/AGENTS.md", "harness/bin/taskboard.py": "scripts/taskboard.py",
+              "harness/bin/workflow_friction.py": "scripts/workflow_friction.py",
+              "harness/docs/evaluations/workflow-friction.md": "docs/evaluations/workflow-friction.md",
               "harness/templates/feature-tasks.md": "templates/feature-tasks.md",
               "harness/THIRD_PARTY_NOTICES.md": "THIRD_PARTY_NOTICES.md"}
+    for sample in ("baseline.json", "candidate.json"):
+        result["harness/evaluations/workflow-friction/" + sample] = "tests/fixtures/workflow-friction/" + sample
     if client == "agy":
         result["plugins/chuli/plugin.json"] = "VERSION"
     skills_target = "plugins/chuli/skills" if client == "agy" else "skills"

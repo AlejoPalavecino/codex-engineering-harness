@@ -118,7 +118,7 @@ func realProfile(t *testing.T, repo, version string) []byte {
 		t.Fatal(err)
 	}
 	entries := []zipEntry{{"VERSION", version + "\n", 0600}, {"THIRD_PARTY_NOTICES.md", string(notice), 0600}}
-	for _, prefix := range []string{"config", "agents", "skills", "scripts", "templates", "docs/protocols"} {
+	for _, prefix := range []string{"config", "agents", "skills", "scripts", "templates", "docs/protocols", "docs/evaluations/workflow-friction.md", "tests/fixtures/workflow-friction"} {
 		base := filepath.Join(repo, filepath.FromSlash(prefix))
 		err := filepath.WalkDir(base, func(path string, d fs.DirEntry, err error) error {
 			if err != nil {

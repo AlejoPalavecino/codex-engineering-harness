@@ -16,6 +16,10 @@ GPT-6 Astra es escalamiento **excepcional** por insuficiencia de razonamiento, n
 
 ## Ruta de decisión
 
+Antes de despachar un especialista, escribí en el encargo la pregunta o resultado concreto, la superficie que le corresponde y la prueba que habilita el próximo paso. Identificá qué podés resolver vos en paralelo. Si se necesita independencia, nombrá el riesgo y el paso que depende de la revisión. Si responder el encargo cuesta lo mismo que resolverlo en línea y no aporta independencia, resolvelo en la sesión actual.
+
+En una instalación multicliente, una persona puede probar que reintentar Claude conserva el perfil de Codex mientras otra verifica qué modelos admite el selector. Ambos resultados se pueden integrar con pruebas independientes. En cambio, corregir la codificación de lectura de un archivo de prueba y volver a ejecutarla cabe en un solo turno de trabajo.
+
 1. Determinar tipo de trabajo, dificultad, riesgo y necesidad de herramientas visuales.
 2. Si faltan requisitos, consultar al usuario o investigar: cambiar de modelo no resuelve una definición pendiente.
 3. Preferir trabajo inline en tareas pequeñas. Delegar al especialista solo si aporta valor.

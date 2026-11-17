@@ -9,7 +9,11 @@ $engine = (Get-Process -Id $PID).Path
 $resources = @(
     @{source='templates/feature-tasks.md'; target='harness/templates/feature-tasks.md'},
     @{source='docs/protocols/TTP.md'; target='harness/docs/protocols/TTP.md'},
-    @{source='scripts/taskboard.py'; target='harness/bin/taskboard.py'}
+    @{source='scripts/taskboard.py'; target='harness/bin/taskboard.py'},
+    @{source='scripts/workflow_friction.py'; target='harness/bin/workflow_friction.py'},
+    @{source='docs/evaluations/workflow-friction.md'; target='harness/docs/evaluations/workflow-friction.md'},
+    @{source='tests/fixtures/workflow-friction/baseline.json'; target='harness/evaluations/workflow-friction/baseline.json'},
+    @{source='tests/fixtures/workflow-friction/candidate.json'; target='harness/evaluations/workflow-friction/candidate.json'}
 )
 $failures = New-Object 'System.Collections.Generic.List[string]'
 
@@ -135,7 +139,7 @@ try {
         Assert-That (@($stateAfterRepeat.files).Count -eq 0) 'La reinstalación sin cambios debía tener cero operaciones de backup.'
         $managedCount = 0
         foreach ($entry in $stateAfterRepeat.managed_files.PSObject.Properties) { $managedCount++ }
-        $expectedCount = 4 + @(Get-ChildItem (Join-Path $repo 'skills') -File -Recurse -Force).Count +
+        $expectedCount = 8 + @(Get-ChildItem (Join-Path $repo 'skills') -File -Recurse -Force).Count +
             @(Get-ChildItem (Join-Path $repo 'agents/*.toml') -File).Count +
             @(Get-ChildItem (Join-Path $repo 'docs/protocols') -File -Recurse).Count
         Assert-That ($managedCount -eq $expectedCount) ('La reinstalación perdió el inventario de archivos administrados; encontrados: ' + $managedCount)

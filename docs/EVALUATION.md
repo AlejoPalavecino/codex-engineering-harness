@@ -9,6 +9,8 @@ La [evaluación de voz y explicaciones](evaluations/natural-argentine-voice.md) 
 
 La evaluación complementaria de [preguntas y continuidad de autorización](evaluations/questions-and-authorization.md) cubre ocho criterios aprobados. Se ejecuta y registra por separado, sin alterar la huella del catálogo histórico ni atribuirle resultados de esos casos.
 
+La [comparación de fricción del flujo](evaluations/workflow-friction.md) contrasta dos observaciones equivalentes de R1, interrupción R2 y permisos críticos. Su piloto sintético valida el cálculo y distingue desconocidos de cero; no acredita mejoras conductuales de agentes reales.
+
 ## Objetivo y límites
 
 Medir comportamientos de Chuli en Codex Desktop/CLI bajo circunstancias controladas, sin cambiar agentes ni modelos por intuición. El núcleo Go de este PR **solo valida el catálogo, toma hashes de workspaces, valida registros de observación y prepara comparaciones**. No ejecuta modelos, no consume tokens, no automatiza aprobaciones ni demuestra permisos efectivos.

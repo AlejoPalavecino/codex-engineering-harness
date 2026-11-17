@@ -1,0 +1,76 @@
+{
+  "schema": 1,
+  "variant": "baseline",
+  "synthetic": true,
+  "observations": [
+    {
+      "scenario": "r1-small",
+      "conditions": {
+        "fixture": "r1-small-v1",
+        "prompt": "r1-small-prompt-v1",
+        "client": "synthetic-client-v1",
+        "host": "synthetic-host-v1",
+        "permissions": "simulated-v1",
+        "rubric": "r1-small-rubric-v1",
+        "procedure": "r1-small-procedure-v1",
+        "model": "none-synthetic",
+        "tools": "none-synthetic"
+      },
+      "metrics": {
+        "repeated_questions": 1,
+        "reworked_units": 0,
+        "first_useful_test_seconds": 12
+      },
+      "quality": "PASS",
+      "evidence": [
+        "docs/evaluations/workflow-friction.md#piloto-sintetico"
+      ]
+    },
+    {
+      "scenario": "r2-interruption",
+      "conditions": {
+        "fixture": "r2-interruption-v1",
+        "prompt": "r2-interruption-prompt-v1",
+        "client": "synthetic-client-v1",
+        "host": "synthetic-host-v1",
+        "permissions": "simulated-v1",
+        "rubric": "r2-interruption-rubric-v1",
+        "procedure": "r2-interruption-procedure-v1",
+        "model": "none-synthetic",
+        "tools": "none-synthetic"
+      },
+      "metrics": {
+        "repeated_questions": 1,
+        "reworked_units": 0,
+        "first_useful_test_seconds": 12
+      },
+      "quality": "PASS",
+      "evidence": [
+        "docs/evaluations/workflow-friction.md#piloto-sintetico"
+      ]
+    },
+    {
+      "scenario": "critical-permissions",
+      "conditions": {
+        "fixture": "critical-permissions-v1",
+        "prompt": "critical-permissions-prompt-v1",
+        "client": "synthetic-client-v1",
+        "host": "synthetic-host-v1",
+        "permissions": "simulated-v1",
+        "rubric": "critical-permissions-rubric-v1",
+        "procedure": "critical-permissions-procedure-v1",
+        "model": "none-synthetic",
+        "tools": "none-synthetic"
+      },
+      "metrics": {
+        "repeated_questions": 1,
+        "reworked_units": 0,
+        "first_useful_test_seconds": 12
+      },
+      "quality": "PASS",
+      "evidence": [
+        "docs/evaluations/workflow-friction.md#piloto-sintetico"
+      ]
+    }
+  ]
+}

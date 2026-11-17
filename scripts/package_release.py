@@ -13,6 +13,8 @@ PROFILE_FILES = {
     "docs/protocols/TTP.md", "scripts/install.ps1", "scripts/verify.ps1",
     "scripts/rollback.ps1", "scripts/profile.ps1", "scripts/profile_resources.py", "scripts/toml_config.py",
     "scripts/client_targets.py", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json",
+    "scripts/workflow_friction.py", "docs/evaluations/workflow-friction.md",
+    "tests/fixtures/workflow-friction/baseline.json", "tests/fixtures/workflow-friction/candidate.json",
 }
 
 

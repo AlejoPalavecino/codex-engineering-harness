@@ -25,6 +25,8 @@ Una respuesta parcial habilita solo lo resuelto; el silencio no cuenta como apro
 
 Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
 
+Antes de abrir una tarea, preguntate si otra sesión podría retomarla desde el diff y las pruebas. Nombrá el resultado desde la perspectiva de quien lo usa. Cada unidad incluye el código, la prueba y las instrucciones necesarios para demostrar ese resultado. Para cerrar un tablero nuevo, capturá la huella de los archivos de la tarea antes de la comprobación y cotejala al registrar comando y resultado. Al retomar, usá `taskboard.py check TABLERO --current` desde la raíz del proyecto.
+
 Para una regresión o regla ejecutable, obtené RED por la causa esperada, implementá GREEN y refactorizá con pruebas verdes. En docs pasivas comprobá referencias y lectura. Si falta runner, obtené la evidencia disponible y declaralo. En una migración o cambio de permisos, verificá también el camino negativo y el efecto sobre estado preexistente.
 
 Mantené código, pruebas y documentación del comportamiento juntos. Proyectá altas más bajas de autoría y procurá cortes de unas 400 líneas. Separá archivos vendorizados, generados o lockfiles al explicar la cifra. Proponé un corte cohesivo o justificá el exceso si dividir rompe la verificación. Para publicar, hacer push, abrir PR, merge o deploy, respetá la autorización aplicable al destino.
@@ -38,6 +40,8 @@ Actualizá PLANNED, READY, IN_PROGRESS, VERIFYING, BLOCKED, DONE o CANCELLED cua
 ## MRP · delegación y contexto
 
 Trabajá en línea por defecto. Delegá una exploración cuando el mapa cambie una decisión, una unidad de implementación cuando pueda avanzar en paralelo sin colisiones o el contexto no alcance, y revisión independiente cuando el riesgo lo justifique. Elegí el esfuerzo mínimo que permita reunir evidencia suficiente.
+
+Antes de delegar, precisá qué pregunta o resultado va a resolver el especialista, qué trabajo independiente puede avanzar el orquestador y qué prueba necesita recibir. Si el trabajo depende de una revisión independiente, nombrá el riesgo y esperá esa devolución antes del paso dependiente. Para evaluar un cambio al propio flujo, compará calidad, preguntas repetidas, trabajo rehecho y tiempo hasta la primera prueba útil según `harness/docs/evaluations/workflow-friction.md`.
 
 | Rol estable | Encargo |
 | --- | --- |
