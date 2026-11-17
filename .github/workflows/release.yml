@@ -92,4 +92,4 @@ jobs:
           echo >> "$notes"
           echo "Commit [$SHA](https://github.com/$GITHUB_REPOSITORY/commit/$SHA) · [CI de los artefactos](https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID)" >> "$notes"
           gh release create "v$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --target "$SHA" --verify-tag \
-            --title "Chuli v$VERSION · Perfil personal para Codex" --notes-file "$notes" --latest
+            --title "Chuli v$VERSION · Harness de ingeniería" --notes-file "$notes" --latest

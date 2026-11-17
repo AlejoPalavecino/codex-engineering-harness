@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.2] — 2026-11-17
+
+- Las tareas sustanciales se organizan por comportamiento y el cierre de un tablero nuevo vincula la prueba al contenido de los archivos declarados.
+- La delegación identifica la pregunta, el trabajo independiente y la evidencia requerida. El comparador offline contrasta tres recorridos e informa fricción y calidad por separado.
+- El selector descubre modelos en las cachés de Codex y Claude Code y en AGY CLI. Se incorporan GPT-6.2 Sol y Astra al catálogo de respaldo.
+- El asistente informa el resultado de cada plataforma y permite retomar una instalación tras un conflicto con Gentle. Se corrigen los rótulos de `status` y una prueba de codificación en Windows.
+- La distribución incluye la skill `frontend-design`. El README ilustra la arquitectura multicliente y el recorrido ODD.
+
 ## [2.0.1] — 2026-11-16
 
 - Consola CRT renovada en `chuli` preservando el banner retro de la PC y bloque `CHULI`, con menú de 6 accesos directos (**Instalar**, **Actualizar**, **Gestionar versiones**, **Perfiles de AI**, **MCPs** y **Skills**) y alerta no bloqueante cuando hay una nueva release.
