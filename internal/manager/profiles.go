@@ -51,6 +51,9 @@ func ValidateRoleModels(clientID string, roles map[string]RoleModel) error {
 		if !validEfforts[rm.Effort] {
 			return fmt.Errorf("esfuerzo %q no soportado para %s", rm.Effort, spec.Name)
 		}
+		if clientID == "agy" && rm.Label != "" && !validAGYModelLabel(rm.Label) {
+			return fmt.Errorf("etiqueta AGY inválida para %s", r.ID)
+		}
 	}
 	return nil
 }

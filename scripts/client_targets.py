@@ -67,7 +67,26 @@ def agy_agent_tier(model: str, effort: str) -> str:
         return "flash_lite"
     if norm == "gemini-4-argon" and (effort or "").strip().lower() == "low":
         return "flash"
+    # Historical manifests may contain IDs previously installed as inherit.
     return AGY_AGENT_TIERS.get(norm, "inherit")
+
+
+def valid_agy_label(label: str) -> bool:
+    return bool(label) and len(label.encode("utf-8")) <= 160 and all(
+        c.isalnum() or c in " -_.()/+:" for c in label
+    )
+
+
+def agy_orchestrator_label(spec: dict[str, str]) -> str:
+    label = spec.get("label", "")
+    if label:
+        if not isinstance(label, str) or not valid_agy_label(label):
+            raise ValueError("Invalid AGY model label")
+        return label
+    model = spec["model"]
+    if model not in AGY_DISPLAY_NAMES and model != "inherit":
+        raise ValueError(f"AGY model {model!r} requires its exact CLI label")
+    return format_agy_model(model, spec["effort"])
 
 
 def format_agy_model(model: str, effort: str) -> str:
@@ -114,6 +133,12 @@ def resolve_role_models(
             if effort not in valid_efforts:
                 raise ValueError(f"Invalid effort {effort!r} for {role} on {client}")
             resolved[role] = {"model": model, "effort": effort}
+            if client == "agy":
+                if role == "orchestrator" and "label" in spec:
+                    label = spec["label"]
+                    if not isinstance(label, str) or not valid_agy_label(label):
+                        raise ValueError("Invalid AGY model label")
+                    resolved[role]["label"] = label
         if resolved != presets[base_preset]["roles"] and not preset:
             chosen_preset = "custom"
     return chosen_preset, resolved
@@ -136,6 +161,8 @@ def parse_role_spec(items: list[str], client: str) -> dict[str, dict[str, str]]:
             model, effort = rest.split(":", 1)
         else:
             model, effort = rest, defaults[role]["effort"]
+        if client == "agy" and role != "orchestrator" and model.strip().lower() not in AGY_VALID_AGENT_TIERS | AGY_AGENT_TIERS.keys():
+            raise ValueError(f"AGY specialist model {model!r} must use pro, flash, flash_lite or inherit")
         overrides[role] = {"model": model.strip(), "effort": effort.strip().lower()}
     return overrides
 
@@ -241,7 +268,7 @@ def render_orchestrator_body(
     def fmt(role: str) -> str:
         spec = resolved[role]
         if client == "agy":
-            return format_agy_model(spec["model"], spec["effort"])
+            return spec.get("label") or format_agy_model(spec["model"], spec["effort"])
         return f"{spec['model']} ({spec['effort']})"
 
     old_table = (
@@ -303,7 +330,7 @@ def prepare_json_settings(
         ]
     elif client == "agy":
         targets = [
-            (("model",), format_agy_model(orch["model"], orch["effort"])),
+            (("model",), agy_orchestrator_label(orch)),
         ]
     else:
         raise ValueError(f"JSON settings editor does not support {client!r}")
@@ -390,6 +417,7 @@ def main(argv: list[str] | None = None) -> int:
     p_json.add_argument("--role-models-json", default="")
     p_json.add_argument("--role-models-file", type=Path)
     p_json.add_argument("--configure-models", action="store_true")
+    p_json.add_argument("--preserve-models", action="store_true")
     p_json.add_argument("--replace-managed", action="store_true")
 
     args = parser.parse_args(argv)
@@ -418,7 +446,7 @@ def main(argv: list[str] | None = None) -> int:
                     rel = f"agents/{name}.toml"
                     out = args.output_dir / rel
                     out.parent.mkdir(parents=True, exist_ok=True)
-                    if not args.preset and not args.role_models_json and roles == default_codex:
+                    if roles == default_codex:
                         out.write_bytes((ROOT / "agents" / f"{name}.toml").read_bytes())
                     else:
                         out.write_bytes(render_codex_agent(agent, spec["model"], spec["effort"]))
@@ -452,7 +480,7 @@ def main(argv: list[str] | None = None) -> int:
                     raw,
                     args.client,
                     roles,
-                    configure_models=args.configure_models or bool(args.preset or raw_role_models),
+                    configure_models=(args.configure_models or bool(args.preset or raw_role_models)) and not args.preserve_models,
                     replace_managed=args.replace_managed,
                 )
                 args.output.write_bytes(updated)

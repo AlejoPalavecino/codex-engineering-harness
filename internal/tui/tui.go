@@ -91,6 +91,11 @@ type model struct {
 	versionCursor       int
 	updateCursor        int
 	rolePickerModelIdx  int
+	modelChoices        []string
+	modelLabels         map[string]string
+	pickerChoices       []string
+	modelSource         string
+	modelRequest        int
 	progressStep        int
 	progressTotal       int
 	progressLabel       string
@@ -124,6 +129,28 @@ func (m model) Init() tea.Cmd {
 }
 
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
+	if catalog, ok := message.(modelsLoadedMsg); ok {
+		if catalog.request == m.modelRequest && catalog.target == m.mgr.Target {
+			m.modelChoices, m.modelSource = catalog.ids, catalog.source
+			m.modelLabels = catalog.labels
+			if m.screen == rolePickerScreen {
+				m.openRolePicker()
+			}
+		}
+		return m, nil
+	}
+	next, cmd := m.update(message)
+	wasEditing := m.screen == modelsScreen || m.screen == rolePickerScreen || m.screen == modelsSaveScreen
+	if next.screen == modelsScreen && (!wasEditing || m.mgr.Target != next.mgr.Target) {
+		next.modelChoices, next.modelSource = nil, ""
+		next.modelLabels = nil
+		next.modelRequest++
+		return next, tea.Batch(cmd, loadModelsCmd(next.mgr, next.modelRequest))
+	}
+	return next, cmd
+}
+
+func (m model) update(message tea.Msg) (model, tea.Cmd) {
 	if next, cmd, handled := m.updateWizard(message); handled {
 		return next, cmd
 	}

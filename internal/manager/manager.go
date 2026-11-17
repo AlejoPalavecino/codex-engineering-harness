@@ -206,7 +206,11 @@ func (m Manager) Profile() (string, error) {
 		lines = append(lines, "Modelos por rol:")
 		for _, r := range Roles() {
 			if rm, ok := state.RoleModels[r.ID]; ok && rm.Model != "" {
-				lines = append(lines, fmt.Sprintf("  %s: %s (%s)", r.ID, rm.Model, rm.Effort))
+				if m.effectiveTarget() == "agy" && r.ID == "orchestrator" && rm.Label != "" {
+					lines = append(lines, fmt.Sprintf("  %s: %s — %s (variante AGY)", r.ID, rm.Model, rm.Label))
+				} else {
+					lines = append(lines, fmt.Sprintf("  %s: %s (%s)", r.ID, rm.Model, rm.Effort))
+				}
 			}
 		}
 	}
@@ -559,7 +563,20 @@ func (m Manager) PrepareWithOptions(ctx context.Context, opts PrepareOptions) (P
 	p.configureModels = opts.ConfigureModels
 	p.preset = m.Preset
 	if len(m.RoleModels) > 0 {
-		encoded, encErr := EncodeRoleModels(m.RoleModels)
+		roles := m.RoleModels
+		if m.effectiveTarget() == "agy" && action != "rollback" {
+			var resolveErr error
+			roles, resolveErr = resolveAGYRoleLabel(ctx, roles)
+			if resolveErr != nil {
+				p.Cleanup()
+				return Prepared{}, resolveErr
+			}
+			if resolveErr = validateAGYLabelInstaller(p.Version, roles); resolveErr != nil {
+				p.Cleanup()
+				return Prepared{}, resolveErr
+			}
+		}
+		encoded, encErr := EncodeRoleModels(roles)
 		if encErr != nil {
 			p.Cleanup()
 			return Prepared{}, encErr

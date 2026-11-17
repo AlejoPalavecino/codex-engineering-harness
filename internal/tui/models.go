@@ -1,12 +1,44 @@
 package tui
 
 import (
+	"context"
 	"fmt"
+	"slices"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/manager"
 )
+
+type modelsLoadedMsg struct {
+	target, source string
+	request        int
+	ids            []string
+	labels         map[string]string
+}
+
+func loadModelsCmd(mgr manager.Manager, request int) tea.Cmd {
+	return func() tea.Msg {
+		spec, _ := manager.FindClient(mgr.Target)
+		ids, source, labels := mgr.AvailableModelCatalog(context.Background(), spec)
+		return modelsLoadedMsg{target: mgr.Target, source: source, request: request, ids: ids, labels: labels}
+	}
+}
+
+func (m model) choicesForRole(spec manager.ClientSpec, role string) []string {
+	ids := m.modelChoices
+	if len(ids) == 0 {
+		ids = spec.Models
+	}
+	// AGY plugin agents support tiers; exact model IDs configure its main agent.
+	if spec.ID == "agy" && role != "orchestrator" {
+		ids = []string{"inherit", "pro", "flash", "flash_lite"}
+	}
+	if current := m.mgr.RoleModels[role].Model; current != "" && !slices.Contains(ids, current) {
+		return append(slices.Clone(ids), current)
+	}
+	return ids
+}
 
 const (
 	modelsScreen     = "models"
@@ -137,12 +169,16 @@ func (m *model) cycleRoleModel(delta int) {
 	}
 	roleID := roles[m.roleCursor].ID
 	current := m.mgr.RoleModels[roleID]
+	spec.Models = m.choicesForRole(spec, roleID)
 	idx := 0
 	for i, mod := range spec.Models {
 		if mod == current.Model {
 			idx = (i + delta + len(spec.Models)) % len(spec.Models)
 			break
 		}
+	}
+	if current.Model != spec.Models[idx] || current.Label == "" {
+		current.Label = m.modelLabels[spec.Models[idx]]
 	}
 	current.Model = spec.Models[idx]
 	if current.Effort == "" && len(spec.Efforts) > 0 {
@@ -165,6 +201,9 @@ func (m *model) cycleRoleEffort() {
 	}
 	roleID := roles[m.roleCursor].ID
 	current := m.mgr.RoleModels[roleID]
+	if m.mgr.Target == "agy" && roleID == "orchestrator" && current.Label != "" {
+		return // The exact variant already encodes effort in its ID/label.
+	}
 	idx := 0
 	for i, eff := range spec.Efforts {
 		if eff == current.Effort {
@@ -186,8 +225,9 @@ func (m *model) openRolePicker() {
 	}
 	spec, _ := manager.FindClient(m.mgr.Target)
 	current := m.mgr.RoleModels[roles[m.roleCursor].ID]
+	m.pickerChoices = m.choicesForRole(spec, roles[m.roleCursor].ID)
 	m.rolePickerModelIdx = 0
-	for i, mod := range spec.Models {
+	for i, mod := range m.pickerChoices {
 		if mod == current.Model {
 			m.rolePickerModelIdx = i
 			break
@@ -256,6 +296,7 @@ func (m model) updateModels(message tea.Msg) (model, tea.Cmd, bool) {
 
 	if m.screen == rolePickerScreen {
 		spec, _ := manager.FindClient(m.mgr.Target)
+		spec.Models = m.pickerChoices
 		roles := manager.Roles()
 		roleID := roles[min(m.roleCursor, len(roles)-1)].ID
 		applyModelIdx := func(idx int) {
@@ -263,6 +304,9 @@ func (m model) updateModels(message tea.Msg) (model, tea.Cmd, bool) {
 				return
 			}
 			cur := m.mgr.RoleModels[roleID]
+			if cur.Model != spec.Models[idx] || cur.Label == "" {
+				cur.Label = m.modelLabels[spec.Models[idx]]
+			}
 			cur.Model = spec.Models[idx]
 			if cur.Effort == "" && len(spec.Efforts) > 0 {
 				cur.Effort = "medium"
@@ -443,8 +487,20 @@ func (m model) crtModels(width int) (string, string) {
 			b.WriteString(crtGreen.Render("Perfiles de AI · "+spec.Short) + "\n")
 		}
 		b.WriteString(crtAmber.Render("Elegir modelo para: "+roleSpec.Name) + "\n")
-		b.WriteString("Esfuerzo actual: " + effortTag(cur.Effort) + " (←→ o E para cambiar)\n\n")
-		for i, mod := range spec.Models {
+		if spec.ID == "agy" && roleSpec.ID != "orchestrator" {
+			b.WriteString("Niveles de agente de AGY\n")
+		} else if m.modelSource != "" {
+			b.WriteString("Fuente: " + m.modelSource + "\n")
+		}
+		if spec.ID == "agy" && roleSpec.ID == "orchestrator" && cur.Label != "" {
+			b.WriteString("Variante: " + cur.Label + " · esfuerzo definido por AGY\n\n")
+		} else {
+			b.WriteString("Esfuerzo actual: " + effortTag(cur.Effort) + " (←→ o E para cambiar)\n\n")
+		}
+		rows := max(3, m.height-16)
+		start := max(0, min(m.rolePickerModelIdx-rows/2, len(m.pickerChoices)-rows))
+		for i := start; i < min(start+rows, len(m.pickerChoices)); i++ {
+			mod := m.pickerChoices[i]
 			mark := "( )"
 			if mod == cur.Model {
 				mark = "(●)"
@@ -456,7 +512,11 @@ func (m model) crtModels(width int) (string, string) {
 				b.WriteString("  " + line + "\n")
 			}
 		}
-		return strings.TrimRight(b.String(), "\n"), "↑↓ elegir modelo · ←→ esfuerzo · Enter aceptar · Esc volver"
+		help := "↑↓ elegir modelo · ←→ esfuerzo · Enter aceptar · Esc volver"
+		if spec.ID == "agy" && roleSpec.ID == "orchestrator" && cur.Label != "" {
+			help = "↑↓ elegir variante · Enter aceptar · Esc volver"
+		}
+		return strings.TrimRight(b.String(), "\n"), help
 	}
 
 	if m.screen == modelsSaveScreen {
@@ -496,12 +556,16 @@ func (m model) crtModels(width int) (string, string) {
 
 	for i, r := range roles {
 		rm := m.mgr.RoleModels[r.ID]
+		effort := rm.Effort
+		if spec.ID == "agy" && r.ID == "orchestrator" && rm.Label != "" {
+			effort = "variante AGY"
+		}
 		if width < 60 {
 			roleLabel := strings.TrimPrefix(r.ID, "chuli_")
 			if len(roleLabel) > 9 {
 				roleLabel = roleLabel[:9]
 			}
-			line := fmt.Sprintf("%-9s %s (%s)", roleLabel, rm.Model, rm.Effort)
+			line := fmt.Sprintf("%-9s %s (%s)", roleLabel, rm.Model, effort)
 			if i == m.roleCursor {
 				b.WriteString(crtNeon.Render("› "+line) + "\n")
 			} else {
@@ -510,7 +574,7 @@ func (m model) crtModels(width int) (string, string) {
 			continue
 		}
 		sep := crtCaseSide.Render(" │ ")
-		tag := effortTag(rm.Effort)
+		tag := effortTag(effort)
 		if i == m.roleCursor {
 			row := crtNeon.Render(fmt.Sprintf("▎› %-17s", r.ID)) + sep +
 				crtAmber.Render("◀ ") + crtNeon.Render(fmt.Sprintf("%-19s", rm.Model)) + crtAmber.Render(" ▶") +

@@ -17,7 +17,7 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/tui"
 )
 
-var version = "2.0.1-dev"
+var version = "2.0.2-dev"
 
 func currentVersion() string {
 	info, ok := debug.ReadBuildInfo()
@@ -69,7 +69,8 @@ func main() {
 		if err != nil {
 			fail(err)
 		}
-		fmt.Printf("Chuli Manager %s\nCODEX_HOME: %s\n%s\n", v, m.Home, summary)
+		spec, _ := manager.FindClient(m.Target)
+		fmt.Printf("Chuli Manager %s\n%s: %s\n%s\n", v, spec.EnvHome, m.Home, summary)
 	case "models":
 		if err := modelsCLI(m, flag.Args()[1:], os.Stdout); err != nil {
 			fail(err)
@@ -141,7 +142,12 @@ func modelsCLI(m manager.Manager, args []string, out io.Writer) error {
 	if !ok {
 		return fmt.Errorf("cliente inválido %q (esperado codex, claude o agy)", target)
 	}
-	fmt.Fprintf(out, "Cliente: %s (%s)\nModelos: %s\nEsfuerzos: %s\n\nPresets:\n", c.Name, c.ID, strings.Join(c.Models, ", "), strings.Join(c.Efforts, ", "))
+	models, source := m.AvailableModels(context.Background(), c)
+	fmt.Fprintf(out, "Cliente: %s (%s)\nFuente: %s\nModelos: %s\nEsfuerzos: %s\n\nPresets:\n", c.Name, c.ID, source, strings.Join(models, ", "), strings.Join(c.Efforts, ", "))
+	if c.ID == "agy" {
+		fmt.Fprintln(out, "Los IDs listados corresponden al orquestador. Especialistas: pro, flash, flash_lite, inherit (los presets anteriores conservan sus equivalencias).")
+		fmt.Fprintln(out, "En modelos descubiertos de AGY, el esfuerzo lo define la variante/etiqueta elegida.")
+	}
 	for _, p := range c.Presets {
 		fmt.Fprintf(out, "  %s — %s\n    %s\n", p.ID, p.Name, p.Description)
 		for _, r := range manager.Roles() {

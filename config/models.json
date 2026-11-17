@@ -46,6 +46,8 @@
       "env_home": "CODEX_HOME",
       "default_preset": "codex-balanced",
       "models": [
+        "gpt-6.2-sol",
+        "gpt-6.2-astra",
         "gpt-6.1-sol",
         "gpt-6.1-terra",
         "gpt-6-luna",
@@ -110,7 +112,10 @@
         "claude-opus-5-5",
         "claude-sonnet-5-5",
         "claude-haiku-5-5",
-        "inherit"
+        "inherit",
+        "opus",
+        "sonnet",
+        "haiku"
       ],
       "efforts": [
         "low",

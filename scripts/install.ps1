@@ -51,6 +51,8 @@ if (-not (Test-Path -LiteralPath $legacyBaselinePath -PathType Leaf)) {
 $legacyBaselines = Get-Content -LiteralPath $legacyBaselinePath -Raw | ConvertFrom-Json
 $python = Get-Python
 $previous = $null
+$modelSelectionRequested = [bool]($Preset -or $RoleModelsJson)
+$wantModelUpdate = [bool]($ConfigureModels -or $modelSelectionRequested)
 $managedFiles = @{}
 if (Test-Path -LiteralPath $statePath -PathType Leaf) {
     $previous = Get-Content -LiteralPath $statePath -Encoding UTF8 -Raw | ConvertFrom-Json
@@ -79,6 +81,14 @@ if (Test-Path -LiteralPath $statePath -PathType Leaf) {
     # config.toml / settings.json is tracked separately through managed_config.
     $managedFiles.Remove('config.toml') | Out-Null
     $managedFiles.Remove('settings.json') | Out-Null
+}
+$inheritedModels = $false
+if ($null -ne $previous -and -not $wantModelUpdate) {
+    if ($previous.PSObject.Properties.Name -contains 'preset') { $Preset = [string]$previous.preset }
+    if ($previous.PSObject.Properties.Name -contains 'role_models' -and $null -ne $previous.role_models) {
+        $RoleModelsJson = ConvertTo-Json -InputObject $previous.role_models -Depth 12 -Compress
+    }
+    $inheritedModels = [bool]($Preset -or $RoleModelsJson)
 }
 $staging = Join-Path ([IO.Path]::GetTempPath()) ('harness-stage-' + [guid]::NewGuid().ToString('N'))
 $preservedFiles = @{}
@@ -186,7 +196,7 @@ try {
             if ($managedFiles.ContainsKey([string]$item.path)) {
                 $knownManagedHash = [string]$managedFiles[[string]$item.path]
             }
-            $customModelUpdate = ($Preset -ne '' -or $RoleModelsJson -ne '') -and $stagedMap.ContainsKey([string]$item.path)
+            $customModelUpdate = $modelSelectionRequested -and $stagedMap.ContainsKey([string]$item.path)
             if ($item.path -eq $instrRel -and $instructions.preserved -and @($instructions.adopted_gentle).Count -eq 0) {
                 $preserved.Add(($instrRel + ' (customized Chuli block)'))
                 $action = 'PRESERVE-CUSTOMIZED'
@@ -225,7 +235,6 @@ try {
     } else {
         Save-Text $inputPath ''
     }
-    $wantModelUpdate = [bool]($ConfigureModels -or $Preset -or $RoleModelsJson)
     if ($Client -eq 'codex') {
         $args = @((Join-Path $root 'scripts/toml_config.py'), 'prepare', '--input', $inputPath,
             '--output', $candidatePath, '--report', $reportPath,
@@ -240,6 +249,7 @@ try {
         if ($Preset) { $args += @('--preset', $Preset) }
         if ($roleModelsFile) { $args += @('--role-models-file', $roleModelsFile) }
         if ($wantModelUpdate) { $args += '--configure-models' }
+        if ($inheritedModels) { $args += '--preserve-models' }
         if ($ReplaceCustomized) { $args += '--replace-managed' }
         $reportOutput = Invoke-ProfilePython $python $args
     }
@@ -270,6 +280,7 @@ try {
         if ($Preset) { $cliArgs += @('--preset', $Preset) }
         if ($roleModelsFile) { $cliArgs += @('--role-models-file', $roleModelsFile) }
         if ($wantModelUpdate) { $cliArgs += '--configure-models' }
+        if ($inheritedModels) { $cliArgs += '--preserve-models' }
         if ($ReplaceCustomized) { $cliArgs += '--replace-managed' }
         $null = Invoke-ProfilePython $python $cliArgs
         $cliReport = Get-Content -LiteralPath $cliReportPath -Raw | ConvertFrom-Json

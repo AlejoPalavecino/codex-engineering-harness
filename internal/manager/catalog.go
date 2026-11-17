@@ -12,6 +12,7 @@ import (
 type RoleModel struct {
 	Model  string `json:"model"`
 	Effort string `json:"effort"`
+	Label  string `json:"label,omitempty"`
 }
 
 type RoleSpec struct {
@@ -57,7 +58,7 @@ var clientCatalog = []ClientSpec{
 		DefaultHome:   ".codex",
 		EnvHome:       "CODEX_HOME",
 		DefaultPreset: "codex-balanced",
-		Models:        []string{"gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-luna", "gpt-6-astra"},
+		Models:        []string{"gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-luna", "gpt-6-astra"},
 		Efforts:       []string{"low", "medium", "high"},
 		Presets: []PresetSpec{
 			{
@@ -111,7 +112,7 @@ var clientCatalog = []ClientSpec{
 		DefaultHome:   ".claude",
 		EnvHome:       "CLAUDE_CONFIG_DIR",
 		DefaultPreset: "claude-balanced",
-		Models:        []string{"claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "inherit"},
+		Models:        []string{"claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "inherit", "opus", "sonnet", "haiku"},
 		Efforts:       []string{"low", "medium", "high"},
 		Presets: []PresetSpec{
 			{
@@ -314,6 +315,9 @@ func ParseRoleModelSpecs(clientID, presetID string, specs []string) (map[string]
 		}
 		if !validEfforts[effort] {
 			return nil, fmt.Errorf("esfuerzo %q no soportado en %s", effort, c.Name)
+		}
+		if clientID == "agy" && role != "orchestrator" && !validAGYSpecialistModel(modelPart) {
+			return nil, fmt.Errorf("modelo AGY para %s requiere un nivel: pro, flash, flash_lite o inherit", role)
 		}
 		roles[role] = RoleModel{Model: modelPart, Effort: effort}
 	}

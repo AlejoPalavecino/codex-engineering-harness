@@ -12,6 +12,32 @@ import profile_resources as profile
 
 
 class ClientTargetsTests(unittest.TestCase):
+    def test_agy_exact_label_survives_resolution_and_settings(self):
+        _, roles = ct.resolve_role_models("agy", overrides={"orchestrator": {
+            "model": "gemini-next-high", "effort": "low", "label": "Gemini Next (High)"
+        }})
+        self.assertEqual(roles["orchestrator"]["model"], "gemini-next-high")
+        raw, _ = ct.prepare_json_settings(b'{"theme":"dark"}', "agy", roles, configure_models=True)
+        self.assertEqual(json.loads(raw)["model"], "Gemini Next (High)")
+        self.assertEqual(json.loads(raw)["theme"], "dark")
+        roles["orchestrator"].pop("label")
+        with self.assertRaisesRegex(ValueError, "exact CLI label"):
+            ct.prepare_json_settings(b"{}", "agy", roles, configure_models=True)
+
+    def test_agy_unknown_specialist_never_silently_inherits(self):
+        with self.assertRaisesRegex(ValueError, "specialist"):
+            ct.parse_role_spec(["chuli_worker=new-model:high"], "agy")
+        _, legacy = ct.resolve_role_models("agy", overrides={"chuli_worker": {"model": "new-model", "effort": "high"}})
+        self.assertEqual(ct.agy_agent_tier(legacy["chuli_worker"]["model"], "medium"), "inherit")
+        self.assertEqual(ct.agy_agent_tier("gemini-4-argon", "medium"), "pro")
+
+    def test_agy_rejects_unsafe_labels(self):
+        for label in ("Gemini\nInjected", "Gemini `command`", "x" * 161):
+            with self.subTest(label=label), self.assertRaisesRegex(ValueError, "label"):
+                ct.resolve_role_models("agy", overrides={"orchestrator": {
+                    "model": "new-model", "effort": "high", "label": label
+                }})
+
     def test_catalog_contains_all_clients_roles_and_presets(self):
         cat = ct.load_catalog()
         roles = ct.role_ids(cat)

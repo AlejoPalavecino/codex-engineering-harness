@@ -74,7 +74,7 @@ func renderClientTabs(activeID string) string {
 func renderChuliLogo(clientID, version string) string {
 	ver := crtText(version)
 	if ver == "" {
-		ver = "2.0.1"
+		ver = "2.0.2"
 	}
 	if lipgloss.Width(ver) > 11 {
 		ver = ansi.Truncate(ver, 11, "")
@@ -309,10 +309,14 @@ func effortTag(effort string) string {
 }
 
 func renderTeamCard(clientSpec manager.ClientSpec, presetID string, roles map[string]manager.RoleModel, cardWidth int, compact bool) string {
+	orchEffort := roles["orchestrator"].Effort
+	if clientSpec.ID == "agy" && roles["orchestrator"].Label != "" {
+		orchEffort = "variante AGY"
+	}
 	if compact {
 		return "\n\n" + crtAmber.Render("◆ Equipo activo: "+clientSpec.Name) + "\n" +
 			crtBeige.Render("Preset: "+presetID) + "\n" +
-			fmt.Sprintf("• Orquestador: %s (%s)\n", roles["orchestrator"].Model, roles["orchestrator"].Effort) +
+			fmt.Sprintf("• Orquestador: %s (%s)\n", roles["orchestrator"].Model, orchEffort) +
 			fmt.Sprintf("• Arquitecto:  %s (%s)\n", roles["solution_architect"].Model, roles["solution_architect"].Effort) +
 			fmt.Sprintf("• Worker:      %s (%s)\n", roles["chuli_worker"].Model, roles["chuli_worker"].Effort) +
 			fmt.Sprintf("• Explorer:    %s (%s)", roles["chuli_explorer"].Model, roles["chuli_explorer"].Effort)
@@ -345,6 +349,9 @@ func renderTeamCard(clientSpec manager.ClientSpec, presetID string, roles map[st
 	for _, rr := range roleRows {
 		rm := roles[rr.id]
 		tag := effortTag(rm.Effort)
+		if rr.id == "orchestrator" {
+			tag = effortTag(orchEffort)
+		}
 		tagW := lipgloss.Width(ansi.Strip(tag))
 		leftPart := fmt.Sprintf("• %-11s %-19s", rr.label, ansi.Truncate(rm.Model, 19, "…"))
 		gap := max(1, inner-lipgloss.Width(leftPart)-tagW)
