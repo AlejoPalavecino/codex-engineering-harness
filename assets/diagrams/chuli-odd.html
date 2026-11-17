@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Una unidad que se puede retomar y comprobar</title>
+  <style>
+    body { margin: 0; padding: 24px; background: #f7f2e7; color: #202a24; font-family: "Segoe UI", Arial, sans-serif; }
+    main { max-width: 960px; min-width: 0; margin: auto; }
+    h1 { font: 28px Georgia, serif; }
+    .diagram-container { width: 100%; overflow-x: auto; }
+    svg { display: block; width: 100%; min-width: 960px; font-family: "Segoe UI", Arial, sans-serif; }
+    .name { font-size: 20px; font-weight: 600; fill: #202a24; }
+    .detail { font-size: 16px; fill: #4b5c50; }
+    .tag { font: 12px ui-monospace, monospace; fill: #22643a; letter-spacing: 1px; }
+    .edge { fill: none; stroke: #4b5c50; stroke-width: 2; marker-end: url(#arrow); }
+    .node { fill: #f7f2e7; stroke: #69806e; stroke-width: 2; }
+    @media print { .diagram-container { overflow: visible; } svg { min-width: 0; } }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Una unidad que se puede retomar y comprobar</h1>
+  <p>Recorrido ODD · formato doc-inline 960×600 · cuatro pasos; el detalle operativo queda en los protocolos.</p>
+  <div class="diagram-container">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 600" role="img" aria-labelledby="chuli-odd-title chuli-odd-desc">
+      <title id="chuli-odd-title">Una unidad que se puede retomar y comprobar</title>
+      <desc id="chuli-odd-desc">Chuli define una unidad vertical retomable, justifica cada delegación con una pregunta y evidencia requerida, verifica los archivos del candidato y compara la fricción del proceso con la calidad obtenida.</desc>
+      <defs><marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#4b5c50"/></marker></defs>
+      <rect width="960" height="600" fill="#f7f2e7"/>
+      <text x="48" y="48" class="tag">CHULI / DEL COMPORTAMIENTO A SU EVIDENCIA</text>
+      <path class="edge" d="M432 184 H528"/>
+      <path class="edge" d="M720 272 V336"/>
+      <path class="edge" d="M528 424 H432"/>
+      <rect x="48" y="96" width="384" height="176" rx="6" fill="#e4eedf" stroke="#22643a" stroke-width="2"/>
+      <text x="72" y="128" class="tag">01 / UNIDAD VERTICAL</text>
+      <text x="72" y="164" class="name">Un resultado observable</text>
+      <text x="72" y="196" class="detail">Recorre las partes necesarias del sistema.</text>
+      <text x="72" y="224" class="detail">Conserva criterio, estado y próximo paso.</text>
+      <text x="72" y="252" class="detail">Otra sesión puede retomar el trabajo.</text>
+      <rect x="528" y="96" width="384" height="176" rx="6" class="node"/>
+      <text x="552" y="128" class="tag">02 / SI CONVIENE DELEGAR</text>
+      <text x="552" y="164" class="name">Una pregunta concreta</text>
+      <text x="552" y="196" class="detail">¿Qué necesita resolver el especialista?</text>
+      <text x="552" y="224" class="detail">¿Qué trabajo independiente puede avanzar?</text>
+      <text x="552" y="252" class="detail">¿Qué prueba o evidencia debe devolver?</text>
+      <rect x="528" y="336" width="384" height="176" rx="6" class="node"/>
+      <text x="552" y="368" class="tag">03 / CANDIDATO IDENTIFICADO</text>
+      <text x="552" y="404" class="name">Archivos + comprobación</text>
+      <text x="552" y="436" class="detail">Commit o diff reproducible, prueba y resultado.</text>
+      <text x="552" y="464" class="detail">La evidencia corresponde a esos archivos.</text>
+      <text x="552" y="492" class="detail">Si cambian, repetí la verificación afectada.</text>
+      <rect x="48" y="336" width="384" height="176" rx="6" class="node"/>
+      <text x="72" y="368" class="tag">04 / EVALUAR EL PROCESO</text>
+      <text x="72" y="404" class="name">Fricción frente a calidad</text>
+      <text x="72" y="436" class="detail">Compará preguntas, esperas y pasos</text>
+      <text x="72" y="464" class="detail">con resultado, pruebas y regresiones.</text>
+      <text x="72" y="492" class="detail">Reducí carga conservando las comprobaciones.</text>
+      <text x="48" y="568" class="detail">El proceso se justifica por el resultado y su evidencia. Una respuesta del agente requiere verificación.</text>
+    </svg>
+  </div>
+  <p>Fuente: docs/protocols/ODD.md, MRP.md y docs/EVALUATION.md. La delegación es opcional; el trabajo sustancial conserva su continuidad en el tablero TTP.</p>
+</main>
+</body>
+</html>

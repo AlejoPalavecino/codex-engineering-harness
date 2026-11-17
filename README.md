@@ -20,17 +20,19 @@ De la idea al cambio comprobado, con decisiones claras, modelos configurables po
 
 ## 00 · Qué estás instalando
 
-Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar el trabajo, especialistas para tareas concretas y procedimientos que el agente consulta cuando hacen falta. Está pensado para construir y mantener un proyecto con decisiones, cambios y comprobaciones que otra persona pueda entender.
+Chuli es un **perfil de ingeniería para Codex, Claude Code y AGY CLI**. Reúne instrucciones para coordinar el trabajo, especialistas para tareas concretas y procedimientos que el agente consulta cuando hacen falta. Está pensado para construir y mantener un proyecto con decisiones, cambios y comprobaciones que otra persona pueda entender.
 
-![El Manager instala el perfil local; Codex usa ese perfil para trabajar sobre tu proyecto y conservar evidencia en Git.](assets/diagrams/chuli-architecture.svg)
+![El Manager instala el perfil del cliente elegido; Codex, Claude Code o AGY CLI lo usan para trabajar sobre tu proyecto y conservar evidencia en Git.](assets/diagrams/chuli-architecture.svg)
 
-**El recorrido:** abrís el Manager para instalar o actualizar el perfil; después abrís Codex en tu proyecto y trabajás ahí. El Manager no dirige cada etapa de desarrollo. El orquestador corre dentro de la sesión de Codex y te ayuda a decidir qué hace falta investigar, acordar, implementar o verificar.
+Cada cliente usa su propio destino y formato de configuración. El Manager administra el perfil; el trabajo de ingeniería ocurre en la sesión del cliente elegido.
+
+Abrís el Manager para instalar o actualizar el perfil del cliente que elegís. Después abrís ese cliente en tu proyecto. El orquestador corre dentro de esa sesión y te ayuda a decidir qué hace falta investigar, acordar, implementar o verificar.
 
 | Parte | Dónde está | Qué hace |
 | --- | --- | --- |
 | **Chuli Manager** | El ejecutable `chuli` / `chuli.exe` | Descarga, instala, verifica, actualiza y revierte el perfil. |
-| **Perfil de Chuli** | Tu `CODEX_HOME`, normalmente `~/.codex` | Contiene instrucciones, configuración de roles, skills y recursos. |
-| **Tu sesión de Codex** | Codex CLI o el modo Codex local de la app de escritorio | Es donde conversás, el agente usa herramientas y se modifica el proyecto autorizado. |
+| **Perfil de Chuli** | `~/.codex` (`CODEX_HOME`), `~/.claude` (`CLAUDE_CONFIG_DIR`) o `~/.gemini/config` (`AGY_HOME`) | Contiene instrucciones, configuración de roles, skills y recursos según el cliente. |
+| **Tu sesión de ingeniería** | Codex, Claude Code o AGY CLI | Es donde conversás, el agente usa herramientas y se modifica el proyecto autorizado. |
 | **Tu proyecto** | El repositorio donde estás trabajando | Conserva código, pruebas y documentación; en trabajo sustancial, decisiones y seguimiento para retomar. |
 
 [Fuente del diagrama](assets/diagrams/chuli-architecture.html) · [Operaciones del Manager](docs/TUI.md) · [Responsabilidad de cada componente](docs/protocols/TKA.md)
@@ -44,8 +46,8 @@ Chuli es un **perfil de ingeniería para Codex**: instrucciones para coordinar e
 ### Con un comando (Go 1.26+, Windows / Linux / macOS)
 
 ```sh
-# Stable channel: the latest release (v2.0.1)
-go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.1
+# Stable channel: the latest release (v2.0.2)
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.2
 
 # Or always install the latest tagged release
 go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
@@ -58,7 +60,7 @@ Después ejecutá `chuli`: la consola CRT te recibe con un menú directo de 6 ac
 1. **Descargá el Manager** desde la [última release estable](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest) (o usá `install-chuli-windows.ps1` en Windows).
 2. **Extraé y abrí el ejecutable:** `chuli.exe` en Windows o `chuli` en Linux/macOS.
 3. **Elegí instalar desde la última release.** Revisá el destino y los cambios, y confirmá. El Manager descarga el perfil y verifica su SHA-256.
-4. **Abrí una sesión nueva de Codex** en tu proyecto y empezá con una tarea concreta.
+4. **Abrí una sesión nueva del cliente que elegiste** en tu proyecto y empezá con una tarea concreta.
 
 | Tu equipo | Archivo del Manager |
 | --- | --- |
@@ -89,7 +91,15 @@ Pregunta por decisiones que cambian el resultado y resuelve detalles técnicos r
 
 El riesgo se evalúa aparte del tamaño: un cambio pequeño de permisos puede necesitar controles adicionales. Aprobar un diseño y autorizar su implementación son decisiones distintas. Publicar, hacer push, abrir una PR, integrar o desplegar requieren la autorización aplicable.
 
-Usa TDD cuando hay una prueba adecuada y procura unidades revisables de unas 400 líneas, con código, pruebas y documentación del comportamiento juntos. Un cierre explica qué cambió, cómo se comprobó y qué quedó pendiente; escribir código o guardar una captura no alcanza para afirmar que todo funciona.
+Usa TDD cuando hay una prueba adecuada y procura unidades revisables de unas 400 líneas, con código, pruebas y documentación del comportamiento juntos. Cada unidad atraviesa el recorrido necesario para entregar un resultado observable y deja contexto suficiente para retomarlo: qué cambió, qué se comprobó y cuál es el siguiente paso.
+
+![Una unidad vertical conserva su criterio y su próximo paso; las pruebas se vinculan con los archivos del candidato y el cierre compara fricción y calidad.](assets/diagrams/chuli-odd.svg)
+
+En un tablero nuevo, el orquestador captura la huella de los archivos de la tarea antes de probarlos. Al cerrarla registra el comando, el resultado y esa huella. Si editás uno de los archivos, podés detectar qué prueba hay que repetir con `taskboard.py check TABLERO --current`. [Ejemplo de captura y cierre](docs/protocols/TTP.md)
+
+Para evaluar el flujo, podés comparar dos observaciones del mismo recorrido. Chuli muestra preguntas repetidas, unidades rehechas y tiempo hasta la primera prueba útil junto con la calidad obtenida. El piloto incluido usa datos sintéticos y se puede ejecutar sin una cuenta. [Cómo reproducir la comparación](docs/evaluations/workflow-friction.md)
+
+Un cierre explica qué cambió, cómo se comprobó y qué quedó pendiente; escribir código o guardar una captura no alcanza para afirmar que todo funciona. [Fuente de la figura ODD](assets/diagrams/chuli-odd.html).
 
 [Fuente del diagrama](assets/diagrams/chuli-workflow.html) · [Rutas de trabajo](docs/protocols/EWP.md) · [Unidades y evidencia](docs/protocols/ODD.md)
 
@@ -109,6 +119,8 @@ Usa TDD cuando hay una prueba adecuada y procura unidades revisables de unas 400
 
 No todos los pedidos necesitan un equipo de agentes. El orquestador trabaja en línea por defecto y delega cuando una exploración, una especialidad o una revisión independiente aporta valor. Vos conservás las decisiones de producto, alcance, diseño y entrega.
 
+Antes de delegar, define la pregunta concreta que necesita resolver, qué trabajo independiente puede avanzar mientras tanto y qué prueba o evidencia debe devolver el especialista. La respuesta se contrasta con el candidato antes de dar la tarea por terminada.
+
 | Especialista | Cuándo ayuda | Qué devuelve |
 | --- | --- | --- |
 | Exploración · `chuli_explorer` | Hace falta ubicar un contrato o entender código existente. | Un mapa con rutas, consumidores y referencias. |
@@ -119,6 +131,18 @@ No todos los pedidos necesitan un equipo de agentes. El orquestador trabaja en l
 | Revisión · `quality_reviewer` | El riesgo justifica verificar un candidato de forma independiente. | Hallazgos reproducibles y verificaciones realizadas/omitidas. |
 
 Los modelos declarados y los contratos de cada rol están en [Especialistas](docs/AGENTS.md). Su disponibilidad depende del cliente y de la cuenta; una configuración no demuestra por sí sola qué modelo se ejecutó.
+
+### Modelos según el cliente
+
+Al configurar los modelos, el Manager muestra la fuente del catálogo que pudo obtener. La selección conserva los roles ya configurados hasta que confirmás los cambios.
+
+| Cliente | Catálogo y selección |
+| --- | --- |
+| **Codex** | Lee la caché de modelos del cliente en su perfil local. |
+| **Claude Code** | Lee una caché compatible y sin ambigüedad de cuenta; incluye `inherit` para heredar el modelo. |
+| **AGY CLI** | Consulta `agy --output-format json models` para el orquestador; los especialistas eligen un tier. |
+
+Si no obtiene un catálogo utilizable, ofrece el catálogo incluido en Chuli. Esa lista permite configurar el perfil; la disponibilidad efectiva se comprueba en el cliente y la cuenta que lo ejecutan. [Configuración de modelos](docs/TUI.md).
 
 ### Las skills aportan el procedimiento
 
@@ -169,7 +193,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 2.0.1](docs/releases/v2.0.1.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 2.0.2](docs/releases/v2.0.2.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 
