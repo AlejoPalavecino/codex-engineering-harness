@@ -45,7 +45,7 @@ Antes de delegar, precisá qué pregunta o resultado va a resolver el especialis
 
 | Rol estable | Encargo |
 | --- | --- |
-| `chuli_explorer` | Luna medium. Lectura de rutas, consumidores y contratos. |
+| `chuli_explorer` | Sol medium. Lectura de rutas, consumidores y contratos. |
 | `chuli_worker` | Sol medium. Implementación y verificación focalizada. |
 | `solution_architect` | Alternativas de arquitectura, datos y contratos. |
 | `product_designer` | Flujos, estados, accesibilidad y dirección visual. |

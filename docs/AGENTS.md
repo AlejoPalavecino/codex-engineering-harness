@@ -4,13 +4,13 @@ El agente principal lee el bloque de Chuli en el `AGENTS.md` del perfil. Puede t
 
 | Rol | Modelo declarado | Esfuerzo | Resultado |
 | --- | --- | --- | --- |
-| Orquestador | Perfil elegido por el usuario | Según sesión | Enrutamiento EWP, autoridad, continuidad y cierre |
-| [chuli_explorer](../agents/chuli_explorer.toml) | gpt-6-luna | medium | Mapa de código y contratos con referencias; solicita sandbox de lectura |
-| [chuli_worker](../agents/chuli_worker.toml) | gpt-6.1-sol | medium | Unidad autorizada con regresiones, verificación y reversión acotada |
-| [solution_architect](../agents/solution_architect.toml) | gpt-6.1-sol | high | Alternativas, restricciones y decisiones pendientes |
-| [product_designer](../agents/product_designer.toml) | gpt-6.1-terra | medium | Flujos, estados, identidad y accesibilidad |
-| [test_engineer](../agents/test_engineer.toml) | gpt-6.1-sol | medium | Pruebas vinculadas con aceptación y riesgo |
-| [quality_reviewer](../agents/quality_reviewer.toml) | gpt-6.1-sol | high | Revisión de un candidato fijo con evidencia independiente |
+| Orquestador | gpt-6.2-astra (recomendado) | medium | Enrutamiento EWP, autoridad, continuidad y cierre |
+| [chuli_explorer](../agents/chuli_explorer.toml) | gpt-6.2-sol | medium | Mapa de código y contratos con referencias; solicita sandbox de lectura |
+| [chuli_worker](../agents/chuli_worker.toml) | gpt-6.2-sol | medium | Unidad autorizada con regresiones, verificación y reversión acotada |
+| [solution_architect](../agents/solution_architect.toml) | gpt-6.2-astra | high | Alternativas, restricciones y decisiones pendientes |
+| [product_designer](../agents/product_designer.toml) | gpt-6.2-sol | medium | Flujos, estados, identidad y accesibilidad |
+| [test_engineer](../agents/test_engineer.toml) | gpt-6.2-sol | medium | Pruebas vinculadas con aceptación y riesgo |
+| [quality_reviewer](../agents/quality_reviewer.toml) | gpt-6.2-sol | high | Revisión de un candidato fijo con evidencia independiente |
 
 ## Contrato de una delegación
 

@@ -24,10 +24,10 @@ func TestPickerLoadsNewModelsWhileOpen(t *testing.T) {
 	m, _ = sendKey(m, "enter")
 	updated, _ := m.Update(refresh())
 	m = updated.(model)
-	if !strings.Contains(m.View().Content, "future-model") || !slices.Equal(m.pickerChoices, []string{"future-model", "gpt-6.1-sol"}) {
+	if !strings.Contains(m.View().Content, "future-model") || !slices.Equal(m.pickerChoices, []string{"future-model", "gpt-6.2-astra"}) {
 		t.Fatalf("expected discovered model and current assignment: %v", m.pickerChoices)
 	}
-	if m.mgr.RoleModels["orchestrator"].Model != "gpt-6.1-sol" {
+	if m.mgr.RoleModels["orchestrator"].Model != "gpt-6.2-astra" {
 		t.Fatal("refresh changed assigned model")
 	}
 	m, _ = sendKey(m, "up")

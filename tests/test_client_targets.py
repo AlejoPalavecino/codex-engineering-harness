@@ -62,9 +62,9 @@ class ClientTargetsTests(unittest.TestCase):
     def test_resolve_and_custom_role_overrides(self):
         preset, roles = ct.resolve_role_models("claude", "claude-balanced")
         self.assertEqual(preset, "claude-balanced")
-        self.assertEqual(roles["orchestrator"]["model"], "claude-opus-5-5")
-        self.assertEqual(roles["solution_architect"]["model"], "claude-fable-5-2")
-        self.assertEqual(roles["chuli_explorer"]["model"], "claude-haiku-5-5")
+        self.assertEqual(roles["orchestrator"]["model"], "opus")
+        self.assertEqual(roles["solution_architect"]["model"], "opus")
+        self.assertEqual(roles["chuli_explorer"]["model"], "haiku")
 
         overrides = ct.parse_role_spec(["orchestrator=claude-fable-5-2:high", "chuli_worker=claude-opus-5-5:high"], "claude")
         preset, custom = ct.resolve_role_models("claude", "", overrides)
@@ -122,6 +122,7 @@ class ClientTargetsTests(unittest.TestCase):
                 "outputStyle": "concise",
                 "permissions": {"allow": ["Bash(git status)"]},
                 "model": "custom-user-model",
+                "env": {"CLAUDE_CODE_SUBAGENT_MODEL": "personal", "OTHER": "keep"},
             }
         ).encode("utf-8")
         updated, report = ct.prepare_json_settings(existing, "claude", claude_roles, configure_models=False)
@@ -131,11 +132,13 @@ class ClientTargetsTests(unittest.TestCase):
         self.assertEqual(data["model"], "custom-user-model")
         self.assertEqual(data["outputStyle"], "concise")
         self.assertEqual(data["env"]["CLAUDE_CODE_EFFORT_LEVEL"], "medium")
-        self.assertEqual(data["env"]["CLAUDE_CODE_SUBAGENT_MODEL"], "claude-sonnet-5-5")
+        self.assertEqual(data["env"]["CLAUDE_CODE_SUBAGENT_MODEL"], "personal")
 
         replaced, report2 = ct.prepare_json_settings(existing, "claude", claude_roles, configure_models=True)
         data2 = json.loads(replaced.decode("utf-8-sig"))
-        self.assertEqual(data2["model"], "claude-opus-5-5")
+        self.assertEqual(data2["model"], "opus")
+        self.assertNotIn("CLAUDE_CODE_SUBAGENT_MODEL", data2["env"])
+        self.assertEqual(data2["env"]["OTHER"], "keep")
         self.assertEqual(report2["preserved"], [])
 
         _, agy_roles = ct.resolve_role_models("agy", "agy-balanced")
@@ -163,10 +166,10 @@ class ClientTargetsTests(unittest.TestCase):
                 rendered = out.read_text(encoding="utf-8")
                 if client == "claude":
                     self.assertIn("Claude Code", rendered)
-                    self.assertIn("claude-fable-5-2", rendered)
+                    self.assertIn("opus", rendered)
                 else:
                     self.assertIn("AGY CLI", rendered)
-                    self.assertIn("Gemini 4 Carbon (High)", rendered)
+                    self.assertIn("| `solution_architect` | `pro` |", rendered)
 
 
 if __name__ == "__main__":

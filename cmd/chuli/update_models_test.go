@@ -96,7 +96,7 @@ func TestManageUpdatePreservesInstalledModelSelection(t *testing.T) {
 		if settings.Model != "claude-sonnet-5-5" || settings.Env["PERSONAL"] != "keep" || !settings.Personal {
 			t.Fatalf("update overwrote personal settings: %s", raw)
 		}
-		if settings.Env["CLAUDE_CODE_EFFORT_LEVEL"] != "high" || settings.Env["CLAUDE_CODE_SUBAGENT_MODEL"] != "claude-fable-5-2" {
+		if settings.Env["CLAUDE_CODE_EFFORT_LEVEL"] != "high" || settings.Env["CLAUDE_CODE_SUBAGENT_MODEL"] != "" {
 			t.Fatalf("missing settings were not restored from installed roles: %s", raw)
 		}
 	}

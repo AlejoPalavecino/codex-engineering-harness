@@ -178,7 +178,7 @@ func TestModelsConfiguratorAndClientSwitch(t *testing.T) {
 	if m.mgr.Target != "claude" || m.mgr.Preset != "claude-balanced" {
 		t.Fatalf("expected claude-balanced, got %s / %s", m.mgr.Target, m.mgr.Preset)
 	}
-	if m.mgr.RoleModels["solution_architect"].Model != "claude-fable-5-2" {
+	if m.mgr.RoleModels["solution_architect"].Model != "opus" {
 		t.Fatalf("unexpected architect model: %+v", m.mgr.RoleModels["solution_architect"])
 	}
 	next, _ = m.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})

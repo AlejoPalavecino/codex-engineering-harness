@@ -137,32 +137,17 @@ try {
     if ($AdoptGentleRouting) { $instructionArgs += '--adopt-gentle-routing' }
     $instructions = (Invoke-ProfilePython $python $instructionArgs) | ConvertFrom-Json
     $stagedMap = @{}
-    $orchModel = 'gpt-6.1-sol'
-    $orchEffort = 'medium'
-    $subModel = 'gpt-6.1-sol'
-    $resolvedPreset = 'codex-balanced'
-    $resolvedRoleModels = [ordered]@{
-        orchestrator       = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
-        chuli_explorer     = @{ model = 'gpt-6-luna';    effort = 'medium' }
-        chuli_worker       = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
-        solution_architect = @{ model = 'gpt-6.1-sol';   effort = 'high'   }
-        product_designer   = @{ model = 'gpt-6.1-terra'; effort = 'medium' }
-        test_engineer      = @{ model = 'gpt-6.1-sol';   effort = 'medium' }
-        quality_reviewer   = @{ model = 'gpt-6.1-sol';   effort = 'high'   }
-    }
-    if ($Client -ne 'codex' -or $Preset -or $RoleModelsJson) {
-        $stagedAgentsDir = Join-Path $staging 'staged-agents'
-        $stageArgs = @((Join-Path $PSScriptRoot 'client_targets.py'), 'stage-agents', '--client', $Client, '--output-dir', $stagedAgentsDir)
-        if ($Preset) { $stageArgs += @('--preset', $Preset) }
-        if ($roleModelsFile) { $stageArgs += @('--role-models-file', $roleModelsFile) }
-        $stageInfo = (Invoke-ProfilePython $python $stageArgs) | ConvertFrom-Json
-        foreach ($prop in $stageInfo.staged.PSObject.Properties) { $stagedMap[$prop.Name] = [string]$prop.Value }
-        $orchModel = [string]$stageInfo.role_models.orchestrator.model
-        $orchEffort = [string]$stageInfo.role_models.orchestrator.effort
-        $subModel = [string]$stageInfo.role_models.chuli_worker.model
-        $resolvedPreset = [string]$stageInfo.preset
-        $resolvedRoleModels = $stageInfo.role_models
-    }
+    $stagedAgentsDir = Join-Path $staging 'staged-agents'
+    $stageArgs = @((Join-Path $PSScriptRoot 'client_targets.py'), 'stage-agents', '--client', $Client, '--output-dir', $stagedAgentsDir)
+    if ($Preset) { $stageArgs += @('--preset', $Preset) }
+    if ($roleModelsFile) { $stageArgs += @('--role-models-file', $roleModelsFile) }
+    $stageInfo = (Invoke-ProfilePython $python $stageArgs) | ConvertFrom-Json
+    foreach ($prop in $stageInfo.staged.PSObject.Properties) { $stagedMap[$prop.Name] = [string]$prop.Value }
+    $orchModel = [string]$stageInfo.role_models.orchestrator.model
+    $orchEffort = [string]$stageInfo.role_models.orchestrator.effort
+    $subModel = [string]$stageInfo.role_models.chuli_worker.model
+    $resolvedPreset = [string]$stageInfo.preset
+    $resolvedRoleModels = $stageInfo.role_models
     foreach ($entry in $inventory.PSObject.Properties) {
         $items.Add(@{path=$entry.Name; source=[string]$entry.Value; kind='copy'})
     }

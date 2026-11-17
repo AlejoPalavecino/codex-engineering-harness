@@ -60,16 +60,16 @@
       ],
       "presets": {
         "codex-balanced": {
-          "name": "Equilibrado (Sol / Terra / Luna)",
-          "description": "Configuración recomendada para ingeniería diaria en Codex.",
+          "name": "Equilibrado (Astra 6.2 + Sol 6.2)",
+          "description": "Astra coordina y diseña la arquitectura. Sol explora, implementa, diseña la UX, prueba y revisa.",
           "roles": {
-            "orchestrator": { "model": "gpt-6.1-sol", "effort": "medium" },
-            "chuli_explorer": { "model": "gpt-6-luna", "effort": "medium" },
-            "chuli_worker": { "model": "gpt-6.1-sol", "effort": "medium" },
-            "solution_architect": { "model": "gpt-6.1-sol", "effort": "high" },
-            "product_designer": { "model": "gpt-6.1-terra", "effort": "medium" },
-            "test_engineer": { "model": "gpt-6.1-sol", "effort": "medium" },
-            "quality_reviewer": { "model": "gpt-6.1-sol", "effort": "high" }
+            "orchestrator": { "model": "gpt-6.2-astra", "effort": "medium" },
+            "chuli_explorer": { "model": "gpt-6.2-sol", "effort": "medium" },
+            "chuli_worker": { "model": "gpt-6.2-sol", "effort": "medium" },
+            "solution_architect": { "model": "gpt-6.2-astra", "effort": "high" },
+            "product_designer": { "model": "gpt-6.2-sol", "effort": "medium" },
+            "test_engineer": { "model": "gpt-6.2-sol", "effort": "medium" },
+            "quality_reviewer": { "model": "gpt-6.2-sol", "effort": "high" }
           }
         },
         "codex-astra-max": {
@@ -124,16 +124,16 @@
       ],
       "presets": {
         "claude-balanced": {
-          "name": "Equilibrado Pro/Max (Opus 5.5 + Fable 5.2 + Sonnet 5.5)",
-          "description": "Opus 5.5 al mando, Fable 5.2 en arquitectura/revisión, Sonnet 5.5 en código y Haiku 5.5 en lectura.",
+          "name": "Equilibrado (Opus + Sonnet + Haiku)",
+          "description": "Opus coordina, diseña la arquitectura y revisa. Sonnet implementa, diseña la UX y prueba. Haiku explora.",
           "roles": {
-            "orchestrator": { "model": "claude-opus-5-5", "effort": "medium" },
-            "chuli_explorer": { "model": "claude-haiku-5-5", "effort": "low" },
-            "chuli_worker": { "model": "claude-sonnet-5-5", "effort": "medium" },
-            "solution_architect": { "model": "claude-fable-5-2", "effort": "high" },
-            "product_designer": { "model": "claude-sonnet-5-5", "effort": "medium" },
-            "test_engineer": { "model": "claude-sonnet-5-5", "effort": "medium" },
-            "quality_reviewer": { "model": "claude-fable-5-2", "effort": "high" }
+            "orchestrator": { "model": "opus", "effort": "medium" },
+            "chuli_explorer": { "model": "haiku", "effort": "low" },
+            "chuli_worker": { "model": "sonnet", "effort": "medium" },
+            "solution_architect": { "model": "opus", "effort": "high" },
+            "product_designer": { "model": "sonnet", "effort": "medium" },
+            "test_engineer": { "model": "sonnet", "effort": "medium" },
+            "quality_reviewer": { "model": "opus", "effort": "high" }
           }
         },
         "claude-fable-max": {
@@ -187,16 +187,16 @@
       ],
       "presets": {
         "agy-balanced": {
-          "name": "Equilibrado (Orchestrator Argon + Carbon + Hydrogen)",
-          "description": "Combina planificación en Argon, arquitectura/revisión en Carbon y ejecución en Hydrogen.",
+          "name": "Equilibrado (Orchestrator Argon + Pro + Flash)",
+          "description": "Orchestrator (Argon) coordina. Pro implementa, diseña y revisa. Flash prueba y Flash Lite explora.",
           "roles": {
             "orchestrator": { "model": "orchestrator-argon", "effort": "medium" },
-            "chuli_explorer": { "model": "gemini-4-hydrogen", "effort": "medium" },
-            "chuli_worker": { "model": "gemini-4-hydrogen", "effort": "high" },
-            "solution_architect": { "model": "gemini-4-carbon", "effort": "high" },
-            "product_designer": { "model": "gemini-4-argon", "effort": "medium" },
-            "test_engineer": { "model": "gemini-4-hydrogen", "effort": "high" },
-            "quality_reviewer": { "model": "gemini-4-carbon", "effort": "high" }
+            "chuli_explorer": { "model": "flash_lite", "effort": "low" },
+            "chuli_worker": { "model": "pro", "effort": "high" },
+            "solution_architect": { "model": "pro", "effort": "high" },
+            "product_designer": { "model": "pro", "effort": "medium" },
+            "test_engineer": { "model": "flash", "effort": "high" },
+            "quality_reviewer": { "model": "pro", "effort": "high" }
           }
         },
         "agy-carbon-max": {

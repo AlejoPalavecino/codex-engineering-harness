@@ -23,7 +23,7 @@ try {
     Assert-That (Test-Path (Join-Path $homePath 'agents/other_agent.toml')) 'Se borro agente ajeno.'
     $config = [IO.File]::ReadAllText((Join-Path $homePath 'config.toml'))
     Assert-That ($config.Contains('[mcp_servers.engram]')) 'Se perdio el MCP.'
-    Assert-That ($config.Contains('gpt-6.1-sol')) 'No se configuro el modelo.'
+    Assert-That ($config.Contains('gpt-6.2-astra')) 'No se configuro el modelo.'
     Assert-That ($config.Contains('[tools.update_plan]')) 'Falta configuracion update_plan.'
     Assert-That ($config.Contains('enabled = true')) 'update_plan no se habilito.'
     Assert-That (Test-Path (Join-Path $homePath 'harness/bin/taskboard.py')) 'Falta validador de tareas.'

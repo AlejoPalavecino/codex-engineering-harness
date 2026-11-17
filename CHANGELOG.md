@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.0.3] — 2026-11-17
+
+- El preset equilibrado de Codex usa GPT-6.2 Astra para orquestación y arquitectura, y GPT-6.2 Sol para los demás roles.
+- Claude Code usa los alias Opus, Sonnet y Haiku. Al configurar los modelos explícitamente, Chuli retira de `settings.json` la variable global que podía anular la elección por rol.
+- AGY combina Orchestrator (Argon) con los niveles nativos `pro`, `flash` y `flash_lite`. El README detalla las asignaciones de los tres clientes.
+
 ## [2.0.2] — 2026-11-17
 
 - Las tareas sustanciales se organizan por comportamiento y el cierre de un tablero nuevo vincula la prueba al contenido de los archivos declarados.

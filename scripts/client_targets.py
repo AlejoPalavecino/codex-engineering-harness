@@ -274,7 +274,7 @@ def render_orchestrator_body(
     old_table = (
         "| Rol estable | Encargo |\n"
         "| --- | --- |\n"
-        "| `chuli_explorer` | Luna medium. Lectura de rutas, consumidores y contratos. |\n"
+        "| `chuli_explorer` | Sol medium. Lectura de rutas, consumidores y contratos. |\n"
         "| `chuli_worker` | Sol medium. Implementación y verificación focalizada. |\n"
         "| `solution_architect` | Alternativas de arquitectura, datos y contratos. |\n"
         "| `product_designer` | Flujos, estados, accesibilidad y dirección visual. |\n"
@@ -321,12 +321,19 @@ def prepare_json_settings(
     tracked: dict[str, object] = {}
 
     orch = role_models["orchestrator"]
-    worker = role_models["chuli_worker"]
     if client == "claude":
+        # Claude Code gives this global override precedence over each agent's model.
+        env = updated.get("env")
+        override = "CLAUDE_CODE_SUBAGENT_MODEL"
+        if isinstance(env, dict) and override in env:
+            if configure_models:
+                del env[override]
+                changed.append(f"env.{override}")
+            else:
+                preserved.append(f"env.{override}")
         targets: list[tuple[tuple[str, ...], object]] = [
             (("model",), orch["model"]),
             (("env", "CLAUDE_CODE_EFFORT_LEVEL"), orch["effort"]),
-            (("env", "CLAUDE_CODE_SUBAGENT_MODEL"), worker["model"]),
         ]
     elif client == "agy":
         targets = [

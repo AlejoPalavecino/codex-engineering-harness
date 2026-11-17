@@ -1,6 +1,6 @@
 name = "chuli_explorer"
 description = "Investiga código, contratos e historial y devuelve un mapa verificable para una decisión concreta."
-model = "gpt-6-luna"
+model = "gpt-6.2-sol"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 developer_instructions = '''

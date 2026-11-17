@@ -357,7 +357,7 @@ func TestWizardSequentialMultiProviderWithArrowsAndEnter(t *testing.T) {
 	}
 	m, _ = sendKey(m, "down")
 	m, _ = sendKey(m, "enter")
-	if m.screen != modelsScreen || m.mgr.RoleModels["orchestrator"].Model == "gpt-6.1-sol" {
+	if m.screen != modelsScreen || m.mgr.RoleModels["orchestrator"].Model == "gpt-6.2-astra" {
 		t.Fatalf("expected updated orchestrator model after picker, got screen=%s model=%s", m.screen, m.mgr.RoleModels["orchestrator"].Model)
 	}
 	// Navigate down to "Aceptar y continuar" (index 7) and press Enter -> moves to provider 2 of 2 (AGY)!

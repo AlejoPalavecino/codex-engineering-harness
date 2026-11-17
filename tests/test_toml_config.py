@@ -40,7 +40,7 @@ class SafeTomlTests(unittest.TestCase):
         source = '[agents.solution_architect]\ndescription = "x"\n'
         updated, _ = mod.prepare(source, configure_models=True, replace_managed=True)
         parsed = tomllib.loads(updated)
-        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
+        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.2-sol")
         self.assertEqual(parsed["agents"]["solution_architect"]["description"],
                          tomllib.loads((ROOT / "agents/solution_architect.toml").read_text(encoding="utf-8"))["description"])
 
@@ -50,16 +50,16 @@ class SafeTomlTests(unittest.TestCase):
         self.assertEqual(parsed["model"], "personal")
         self.assertIn("model", report["preserved"])
         self.assertEqual(parsed["model_reasoning_effort"], "medium")
-        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.1-sol")
+        self.assertEqual(parsed["agents"]["default_subagent_model"], "gpt-6.2-sol")
         self.assertEqual(set(parsed["agents"]) - {"default_subagent_model"},
                          {p.stem for p in (ROOT / "agents").glob("*.toml")})
         new, _ = mod.prepare("")
-        self.assertEqual(tomllib.loads(new)["model"], "gpt-6.1-sol")
+        self.assertEqual(tomllib.loads(new)["model"], "gpt-6.2-astra")
 
     def test_models_only_on_explicit_flag(self):
         source = 'model = "another-model"\n'
         updated, report = mod.prepare(source, configure_models=True)
-        self.assertEqual(tomllib.loads(updated)["model"], "gpt-6.1-sol")
+        self.assertEqual(tomllib.loads(updated)["model"], "gpt-6.2-astra")
         self.assertIn("model", report["changed"])
 
     def test_reject_inline_table_without_writing(self):

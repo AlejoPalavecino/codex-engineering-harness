@@ -46,8 +46,8 @@ Abrís el Manager para instalar o actualizar el perfil del cliente que elegís. 
 ### Con un comando (Go 1.26+, Windows / Linux / macOS)
 
 ```sh
-# Stable channel: the latest release (v2.0.2)
-go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.2
+# Stable channel: the latest release (v2.0.3)
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.0.3
 
 # Or always install the latest tagged release
 go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
@@ -142,6 +142,19 @@ Al configurar los modelos, el Manager muestra la fuente del catálogo que pudo o
 | **Claude Code** | Lee una caché compatible y sin ambigüedad de cuenta; incluye `inherit` para heredar el modelo. |
 | **AGY CLI** | Consulta `agy --output-format json models` para el orquestador; los especialistas eligen un tier. |
 
+En **Instalar → Equilibrado (recomendado)**, cada cliente parte de estas asignaciones. Podés personalizar cada rol antes de aplicar.
+
+| Rol | Codex | Claude Code | AGY CLI |
+| --- | --- | --- | --- |
+| Orquestación | GPT-6.2 Astra · medium | Opus · medium | Orchestrator (Argon) |
+| Exploración | GPT-6.2 Sol · medium | Haiku · low | flash_lite |
+| Implementación y diseño UX | GPT-6.2 Sol · medium | Sonnet · medium | pro |
+| Arquitectura | GPT-6.2 Astra · high | Opus · high | pro |
+| Pruebas | GPT-6.2 Sol · medium | Sonnet · medium | flash |
+| Revisión | GPT-6.2 Sol · high | Opus · high | pro |
+
+Claude Code resuelve los alias según el proveedor y la cuenta. Al aplicar explícitamente modelos por rol, Chuli quita de `settings.json` la variable `CLAUDE_CODE_SUBAGENT_MODEL`, que forzaría un mismo modelo para todos los especialistas. [Configuración de Claude Code](https://code.claude.com/docs/en/model-config).
+
 Si no obtiene un catálogo utilizable, ofrece el catálogo incluido en Chuli. Esa lista permite configurar el perfil; la disponibilidad efectiva se comprueba en el cliente y la cuenta que lo ejecutan. [Configuración de modelos](docs/TUI.md).
 
 ### Las skills aportan el procedimiento
@@ -193,7 +206,7 @@ Las decisiones y el tablero viven en Git, junto al proyecto. Al retomar se contr
 | Operar el Manager y su CLI | [Manager](docs/TUI.md) |
 | Conocer los roles y las skills | [Especialistas](docs/AGENTS.md) · [Catálogo](docs/protocols/SKILLS.md) |
 | Entender las decisiones del producto | [Trayectoria y roadmap](docs/ROADMAP.md) |
-| Ver qué cambió | [Release 2.0.2](docs/releases/v2.0.2.md) · [Changelog](CHANGELOG.md) |
+| Ver qué cambió | [Release 2.0.3](docs/releases/v2.0.3.md) · [Changelog](CHANGELOG.md) |
 | Revisar pruebas y límites de evidencia | [Verificación](docs/TESTING.md) · [Evaluación conductual](docs/EVALUATION.md) |
 | Contribuir o informar un problema | [Contribuciones](CONTRIBUTING.md) · [Seguridad](SECURITY.md) |
 

@@ -120,8 +120,8 @@ def update_text(source: str, path: tuple[str, ...], value) -> str:
     return "".join(lines)
 
 
-def config_targets(skip_task_progress: bool, orchestrator_model: str = "gpt-6.1-sol",
-                   orchestrator_effort: str = "medium", subagent_model: str = "gpt-6.1-sol"):
+def config_targets(skip_task_progress: bool, orchestrator_model: str = "gpt-6.2-astra",
+                   orchestrator_effort: str = "medium", subagent_model: str = "gpt-6.2-sol"):
     targets: dict[tuple[str, ...], object] = {}
     for role, description in agent_definitions():
         targets[("agents", role, "description")] = description
@@ -136,9 +136,9 @@ def config_targets(skip_task_progress: bool, orchestrator_model: str = "gpt-6.1-
 
 def prepare(source: str, *, configure_models: bool = False,
             skip_task_progress: bool = False, replace_managed: bool = False,
-            orchestrator_model: str = "gpt-6.1-sol",
+            orchestrator_model: str = "gpt-6.2-astra",
             orchestrator_effort: str = "medium",
-            subagent_model: str = "gpt-6.1-sol"):
+            subagent_model: str = "gpt-6.2-sol"):
     before = tomllib.loads(source)
     expected = copy.deepcopy(before)
     updated = source
@@ -185,9 +185,9 @@ def main() -> int:
     parser.add_argument("--configure-models", action="store_true")
     parser.add_argument("--skip-task-progress", action="store_true")
     parser.add_argument("--replace-managed", action="store_true")
-    parser.add_argument("--orchestrator-model", default="gpt-6.1-sol")
+    parser.add_argument("--orchestrator-model", default="gpt-6.2-astra")
     parser.add_argument("--orchestrator-effort", default="medium")
-    parser.add_argument("--subagent-model", default="gpt-6.1-sol")
+    parser.add_argument("--subagent-model", default="gpt-6.2-sol")
     args = parser.parse_args()
     try:
         raw = args.input.read_bytes() if args.input.is_file() else b""

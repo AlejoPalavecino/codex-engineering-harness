@@ -63,16 +63,16 @@ var clientCatalog = []ClientSpec{
 		Presets: []PresetSpec{
 			{
 				ID:          "codex-balanced",
-				Name:        "Equilibrado (Sol / Terra / Luna)",
-				Description: "Configuración recomendada para ingeniería diaria en Codex.",
+				Name:        "Equilibrado (Astra 6.2 + Sol 6.2)",
+				Description: "Astra coordina y diseña la arquitectura. Sol explora, implementa, diseña la UX, prueba y revisa.",
 				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "gpt-6.1-sol", Effort: "medium"},
-					"chuli_explorer":     {Model: "gpt-6-luna", Effort: "medium"},
-					"chuli_worker":       {Model: "gpt-6.1-sol", Effort: "medium"},
-					"solution_architect": {Model: "gpt-6.1-sol", Effort: "high"},
-					"product_designer":   {Model: "gpt-6.1-terra", Effort: "medium"},
-					"test_engineer":      {Model: "gpt-6.1-sol", Effort: "medium"},
-					"quality_reviewer":   {Model: "gpt-6.1-sol", Effort: "high"},
+					"orchestrator":       {Model: "gpt-6.2-astra", Effort: "medium"},
+					"chuli_explorer":     {Model: "gpt-6.2-sol", Effort: "medium"},
+					"chuli_worker":       {Model: "gpt-6.2-sol", Effort: "medium"},
+					"solution_architect": {Model: "gpt-6.2-astra", Effort: "high"},
+					"product_designer":   {Model: "gpt-6.2-sol", Effort: "medium"},
+					"test_engineer":      {Model: "gpt-6.2-sol", Effort: "medium"},
+					"quality_reviewer":   {Model: "gpt-6.2-sol", Effort: "high"},
 				},
 			},
 			{
@@ -117,16 +117,16 @@ var clientCatalog = []ClientSpec{
 		Presets: []PresetSpec{
 			{
 				ID:          "claude-balanced",
-				Name:        "Equilibrado Pro/Max (Opus 5.5 + Fable 5.2 + Sonnet 5.5)",
-				Description: "Opus 5.5 al mando, Fable 5.2 en arquitectura/revisión, Sonnet 5.5 en código y Haiku 5.5 en lectura.",
+				Name:        "Equilibrado (Opus + Sonnet + Haiku)",
+				Description: "Opus coordina, diseña la arquitectura y revisa. Sonnet implementa, diseña la UX y prueba. Haiku explora.",
 				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "claude-opus-5-5", Effort: "medium"},
-					"chuli_explorer":     {Model: "claude-haiku-5-5", Effort: "low"},
-					"chuli_worker":       {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"solution_architect": {Model: "claude-fable-5-2", Effort: "high"},
-					"product_designer":   {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"test_engineer":      {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"quality_reviewer":   {Model: "claude-fable-5-2", Effort: "high"},
+					"orchestrator":       {Model: "opus", Effort: "medium"},
+					"chuli_explorer":     {Model: "haiku", Effort: "low"},
+					"chuli_worker":       {Model: "sonnet", Effort: "medium"},
+					"solution_architect": {Model: "opus", Effort: "high"},
+					"product_designer":   {Model: "sonnet", Effort: "medium"},
+					"test_engineer":      {Model: "sonnet", Effort: "medium"},
+					"quality_reviewer":   {Model: "opus", Effort: "high"},
 				},
 			},
 			{
@@ -171,16 +171,16 @@ var clientCatalog = []ClientSpec{
 		Presets: []PresetSpec{
 			{
 				ID:          "agy-balanced",
-				Name:        "Equilibrado (Orchestrator Argon + Carbon + Hydrogen)",
-				Description: "Combina planificación en Argon, arquitectura/revisión en Carbon y ejecución en Hydrogen.",
+				Name:        "Equilibrado (Orchestrator Argon + Pro + Flash)",
+				Description: "Orchestrator (Argon) coordina. Pro implementa, diseña y revisa. Flash prueba y Flash Lite explora.",
 				Roles: map[string]RoleModel{
 					"orchestrator":       {Model: "orchestrator-argon", Effort: "medium"},
-					"chuli_explorer":     {Model: "gemini-4-hydrogen", Effort: "medium"},
-					"chuli_worker":       {Model: "gemini-4-hydrogen", Effort: "high"},
-					"solution_architect": {Model: "gemini-4-carbon", Effort: "high"},
-					"product_designer":   {Model: "gemini-4-argon", Effort: "medium"},
-					"test_engineer":      {Model: "gemini-4-hydrogen", Effort: "high"},
-					"quality_reviewer":   {Model: "gemini-4-carbon", Effort: "high"},
+					"chuli_explorer":     {Model: "flash_lite", Effort: "low"},
+					"chuli_worker":       {Model: "pro", Effort: "high"},
+					"solution_architect": {Model: "pro", Effort: "high"},
+					"product_designer":   {Model: "pro", Effort: "medium"},
+					"test_engineer":      {Model: "flash", Effort: "high"},
+					"quality_reviewer":   {Model: "pro", Effort: "high"},
 				},
 			},
 			{
