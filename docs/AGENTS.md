@@ -30,4 +30,4 @@ También podés personalizar modelo y esfuerzo rol por rol o guardar perfiles pr
 
 ## Procedimientos
 
-El [catálogo de skills](protocols/SKILLS.md) identifica las cinco nativas y las 18 importadas, su runtime y requisitos. El [protocolo ODD](protocols/ODD.md) describe cómo combinar las decisiones del orquestador, TDD y la revisión según riesgo.
+El [catálogo de skills](protocols/SKILLS.md) identifica las cinco nativas y las 20 importadas, su runtime y requisitos. El [protocolo ODD](protocols/ODD.md) describe cómo combinar las decisiones del orquestador, TDD y la revisión según riesgo.

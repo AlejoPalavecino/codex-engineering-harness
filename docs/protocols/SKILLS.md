@@ -1,10 +1,10 @@
 # Catálogo de skills
 
-Seleccioná por objetivo y por capacidad real del cliente. El perfil completo tiene 24 skills: 5 de Chuli, 18 tomadas de Gentle AI™ v4.4.0 y diagram-design 2.6. Cargar una skill consiste en leer su procedimiento cuando hace falta. No instala las herramientas que ese procedimiento describe.
+Seleccioná por objetivo y por capacidad real del cliente. El perfil completo tiene 25 skills: 5 de Chuli, 18 tomadas de Gentle AI™ v4.4.0, diagram-design 2.6 y frontend-design. Cargar una skill consiste en leer su procedimiento cuando hace falta. No instala las herramientas que ese procedimiento describe.
 
 Las cinco nativas son `harness-discovery` (alcance), `harness-architecture` (contratos y alternativas), `harness-ux-ui` (flujos e interacción), `harness-specification` (aceptación y tareas), y `harness-tdd-qa` (pruebas y evidencia). Necesitan el contexto del proyecto. Un runner de pruebas o navegador sólo corresponde cuando hay una verificación concreta que lo requiere.
 
-Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `harness-tdd-qa` comprueba apariencia, interacción y resultado. Ambas incluyen referencias locales instalables. Ego-browser/egolite es la preferencia de revisión web si está disponible y autorizado; se distribuye por separado. Bibliotecas como ui-ux-pro-max o design-taste-frontend son apoyos opcionales revisados, no parte de este paquete: elegir una fuente de dirección visual por tarea, respetando el diseño aprobado. No se instalan automáticamente ni se impone un stack.
+Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `frontend-design` aporta dirección visual, tipografía y redacción web/frontend cuando se diseña una UI nueva o rediseño; y `harness-tdd-qa` comprueba apariencia, interacción y resultado. Ego-browser/egolite es la preferencia de revisión web si está disponible y autorizado; se distribuye por separado. Otras bibliotecas externas siguen siendo apoyos opcionales revisados, no parte de este paquete: elegir una fuente de dirección visual por tarea, respetando el diseño aprobado. No se instalan herramientas automáticamente ni se impone un stack.
 
 | Skill importada | Objetivo | Runtime o destino | Requisitos |
 | --- | --- | --- | --- |
@@ -12,6 +12,7 @@ Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `harness-tdd-qa
 | `chained-pr` | Dividir una entrega en unidades revisables | Codex | Git; publicar ramas o PR requiere autorización |
 | `cognitive-doc-design` | Diseñar documentación legible | Codex | Documento y audiencia |
 | `diagram-design` | Diagramas editoriales con fuente HTML y exportaciones SVG/PNG | Codex | Python para comprobación y SVG; navegador disponible para QA. PNG requiere Playwright/Chromium opcionales |
+| `frontend-design` | Dirección visual intencional, tipografía y microcopy para web/frontend | Codex, Claude Code, AGY | Complementa `harness-ux-ui`; subordinada a requisitos, accesibilidad y aprobación humana |
 | `comment-writer` | Redactar comentarios colaborativos | Codex | Contexto del intercambio |
 | `gentle-ai-bench` | Autoría y verificación de journeys de Gentle AI | Checkout de Gentle AI | bench/, compilador Go y CI del upstream |
 | `gentle-ai-collab-perfect` | Colaborar externamente con Gentle AI | Checkout de Gentle AI | Política de contribución de Gentleman-Programming/gentle-ai |
@@ -35,3 +36,5 @@ El catálogo conserva las 14 skills seleccionables del instalador upstream, la s
 En la instalación, resolvé los archivos por la ruta efectiva de la skill. Los avisos y el pin verificable viajan en `skills/_shared/NOTICES.md`. Un procedimiento instalado sólo se activa si coincide el objetivo, el runtime y las dependencias. Si el host ya proporciona otra skill con igual nombre, verificá su origen antes de invocarla.
 
 `diagram-design` se conserva completa e intacta desde cathrynlavery/diagram-design, commit `6a7f19fcc132b39b126bea90167679b46b14bcc4` (MIT). `skills/diagram-design/UPSTREAM.json` registra hashes de los 293 archivos originales y la licencia. cognitive-doc-design conecta con ella solo cuando una figura aporta comprensión; incluye guías, scripts y ejemplos, sin instalar el plugin ni prometer sus slash commands. Las actualizaciones upstream requieren revisión; no son automáticas.
+
+`frontend-design` se conserva intacta desde anthropics/skills, commit `e4bb5d960d87126ff3b3a8af1a104b7db67560ba` (Apache-2.0). `skills/frontend-design/UPSTREAM.json` registra los hashes de `SKILL.md` y `LICENSE.txt`. `harness-ux-ui` la referencia solo cuando hace falta dirección estética web/frontend, sin instalar paquetes externos con `npx` ni duplicar el flujo de aprobación y accesibilidad de Chuli.

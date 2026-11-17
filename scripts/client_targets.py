@@ -215,7 +215,7 @@ def render_agy_plugin_manifest(version: str) -> bytes:
         "name": "chuli",
         "displayName": "Chuli Engineering Harness",
         "version": version,
-        "description": "Orquestador ODD/EWP, 6 especialistas y 24 skills de ingeniería para AGY CLI.",
+        "description": "Orquestador ODD/EWP, 6 especialistas y 25 skills de ingeniería para AGY CLI.",
         "repository": "https://github.com/AlejoPalavecino/codex-engineering-harness",
     }
     return (json.dumps(manifest, indent=2, ensure_ascii=False) + "\n").encode("utf-8")

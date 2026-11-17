@@ -7,5 +7,6 @@ go.sum text eol=lf
 evals/** text eol=lf
 tests/fixtures/** text eol=lf
 
-# Preserve exact bytes of the pinned third-party diagram skill and its manifest.
+# Preserve exact bytes of pinned third-party skills and their manifests.
 skills/diagram-design/** -text
+skills/frontend-design/** -text

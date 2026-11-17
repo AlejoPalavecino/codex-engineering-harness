@@ -132,9 +132,9 @@ Un rol define **de qué se ocupa un agente**. Una skill explica **cómo encarar 
 | [`harness-specification`](skills/harness-specification/SKILL.md) | ¿Qué significa terminado y cómo se divide el trabajo? |
 | [`harness-tdd-qa`](skills/harness-tdd-qa/SKILL.md) | ¿Qué evidencia necesitamos para comprobar el cambio? |
 
-El catálogo de este checkout suma **24 skills**: las cinco propias, 18 de Gentle AI v4.4.0 y Diagram Design 2.6. Las importadas incluyen documentación, revisiones, contribución y preparación de unidades de trabajo; algunas requieren un repositorio o runtime específico. [Catálogo y condiciones](docs/protocols/SKILLS.md) · [Procedencia y licencias](THIRD_PARTY_NOTICES.md).
+El catálogo de este checkout suma **25 skills**: las cinco propias, 18 de Gentle AI v4.4.0, Diagram Design 2.6 y Frontend Design. Las importadas incluyen diseño frontend, documentación, revisiones, contribución y preparación de unidades de trabajo; algunas requieren un repositorio o runtime específico. [Catálogo y condiciones](docs/protocols/SKILLS.md) · [Procedencia y licencias](THIRD_PARTY_NOTICES.md).
 
-> Diagram Design se incluye desde v1.1.0. La v1.0.1 conserva su catálogo histórico de 23 skills.
+> Diagram Design se incluye desde v1.1.0 (la v1.0.1 conserva su catálogo histórico de 23 skills); Frontend Design se incorporó sobre la base de `v2.0.1` sin modificar el flujo de aprobación de [`harness-ux-ui`](skills/harness-ux-ui/SKILL.md).
 
 ### Documentación que otra persona pueda seguir
 
