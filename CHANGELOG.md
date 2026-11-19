@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.1] — 2026-11-19
+
+- TTP y la skill de especificación identifican la raíz del perfil de Codex, Claude Code y AGY para encontrar plantillas y ejecutar el validador.
+- Antigravity carga completa la entrada de diagram-design y conserva la guía original junto a sus referencias. Codex y Claude Code reciben la distribución original.
+
 ## [2.1.0] — 2026-11-19
 
 - Chuli revisa criterios ambiguos antes de planificar e identifica las decisiones necesarias para probarlos.
