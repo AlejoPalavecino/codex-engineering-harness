@@ -330,13 +330,48 @@ def atomic_write(path: Path, source: str) -> None:
             os.unlink(temp)
 
 
+def show_impact(filename: str, metadata: dict[str, str], tasks: list[Task]) -> None:
+    filename = filename.replace("\\", "/").removeprefix("./")
+    validate_scope([filename])
+    matches = []
+    unscoped = 0
+    for task in tasks:
+        raw_scope = task.fields.get("Scope")
+        if raw_scope is None:
+            unscoped += 1
+            continue
+        try:
+            scope = validate_scope(json.loads(raw_scope))
+        except ValueError as exc:
+            raise ValueError(f"{task.ident}: Scope inválido: {exc}") from exc
+        if filename in scope:
+            matches.append(task)
+
+    print(f"Archivo: {filename}")
+    for task in matches:
+        print(f"{task.ident}: {task.state} — {task.title}")
+        if "Trace mode" in metadata:
+            for ident in task.requirements:
+                print(f"  {ident}: {metadata[ident]}")
+            print(f"  Verification: {task.fields['Verification']}")
+        else:
+            print("  Requisitos y verificación prevista: sin vínculo declarado")
+        print(f"  Evidence: {task.fields['Evidence']}")
+    if not matches:
+        print("Sin coincidencias en los alcances declarados.")
+    if unscoped:
+        print(f"Tareas sin Scope: {unscoped}. Su impacto queda indeterminado.")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="TTP: validación y transición de tareas (sin dependencias)")
     sub = parser.add_subparsers(dest="action", required=True)
-    for name in ("check", "show", "set", "fingerprint", "trace"):
+    for name in ("check", "show", "set", "fingerprint", "trace", "impact"):
         command = sub.add_parser(name)
         command.add_argument("file", type=Path)
         command.add_argument("--root", type=Path, default=Path.cwd())
+        if name == "impact":
+            command.add_argument("path", help="Ruta del archivo relativa a la raíz del proyecto")
         if name == "check":
             command.add_argument("--current", action="store_true")
         if name in ("fingerprint", "trace"):
@@ -368,6 +403,9 @@ def main(argv: list[str] | None = None) -> int:
                 print("ERROR:", issue, file=sys.stderr)
             return 2
         metadata, tasks = parse(source)
+        if args.action == "impact":
+            show_impact(args.path, metadata, tasks)
+            return 0
         if args.action == "trace":
             if "Trace mode" not in metadata:
                 raise ValueError("El tablero no declara trazabilidad de requisitos")
