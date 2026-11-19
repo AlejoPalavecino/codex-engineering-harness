@@ -21,7 +21,9 @@ import tempfile
 
 HEADER = re.compile(r"^### ([A-Z][A-Z0-9]*-\d{3,}) [—-] (.+)$", re.MULTILINE)
 FIELD = re.compile(r"^- \*\*(State|Depends on|Owner|Acceptance|Evidence|Blocker|Scope):\*\* (.*)$", re.MULTILINE)
-META = re.compile(r"^- \*\*(Spec|Design|Approval|Evidence mode):\*\* (.*)$", re.MULTILINE)
+META = re.compile(r"^- \*\*(Spec|Design|Approval|Evidence mode|Trace mode):\*\* (.*)$", re.MULTILINE)
+REQUIREMENT = re.compile(r"^- \*\*(REQ-[^:*\r\n]*):\*\*[ \t]*(.*)$", re.MULTILINE)
+TRACE_FIELD = re.compile(r"^- \*\*(Requirements|Verification):\*\*[ \t]*(.*)$", re.MULTILINE)
 STATES = ("PLANNED", "READY", "IN_PROGRESS", "VERIFYING", "BLOCKED", "DONE", "CANCELLED")
 TRANSITIONS = {
     "PLANNED": {"READY", "CANCELLED"},
@@ -48,6 +50,10 @@ class Task:
         return self.fields["State"]
 
     @property
+    def requirements(self) -> list[str]:
+        return [item.strip() for item in self.fields.get("Requirements", "").split(",")]
+
+    @property
     def deps(self) -> list[str]:
         value = self.fields["Depends on"].strip()
         return [] if value.lower() in UNSET else [x.strip() for x in value.split(",")]
@@ -67,12 +73,27 @@ def parse(source: str) -> tuple[dict[str, str], list[Task]]:
         if key not in metadata:
             raise ValueError(f"Falta metadato {key}")
 
+    tracing = "Trace mode" in metadata
+    if tracing:
+        if metadata["Trace mode"] != "requirements-v1":
+            raise ValueError("Trace mode debe ser requirements-v1")
+        for entry in REQUIREMENT.finditer(source[:matches[0].start()]):
+            ident, description = entry.groups()
+            if not re.fullmatch(r"REQ-[0-9]{3,}", ident) or not description.strip():
+                raise ValueError(f"Requisito inválido: {ident}; se espera REQ-001 y descripción o referencia")
+            if ident in metadata:
+                raise ValueError(f"{ident}: requisito repetido")
+            metadata[ident] = description.strip()
+
     tasks: list[Task] = []
     for idx, match in enumerate(matches):
         end = matches[idx + 1].start() if idx + 1 < len(matches) else len(source)
         body = source[match.end():end]
         fields: dict[str, str] = {}
-        for entry in FIELD.finditer(body):
+        entries = list(FIELD.finditer(body))
+        if tracing:
+            entries.extend(TRACE_FIELD.finditer(body))
+        for entry in entries:
             key, value = entry.group(1), entry.group(2).strip()
             if key in fields:
                 raise ValueError(f"{match.group(1)}: campo repetido {key}")
@@ -98,6 +119,21 @@ def errors_for(source: str) -> list[str]:
         errors.append("Approval debe ser pending o approved")
     if not metadata["Spec"] or not metadata["Design"]:
         errors.append("Spec y Design deben indicar referencias o 'n/a' justificable")
+    if "Trace mode" in metadata:
+        linked = set()
+        for task in tasks:
+            for ident, count in Counter(task.requirements).items():
+                if ident not in metadata or not ident.startswith("REQ-"):
+                    errors.append(f"{task.ident}: Requirements requiere un requisito definido: {ident!r}")
+                if count > 1:
+                    errors.append(f"{task.ident}: requisito repetido {ident}")
+                linked.add(ident)
+            if task.fields.get("Verification", "").lower() in UNSET:
+                errors.append(f"{task.ident}: falta la prueba o inspección prevista en Verification")
+        for ident in metadata:
+            if ident.startswith("REQ-") and ident not in linked:
+                errors.append(f"{ident}: sin tarea asociada")
+
     by_id: dict[str, Task] = {}
     for task in tasks:
         if mode == "candidate-v1":
@@ -297,13 +333,13 @@ def atomic_write(path: Path, source: str) -> None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="TTP: validación y transición de tareas (sin dependencias)")
     sub = parser.add_subparsers(dest="action", required=True)
-    for name in ("check", "show", "set", "fingerprint"):
+    for name in ("check", "show", "set", "fingerprint", "trace"):
         command = sub.add_parser(name)
         command.add_argument("file", type=Path)
         command.add_argument("--root", type=Path, default=Path.cwd())
         if name == "check":
             command.add_argument("--current", action="store_true")
-        if name == "fingerprint":
+        if name in ("fingerprint", "trace"):
             command.add_argument("id")
         if name == "set":
             command.add_argument("id")
@@ -332,6 +368,19 @@ def main(argv: list[str] | None = None) -> int:
                 print("ERROR:", issue, file=sys.stderr)
             return 2
         metadata, tasks = parse(source)
+        if args.action == "trace":
+            if "Trace mode" not in metadata:
+                raise ValueError("El tablero no declara trazabilidad de requisitos")
+            if not args.id.startswith("REQ-") or args.id not in metadata:
+                raise ValueError(f"Requisito desconocido: {args.id}")
+            print(f"{args.id}: {metadata[args.id]}")
+            for task in tasks:
+                if args.id in task.requirements:
+                    print(f"{task.ident}: {task.state} — {task.title}")
+                    for key in ("Acceptance", "Scope", "Verification", "Evidence"):
+                        if key in task.fields:
+                            print(f"  {key}: {task.fields[key]}")
+            return 0
         if args.action == "fingerprint":
             task = next((task for task in tasks if task.ident == args.id), None)
             if metadata.get("Evidence mode") != "candidate-v1" or task is None:

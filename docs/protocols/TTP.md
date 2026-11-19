@@ -41,6 +41,20 @@ En otras shells resolvé ese mismo directorio desde `CODEX_HOME` o su valor por 
 
 Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. Después de instalar o actualizar Chuli, ejecutá `scripts/verify.ps1` desde el checkout del harness: el verificador comprueba la presencia de los recursos obligatorios del paquete y devuelve un error si falta alguno. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
 
+## Consultar el impacto de un requisito
+
+En una funcionalidad que requiera trazabilidad, agregá `- **Trace mode:** requirements-v1` antes de la primera tarea. En esa misma sección, definí cada requisito una vez, por ejemplo `- **REQ-001:** Reservar un turno disponible`. Si el requisito vive en una especificación aprobada, usá el enlace a su sección como valor. Conservá los identificadores dentro de la funcionalidad al reordenar o editar el texto. Nunca reasignes un ID retirado.
+
+En cada tarea, `Requirements` enumera los IDs que satisface, separados por comas. `Acceptance` conserva el criterio observable y `Verification` identifica la prueba o inspección reproducible prevista. Un requisito puede abarcar varias tareas. Usá una tarea por resultado cuando los criterios necesiten verificaciones distintas. La [plantilla](../../templates/feature-tasks.md) contiene un ejemplo completo.
+
+```sh
+python scripts/taskboard.py trace templates/feature-tasks.md REQ-001
+```
+
+La consulta muestra el estado, criterio, archivos de Scope si están declarados, verificación prevista y evidencia registrada de cada tarea vinculada. Es de solo lectura. `check` detecta requisitos sin tarea, referencias inexistentes, repetidas o sin verificación prevista. La ejecución de las pruebas se registra en Evidence por el mecanismo habitual.
+
+Los tableros previos conservan sus comandos y campos. Para adoptar el modo en uno existente, agregá la cabecera, los requisitos y los dos campos por tarea en la misma edición. En un trabajo que no necesite trazabilidad, podés omitir estas líneas de la plantilla.
+
 ## Unidad de trabajo
 
 Una tarea debe representar **comportamiento o entregable verificable**, no operaciones como «abrir un archivo», «crear carpeta» o «ejecutar comando». Su contrato contiene:

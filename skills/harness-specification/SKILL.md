@@ -7,7 +7,7 @@ description: "Convertir alcance y diseño aprobados en especificaciones verifica
 
 1. Confirmar aprobaciones vigentes y las fuentes originales de alcance, UX, arquitectura y contratos.
 2. Describir comportamientos por unidad de valor: actor, disparador, entradas, validaciones, permisos, efectos, resultados y errores.
-3. Escribir criterios observables y trazarlos a pruebas o inspecciones reproducibles.
+3. Escribir criterios observables y trazarlos a pruebas o inspecciones reproducibles. Cuando se requiera analizar el impacto de cambios, conservá IDs estables de requisito y usá el modo opcional `requirements-v1` del tablero TTP. Si la especificación ya define el requisito, enlazá su sección.
 4. Identificar dependencias y superficies de edición para evitar colisiones entre escritores.
 5. Planificar tareas por resultado de la persona usuaria. Reunir en cada unidad la entrada, el efecto observable y su comprobación. Preguntarse qué necesitaría otra sesión para retomar desde el diff.
 6. Incluir riesgos, supuestos y decisiones pendientes; no inventar detalles bloqueantes.
