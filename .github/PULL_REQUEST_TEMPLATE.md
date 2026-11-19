@@ -30,6 +30,9 @@
 
 ## Riesgos y reversión
 
+<!-- Si cambia permisos, datos sensibles, dependencias o publicación: incluir fronteras
+     de confianza, controles, prueba de rechazo/recuperación y riesgo residual. -->
+
 ## Checklist
 
 - [ ] Issue aprobado vinculado con la intención de cierre elegida por la persona responsable.
