@@ -7,14 +7,16 @@ on:
         description: "Successful Validate harness push run on main"
         type: string
         required: true
+      artifact_id:
+        description: "Approved artifact ID shown in the candidate job summary"
+        type: string
+        required: true
       version:
         description: "Approved release version without v"
         type: string
         required: true
 
-permissions:
-  actions: read
-  contents: write
+permissions: {}
 
 concurrency:
   group: chuli-stable-release
@@ -22,74 +24,86 @@ concurrency:
 
 jobs:
   release:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: write
     steps:
       - name: Verify workflow identity and the exact current main
         id: approval
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_ID: ${{ inputs.validation_run }}
+          ARTIFACT_ID: ${{ inputs.artifact_id }}
           VERSION_APPROVED: ${{ inputs.version }}
         run: |
           set -euo pipefail
-          [[ "$RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$RUN_ID" =~ ^[1-9][0-9]*$ && "$ARTIFACT_ID" =~ ^[1-9][0-9]*$ ]]
           [[ "$VERSION_APPROVED" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
           run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")
           echo "$run" | jq -e --arg repo "$GITHUB_REPOSITORY" '.path == ".github/workflows/validate.yml" and .event == "push" and .head_branch == "main" and .conclusion == "success" and .head_repository.full_name == $repo'
           sha=$(jq -r .head_sha <<< "$run")
           head=$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)
-          [[ "$head" == "$sha" ]]
+          [[ "$head" == "$sha" && "$GITHUB_SHA" == "$sha" ]]
           version=$(gh api "repos/$GITHUB_REPOSITORY/contents/VERSION?ref=$sha" --jq .content | base64 -d | tr -d '\r\n')
           [[ "$version" == "$VERSION_APPROVED" ]]
-          if gh release view "v$version" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then exit 0; fi
-          echo "publish=true" >> "$GITHUB_OUTPUT"
+          artifact=$(gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$ARTIFACT_ID")
+          jq -e --arg id "$ARTIFACT_ID" --arg run "$RUN_ID" --arg sha "$sha" '
+            (.id | tostring) == $id and .name == "release-candidate" and .expired == false
+            and (.workflow_run.id | tostring) == $run and .workflow_run.head_sha == $sha
+            and (.digest | test("^sha256:[0-9a-f]{64}$"))
+          ' <<< "$artifact" >/dev/null
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - uses: actions/checkout@v4
-        if: steps.approval.outputs.publish == 'true'
+          echo "artifact_id=$ARTIFACT_ID" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           ref: ${{ steps.approval.outputs.sha }}
-          fetch-depth: 0
-      - uses: actions/download-artifact@v4
-        if: steps.approval.outputs.publish == 'true'
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: "3.11"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           github-token: ${{ github.token }}
           run-id: ${{ inputs.validation_run }}
-          pattern: release-*
-          path: dist
+          artifact-ids: ${{ steps.approval.outputs.artifact_id }}
           merge-multiple: true
-      - name: Verify files, tag and publish
-        if: steps.approval.outputs.publish == 'true'
+          digest-mismatch: error
+          path: dist
+      - name: Verify candidate again before publication
+        env:
+          VERSION: ${{ steps.approval.outputs.version }}
+        run: python scripts/verify_release.py "$VERSION" dist --check
+      - name: Tag and publish
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.approval.outputs.version }}
           SHA: ${{ steps.approval.outputs.sha }}
           RUN_ID: ${{ inputs.validation_run }}
+          ARTIFACT_ID: ${{ steps.approval.outputs.artifact_id }}
         run: |
           set -euo pipefail
-          git fetch origin main --tags
-          [[ "$(git rev-parse origin/main)" == "$SHA" ]]
-          files=("chuli-profile-v${VERSION}.zip" "chuli_v${VERSION}_windows_amd64.zip" "chuli_v${VERSION}_linux_amd64.tar.gz" "chuli_v${VERSION}_darwin_arm64.tar.gz" "install-chuli-windows.ps1")
-          (
-            cd dist
-            [[ "$(find . -type f | wc -l)" -eq 5 ]]
-            for name in "${files[@]}"; do test -s "$name"; done
-            unzip -tq "${files[0]}"
-            [[ "$(unzip -p "${files[0]}" VERSION | tr -d '\r\n')" == "$VERSION" ]]
-            [[ "$(unzip -Z1 "${files[1]}")" == "chuli.exe" ]]
-            for name in "${files[@]:2:2}"; do [[ "$(tar -tzf "$name")" == "chuli" ]]; done
-            cmp "${files[4]}" ../scripts/install-manager.ps1
-            sha256sum "${files[@]}" > SHA256SUMS.txt
-            sha256sum -c SHA256SUMS.txt
-          )
+          git fetch --tags origin
+          release=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases?per_page=100" \
+            | jq -sc --arg tag "v$VERSION" 'map(.[] | select(.tag_name == $tag)) | if length > 1 then error("Multiple releases match the tag") else .[0] end')
+          if [[ "$release" != null ]]; then
+            [[ "$(git rev-parse "refs/tags/v$VERSION^{commit}")" == "$SHA" ]]
+            python scripts/verify_release.py "$VERSION" dist --check --published <<< "$release"
+            exit 0
+          fi
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)" == "$SHA" ]]
           if ! git show-ref --verify --quiet "refs/tags/v$VERSION"; then
-            git tag "v$VERSION" "$SHA"
-            git push origin "refs/tags/v$VERSION"
+            gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" -f "ref=refs/tags/v$VERSION" -f "sha=$SHA" --silent
+            git fetch --tags origin
           fi
           [[ "$(git rev-parse "refs/tags/v$VERSION^{commit}")" == "$SHA" ]]
+          [[ "$(gh api "repos/$GITHUB_REPOSITORY/branches/main" --jq .commit.sha)" == "$SHA" ]]
           notes="$RUNNER_TEMP/chuli-release.md"
           cp "docs/releases/v$VERSION.md" "$notes"
           echo >> "$notes"
-          echo "Commit [$SHA](https://github.com/$GITHUB_REPOSITORY/commit/$SHA) · [CI de los artefactos](https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID)" >> "$notes"
+          echo "Commit [$SHA](https://github.com/$GITHUB_REPOSITORY/commit/$SHA) · [Candidato de CI](https://github.com/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/artifacts/$ARTIFACT_ID)" >> "$notes"
           gh release create "v$VERSION" dist/* --repo "$GITHUB_REPOSITORY" --target "$SHA" --verify-tag \
             --title "Chuli v$VERSION · Harness de ingeniería" --notes-file "$notes" --latest
