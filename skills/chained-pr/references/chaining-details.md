@@ -34,7 +34,7 @@ Steps:
 
 ## Stacked PRs to Main
 
-Use when each slice can land on `main` in order.
+Use when each slice can land on the final base in order. Start the first PR against the final base and target its immediate parent for each later PR while that parent is open.
 
 ```text
 main <- PR 1: foundation
@@ -42,7 +42,7 @@ main <- PR 1: foundation
                 └── PR 3: docs/tests built on PR 2
 ```
 
-After a parent PR merges, rebase/retarget the next PR so GitHub shows only the current slice.
+After a parent PR merges, verify the next diff against the integration base and rebase or retarget with the applicable authorization if needed.
 
 ## Chain Context Section
 
@@ -59,7 +59,7 @@ Append this section to the repo PR template; do not replace required issue/check
 | Base | `<target branch>` |
 | Depends on | <PR/issue/link or "None"> |
 | Follow-up | <next PR or "None"> |
-| Review budget | <changed lines> / 400 |
+| Review budget | <authored additions + deletions>; report generated, vendored, lockfile, and binary changes separately |
 | Starts at | <branch, PR, or state this builds on> |
 | Ends with | <standalone result delivered by this PR> |
 
@@ -93,7 +93,7 @@ gh pr create --base feat/my-feature-01-core --title "feat(scope): next focused s
 
 ## Reviewer Guidance
 
-- Ask for a split when a PR exceeds 400 changed lines without `size:exception`.
+- Above about 400 authored changed lines, review the proposed boundary and its rationale for keeping or splitting the change. Require a formal exception label only when the destination policy requires it.
 - Recommend Feature Branch Chain when work must integrate before `main`.
 - Recommend stacked PRs when each slice can merge independently.
 - Review child PRs against immediate parent branches; a polluted diff is a branching bug.
