@@ -13,6 +13,8 @@ La cantidad de código **no** determina cuánto proceso corresponde. Primero eva
 
 Comprobar problema, éxito esperado, actores, frontera dentro/fuera, procesos, datos, validación, permisos, reglas, integraciones, restricciones no funcionales, UX y operación. Preguntar por bloques que resuelvan dependencias; no repetir datos conocidos ni preguntar por detalles irrelevantes.
 
+Durante el diseño, revisar qué datos o acciones requieren protección y quién debería poder acceder. Si la respuesta cambia un requisito, permiso o frontera de confianza, acordar la decisión antes de implementar. Aplicar los [controles de diseño y verificación de ASEP](ASEP.md#seguridad-y-resiliencia-en-el-diseño) en proporción al riesgo, también en R1 crítico.
+
 ## Decidir cuándo preguntar
 
 Antes de consultar al usuario, revisar instrucciones aplicables, decisiones vigentes y código relevante. La lista de relevamiento identifica vacíos; no obliga a entrevistar sobre todos los temas.
@@ -42,7 +44,7 @@ Una respuesta parcial habilita solo lo resuelto. El silencio no es aprobación. 
 3. **Specification & Planning:** definir contratos, tareas y aceptación verificable.
 4. **Engineering:** implementar unidades de comportamiento con pruebas pertinentes.
 5. **Verification & Validation:** evidencia técnica y validación de utilidad/UX.
-6. **Delivery:** preparar entrega; despliegue solo con autorización.
+6. **Delivery:** vincular evidencia al candidato y documentar cambios, compatibilidad, configuración, migración y reversión cuando correspondan. Para publicar o desplegar, obtener autorización humana sobre el destino y el candidato.
 
 No imponer documentos en R1. La etapa R2 se documenta cuando no pueda recuperarse desde el diff y las decisiones. La prueba crítica fallida impide declarar `VERIFIED`. La autorización pendiente impide avanzar sobre el trabajo dependiente; un modelo no puede aprobar en nombre del usuario.
 
