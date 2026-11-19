@@ -55,6 +55,18 @@ La consulta muestra el estado, criterio, archivos de Scope si están declarados,
 
 Los tableros previos conservan sus comandos y campos. Para adoptar el modo en uno existente, agregá la cabecera, los requisitos y los dos campos por tarea en la misma edición. En un trabajo que no necesite trazabilidad, podés omitir estas líneas de la plantilla.
 
+## Consultar el impacto de un archivo
+
+Desde la raíz del proyecto, pasá el tablero y la ruta que figura en el diff. Por ejemplo:
+
+```sh
+python scripts/taskboard.py impact odd/tasks/trazabilidad-requisitos.md scripts/taskboard.py
+```
+
+El comando busca esa ruta exacta en el `Scope` de cada tarea del tablero, conserva las mayúsculas y admite separadores de Windows. Para cada coincidencia muestra la tarea, los requisitos vinculados, la verificación prevista y la evidencia registrada. Podés consultar una ruta eliminada o consultar ambos nombres de un archivo renombrado.
+
+En tableros anteriores con `Scope`, la consulta recupera las tareas y su evidencia disponible. Informa cuántas tareas carecen de alcance declarado para que puedas revisarlas manualmente. La consulta cubre vínculos explícitos en el tablero elegido; las dependencias indirectas de código requieren inspección adicional.
+
 ## Unidad de trabajo
 
 Una tarea debe representar **comportamiento o entregable verificable**, no operaciones como «abrir un archivo», «crear carpeta» o «ejecutar comando». Su contrato contiene:
