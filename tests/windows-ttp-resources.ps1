@@ -118,6 +118,9 @@ try {
         Write-Fixture $project ($template.Replace('- **Approval:** pending', '- **Approval:** approved'))
         $output = & python (Join-Path $homePath 'harness/bin/taskboard.py') check $project 2>&1
         Assert-That ($LASTEXITCODE -eq 0) ('Plantilla instalada rechazada por validador instalado: ' + ($output -join "`n"))
+        $qualityFixture = Join-Path $repo 'tests/fixtures/taskboard-quality.md'
+        $output = & python -X utf8 (Join-Path $homePath 'harness/bin/taskboard.py') quality $qualityFixture TASK-001 2>&1
+        Assert-That ($LASTEXITCODE -eq 1 -and ($output -join "`n") -match 'not-run') 'El validador instalado no reporta verificaciones sin ejecutar.'
         $before = Snapshot $homePath
         $null = Run-Script 'rollback' $homePath
         Assert-That ((Snapshot $homePath) -eq $before) 'Dry-run rollback modificó el home.'
