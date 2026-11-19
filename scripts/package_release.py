@@ -18,12 +18,17 @@ PROFILE_FILES = {
 }
 
 
-def package_profile(output, version):
+def profile_files():
     tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     files = sorted(p for p in tracked if p in PROFILE_FILES or p.startswith(PROFILE_DIRS))
     missing = PROFILE_FILES - set(files)
     if missing:
         raise ValueError(f"Missing release resources: {sorted(missing)}")
+    return files
+
+
+def package_profile(output, version):
+    files = profile_files()
     with zipfile.ZipFile(output / f"chuli-profile-v{version}.zip", "w", zipfile.ZIP_DEFLATED) as package:
         for name in files:
             source = ROOT / name
@@ -62,7 +67,10 @@ def main():
             z.write(args.binary, "chuli.exe")
     else:
         with tarfile.open(str(base) + ".tar.gz", "w:gz") as t:
-            t.add(args.binary, arcname="chuli", recursive=False)
+            info = t.gettarinfo(str(args.binary), arcname="chuli")
+            info.mode = 0o755
+            with args.binary.open("rb") as binary:
+                t.addfile(info, binary)
 
 
 if __name__ == "__main__":
