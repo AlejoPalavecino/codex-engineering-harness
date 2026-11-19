@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0] — 2026-11-19
+
+- Chuli revisa criterios ambiguos antes de planificar e identifica las decisiones necesarias para probarlos.
+- El tablero permite consultar trazabilidad, impacto por archivo y decisiones de arquitectura. Los tableros anteriores siguen siendo compatibles.
+- Los controles de calidad detectan evidencia vencida por cambios en archivos o dependencias. Los tres clientes comparten el flujo Git y GitHub.
+- Se incorporan controles de revisión de seguridad, guías de operación y evaluación, y publicación desde el artefacto exacto validado por CI.
+
 ## [2.0.3] — 2026-11-17
 
 - El preset equilibrado de Codex usa GPT-6.2 Astra para orquestación y arquitectura, y GPT-6.2 Sol para los demás roles.

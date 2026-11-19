@@ -17,7 +17,7 @@ import (
 	"github.com/AlejoPalavecino/codex-engineering-harness/v2/internal/tui"
 )
 
-var version = "2.0.3-dev"
+var version = "2.1.0-dev"
 
 func currentVersion() string {
 	info, ok := debug.ReadBuildInfo()
