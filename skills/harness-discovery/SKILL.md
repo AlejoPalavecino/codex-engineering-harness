@@ -18,3 +18,7 @@ Cada pregunta explica qué decisión falta y qué cambia con la respuesta. Agrup
 Conservar aprobaciones y autorización de ejecución vigentes: esta última cubre implementación, pruebas, correcciones y verificación del resultado acordado. No reconfirmar por cambio de etapa o fallo propio dentro del alcance. Reabrir solo decisiones afectadas por cambios relevantes de alcance, decisiones pendientes o acciones con autorización específica. Aprobar diseño no autoriza ejecución. Una respuesta parcial habilita solo lo resuelto; el silencio no aprueba. Mientras se espera, avanzar únicamente con trabajo independiente y autorizado.
 
 No generar estructuras documentales de manera automática solo por iniciar una conversación. No utilizar en R1 trivial.
+
+## Requisitos y conflictos
+
+En R2, registrá cada requisito en la especificación vigente con un ID estable y su fuente. Para funcionalidades, precisá actor, disparador y efecto. Para restricciones de calidad, precisá condición de operación, medida y umbral acordado. Vinculá dependencias entre requisitos y precondiciones externas. Buscá reglas que para el mismo actor y estado produzcan resultados incompatibles; contrastá las fuentes y pedí resolver solamente la decisión afectada. Señalá también el caso sin regla (por ejemplo, qué ocurre al importar dos veces el mismo SKU). Conservá como pendiente el umbral sin aprobar. Un R1 verificable puede conservar todo esto en su prueba y diff.
