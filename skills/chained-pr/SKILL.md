@@ -1,6 +1,6 @@
 ---
 name: chained-pr
-description: "Trigger: PRs over 400 lines, stacked PRs, review slices. Split oversized changes into chained PRs that protect review focus."
+description: "Trigger: review budget, stacked PRs, review slices. Choose cohesive PR boundaries using authored changed lines and destination policy."
 license: Apache-2.0
 metadata:
   author: gentleman-programming
@@ -14,11 +14,11 @@ metadata:
 
 ## Activation Contract
 
-Load this skill when a planned PR may exceed **400 changed lines**, an ODD feature's forecast or running authored changed-line count from work-unit commits exceeds about 400, or the user asks for chained/stacked PRs, review slices, or reviewer-load control.
+Load this skill when a planned PR or ODD feature may exceed about 400 authored changed lines (additions + deletions), or the user asks for chained/stacked PRs, review slices, or reviewer-load control. Report generated, vendored, lockfile, and binary changes separately. Follow the destination policy for any total-diff gate.
 
 ## Hard Rules
 
-- At about **400 authored changed lines**, try one cohesive split. Use a formal `size:exception` only when the destination policy actually requires it.
+- At about **400 authored changed lines**, evaluate once whether a cohesive split is possible. Use a formal `size:exception` only when the destination policy actually requires it.
 - The budget constrains how work is **sliced**, never the code itself. Never delete comments, blank lines, docs, or tests, and never compress or restyle code, to fit under the budget.
 - Slicing is bounded: make **one** honest slicing pass. If no cohesive split brings every slice within budget, stop iterating, keep the best cohesive split, and report the final line count with an explanation of the overage.
 - Keep each PR reviewable in about **≤60 minutes**.
@@ -26,23 +26,23 @@ Load this skill when a planned PR may exceed **400 changed lines**, an ODD featu
 - State start, end, prior dependencies, follow-up work, and out-of-scope items in every chained PR.
 - Where a chain diagram helps reviewers, include a dependency diagram marking the current PR with `📍`.
 - In Feature Branch Chain, create a draft/no-merge tracker PR; child PR #1 targets the tracker branch, later children target the immediate parent branch.
-- Treat polluted diffs as base bugs: retarget or rebase until only the current work unit appears.
+- Use each PR's immediate parent as its base to show only the current unit. Retarget or rebase only with the authorization applicable to that action.
 - Do not mix chain strategies after the user chooses one.
 
 ## Decision Gates
 
 | Condition | Action |
 |---|---|
-| PR ≤400 changed lines and focused | Keep single PR. |
-| PR >400, each slice can land independently | Use Stacked PRs to main. |
-| PR >400, feature must integrate before main | Use Feature Branch Chain with tracker. |
+| Cohesive change within about 400 authored changed lines | Keep one PR, subject to destination policy. |
+| Above the authored review budget, each slice can land independently | Stack PRs against their immediate bases and integrate in order. |
+| Above the authored review budget, slices must reach the final base together | Use a Feature Branch Chain with a tracker. |
 | Generated/vendor/migration diff cannot split cleanly | Report these lines separately and document the review boundary. |
-| No cohesive split fits the budget after one slicing pass | Stop; deliver the best split, report the overage and why it cannot shrink further, and follow the destination policy for exceptions. |
+| No cohesive split fits the budget after one evaluation | Keep the best cohesive boundary, explain the overage, and follow the destination policy for exceptions. |
 | ODD provides `delivery_strategy` and `chain_strategy` | Follow them before the next work-unit commit or PR creation. |
 
 ## Execution Steps
 
-1. Estimate changed lines and identify independent work units.
+1. Estimate authored changed lines and identify complete work units.
 2. Ask for a chain strategy when none is cached and the budget is exceeded.
 3. Plan the branches/PRs; create them only when authorized for that destination.
 4. Add Chain Context to each PR without replacing the repo PR template.
@@ -51,7 +51,7 @@ Load this skill when a planned PR may exceed **400 changed lines**, an ODD featu
 
 ## Output Contract
 
-Return the chosen strategy, PR order, current PR boundary, dependency diagram, review budget (`additions + deletions`), verification plan, and any `size:exception` rationale.
+Return the chosen strategy, PR order, current PR boundary, dependency diagram, authored review budget (additions + deletions), other diff counts, verification plan, and any `size:exception` rationale.
 
 ## References
 
