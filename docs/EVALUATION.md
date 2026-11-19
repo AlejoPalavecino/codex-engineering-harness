@@ -11,6 +11,8 @@ La evaluación complementaria de [preguntas y continuidad de autorización](eval
 
 La [comparación de fricción del flujo](evaluations/workflow-friction.md) contrasta dos observaciones equivalentes de R1, interrupción R2 y permisos críticos. Su piloto sintético valida el cálculo y distingue desconocidos de cero; no acredita mejoras conductuales de agentes reales.
 
+La guía de operación explica cómo evaluar el valor y la calidad del producto después de la entrega. Los resultados de esos recorridos se registran aparte de las evaluaciones de Chuli. [Operación y evolución](protocols/OPERATIONS.md)
+
 ## Objetivo y límites
 
 Medir comportamientos de Chuli en Codex Desktop/CLI bajo circunstancias controladas, sin cambiar agentes ni modelos por intuición. El núcleo Go de este PR **solo valida el catálogo, toma hashes de workspaces, valida registros de observación y prepara comparaciones**. No ejecuta modelos, no consume tokens, no automatiza aprobaciones ni demuestra permisos efectivos.

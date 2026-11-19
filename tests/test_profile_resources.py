@@ -1,7 +1,9 @@
 """Profile inventory, ownership boundaries and instruction merge contracts."""
 import json
 import os
+import posixpath
 from pathlib import Path
+import re
 import sys
 import tempfile
 import unittest
@@ -24,6 +26,20 @@ class ProfileTests(unittest.TestCase):
             expected = {p.relative_to(profile.ROOT).as_posix() for p in (profile.ROOT / directory).rglob("*") if p.is_file()}
             self.assertEqual(expected, {s for s in resources.values() if s.startswith(directory + "/")})
         self.assertIn("harness/THIRD_PARTY_NOTICES.md", resources)
+
+    def test_operation_guide_is_discoverable_with_installed_links(self):
+        guide = "harness/docs/protocols/OPERATIONS.md"
+        for client in ("codex", "claude", "agy"):
+            with self.subTest(client=client):
+                resources = profile.preflight(self.home, "install", False, client)
+                self.assertEqual(resources.get(guide), "docs/protocols/OPERATIONS.md")
+                profile.prepare_instructions(self.home, self.output, False, client=client)
+                self.assertIn(guide, self.output.read_text(encoding="utf-8"))
+                document = (profile.ROOT / resources[guide]).read_text(encoding="utf-8")
+                links = re.findall(r"\[[^\]]+\]\(([^)]+\.md)(?:#[^)]+)?\)", document)
+                targets = {posixpath.normpath(posixpath.join(posixpath.dirname(guide), link)) for link in links}
+                self.assertIn("harness/docs/evaluations/workflow-friction.md", targets)
+                self.assertLessEqual(targets, resources.keys())
 
     def test_active_gentle_routing_and_override_report_source_before_writes(self):
         instructions = self.home / "AGENTS.md"
