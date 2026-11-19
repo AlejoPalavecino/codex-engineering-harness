@@ -23,6 +23,10 @@ confirmación o un error concreto. La reserva es atómica y la cancelación comp
 propiedad; un conflicto conserva la reserva preexistente. En un proyecto real,
 aprobar los contratos y la experiencia aplicables antes de ejecutar.
 
+## Seguimiento Git (cuando corresponda)
+
+Issue y base acordada · rama · estrategia y límites de cada corte · commits y PRs con sus bases y dependencias · checks del candidato · próximo paso. Actualizá las referencias a medida que existan.
+
 ## Tasks
 
 ### TASK-001 — Reservar un turno disponible

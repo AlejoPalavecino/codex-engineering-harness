@@ -6,7 +6,7 @@ metadata:
   author: gentleman-programming
   version: "1.0"
   upstream: "Gentle AI v4.4.0"
-  chuli-runtime: "Codex"
+  chuli-runtime: "Codex, Claude Code, AGY"
   chuli-dependencies: "Git y política local de entrega"
 ---
 

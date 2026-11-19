@@ -6,10 +6,12 @@ Las cinco nativas son `harness-discovery` (alcance), `harness-architecture` (con
 
 Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `frontend-design` aporta dirección visual, tipografía y redacción web/frontend cuando se diseña una UI nueva o rediseño; y `harness-tdd-qa` comprueba apariencia, interacción y resultado. Ego-browser/egolite es la preferencia de revisión web si está disponible y autorizado; se distribuye por separado. Otras bibliotecas externas siguen siendo apoyos opcionales revisados, no parte de este paquete: elegir una fuente de dirección visual por tarea, respetando el diseño aprobado. No se instalan herramientas automáticamente ni se impone un stack.
 
+El [flujo Git/GitHub](GIT-GITHUB.md) se distribuye en los tres perfiles. Los procedimientos `issue-creation`, `work-unit-commits`, `branch-pr` y `chained-pr` se pueden consultar en cada cliente cuando estén habilitados. Las operaciones dependen de las herramientas disponibles y de los permisos efectivos.
+
 | Skill importada | Objetivo | Runtime o destino | Requisitos |
 | --- | --- | --- | --- |
-| `branch-pr` | Preparar PR según la política del destino | Codex | Git; para operaciones remotas, GitHub autorizado |
-| `chained-pr` | Dividir una entrega en unidades revisables | Codex | Git; publicar ramas o PR requiere autorización |
+| `branch-pr` | Preparar PR según la política del destino | Codex, Claude Code, AGY | Git; para operaciones remotas, GitHub autorizado |
+| `chained-pr` | Dividir una entrega en unidades revisables | Codex, Claude Code, AGY | Git; publicar ramas o PR requiere autorización |
 | `cognitive-doc-design` | Diseñar documentación legible | Codex | Documento y audiencia |
 | `diagram-design` | Diagramas editoriales con fuente HTML y exportaciones SVG/PNG | Codex | Python para comprobación y SVG; navegador disponible para QA. PNG requiere Playwright/Chromium opcionales |
 | `frontend-design` | Dirección visual intencional, tipografía y microcopy para web/frontend | Codex, Claude Code, AGY | Complementa `harness-ux-ui`; subordinada a requisitos, accesibilidad y aprobación humana |
@@ -18,7 +20,7 @@ Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `frontend-desig
 | `gentle-ai-collab-perfect` | Colaborar externamente con Gentle AI | Checkout de Gentle AI | Política de contribución de Gentleman-Programming/gentle-ai |
 | `go-testing` | Probar Go y TUI según comportamiento | Codex | Go; teatest sólo si el proyecto lo usa |
 | `hermes-ephemeral-delegation` | Delegar tareas efímeras en Hermes | Hermes | Herramienta Hermes delegate_task |
-| `issue-creation` | Preparar o clasificar issues del destino | Codex | Política del repositorio; acceso GitHub para mutar |
+| `issue-creation` | Preparar o clasificar issues del destino | Codex, Claude Code, AGY | Política del repositorio; acceso GitHub para mutar |
 | `issue-root-resolution` | Investigar una familia de incidencias | Codex | Issues, historial y capacidad de reproducir |
 | `judgment-day` | Doble revisión ciega solicitada | Codex | Dos sesiones independientes con acceso de lectura |
 | `rdd-advisory-transport` | Mantener el transporte de revisores RDD upstream | Checkout de Gentle AI | Contrato Go y journeys de ese proyecto |
@@ -27,7 +29,7 @@ Para interfaces, `harness-ux-ui` prepara tarea, estados y guion; `frontend-desig
 | `skill-improver` | Revisar o mejorar skills existentes | Codex | Skills existentes y guía incluida |
 | `skill-registry` | Resolver nombres, triggers y rutas | Codex | Metadatos locales; CLI Gentle AI y Engram opcionales |
 | `systemic-issue-triage` | Agrupar incidencias por causa comprobable | Codex | Issues o reportes; GitHub para acciones remotas |
-| `work-unit-commits` | Agrupar código, pruebas y docs por comportamiento | Codex | Git y política local de entrega |
+| `work-unit-commits` | Agrupar código, pruebas y docs por comportamiento | Codex, Claude Code, AGY | Git y política local de entrega |
 
 ## Origen y resolución
 

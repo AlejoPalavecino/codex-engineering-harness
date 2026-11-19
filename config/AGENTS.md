@@ -31,6 +31,8 @@ Para una regresión o regla ejecutable, obtené RED por la causa esperada, imple
 
 Mantené código, pruebas y documentación del comportamiento juntos. Proyectá altas más bajas de autoría y procurá cortes de unas 400 líneas. Separá archivos vendorizados, generados o lockfiles al explicar la cifra. Proponé un corte cohesivo o justificá el exceso si dividir rompe la verificación. Para publicar, hacer push, abrir PR, merge o deploy, respetá la autorización aplicable al destino.
 
+Para trabajar con Git o GitHub, seguí `harness/docs/protocols/GIT-GITHUB.md` bajo `CODEX_HOME`. Consultá la política del destino antes de elegir issue, rama o estrategia de PR.
+
 ## TTP v1.0 · continuidad
 
 En R0 y R1 triviales alcanza la evidencia en la conversación. En R2 con ejecución autorizada usá un único registro `odd/tasks/<slug>.md`. El orquestador es su único escritor. La base de recursos es `CODEX_HOME` (por defecto `~/.codex`). Para crear un tablero nuevo, leé `harness/templates/feature-tasks.md` y `harness/docs/protocols/TTP.md`. Conservá las claves `Spec`, `Design`, `Approval`, encabezados `### TASK-001 — ...` y campos `State`, `Depends on`, `Owner`, `Acceptance`, `Evidence`, `Blocker`. Los textos pueden estar en español.
