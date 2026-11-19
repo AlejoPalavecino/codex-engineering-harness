@@ -127,6 +127,11 @@ try {
         $scenario = $result.scenarios | Where-Object { $_.scenario -eq 'r2-interruption' }
         $duration = $scenario.metrics.first_useful_test_seconds
         Assert-That ($result.synthetic -and $duration.status -eq 'UNKNOWN' -and $null -eq $duration.delta) 'El piloto instalado asignó un delta a un tiempo desconocido.'
+
+
+        $qualityFixture = Join-Path $repo 'tests/fixtures/taskboard-quality.md'
+        $output = & python -X utf8 (Join-Path $homePath 'harness/bin/taskboard.py') quality $qualityFixture TASK-001 2>&1
+        Assert-That ($LASTEXITCODE -eq 1 -and ($output -join "`n") -match 'not-run') 'El validador instalado no reporta verificaciones sin ejecutar.'
         $before = Snapshot $homePath
         $null = Run-Script 'rollback' $homePath
         Assert-That ((Snapshot $homePath) -eq $before) 'Dry-run rollback modificó el home.'

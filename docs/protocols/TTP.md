@@ -196,6 +196,78 @@ el diff y el alcance. No es una firma ni un sandbox.
 
 El registro de tareas debe vivir **en el repositorio del proyecto**, no en la carpeta global del harness. No versionar secretos ni datos de clientes.
 
+### Control de calidad por criterio
+
+Para trabajo nuevo que necesite cotejar cada caso, usá `Evidence mode: quality-v1`.
+Conservá `Acceptance` y `Scope`, y agregá `Risk` y `Verification` a cada tarea.
+`Trace mode: requirements-v1` sigue siendo opcional. De ser necesario, separá en
+tareas distintas los criterios que se puedan verificar de forma independiente.
+
+| `Risk` | Casos mínimos en `Verification` |
+| --- | --- |
+| `low` | Un caso del tipo que corresponda al criterio |
+| `standard` | Una prueba de comportamiento (`test`) |
+| `critical` | `test`, un caso negativo (`negative`) y revisión independiente (`review`) |
+
+Declaralos en un objeto JSON de una línea, con un identificador estable por caso.
+Agregá análisis estático (`static`) cuando corresponda. Todos los casos declarados
+requieren un resultado `passed` para cerrar la tarea.
+
+```markdown
+- **Risk:** standard
+- **Verification:** {"reserva":{"kind":"test","target":"tests/test_reservas.py::test_reserva"}}
+```
+
+Capturá `fingerprint` antes de ejecutar las verificaciones. En este modo la huella
+abarca `Scope`, el ID y las huellas de las dependencias transitivas, `Spec`, `Design`,
+`Acceptance`, los requisitos vinculados y sus definiciones, el riesgo y los casos.
+Incluí en `Scope` los documentos versionados que contengan el criterio o usá
+referencias externas inmutables. Sumá el código, las pruebas y la configuración
+que puedan cambiar el resultado.
+`impact` propone casos para repetir por archivo y por dependencias transitivas;
+revisá también los consumidores que el tablero no cubra.
+
+Guardá las observaciones en un objeto JSON con `candidate` y `runs`. Por ejemplo,
+con una huella ilustrativa que hay que reemplazar por la capturada:
+
+```json
+{
+  "candidate": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "runs": {
+    "reserva": {
+      "status": "passed",
+      "command": "python -m pytest tests/test_reservas.py::test_reserva",
+      "result": "1 passed; CI job 420, artefacto de resultados",
+      "version": "pytest 8.3.5",
+      "observed_at": "2026-11-19T12:00:00Z"
+    }
+  }
+}
+```
+
+Usá `failed` cuando falle y `incomplete` si la ejecución empezó pero no produjo
+un resultado concluyente. Omití el caso si no se ejecutó (`not-run`). Para una
+revisión, `command` identifica la inspección realizada y `version` el método o
+herramienta y su revisión. Registrá resultados observados y una referencia a la
+salida cuando esté disponible.
+
+```sh
+python scripts/taskboard.py quality odd/tasks/reservas.md TASK-001 --evidence-file observed.json
+python scripts/taskboard.py set odd/tasks/reservas.md TASK-001 DONE --expect VERIFYING --evidence-file observed.json
+python scripts/taskboard.py check odd/tasks/reservas.md --current
+```
+
+`quality` consulta una tarea sin escribir. El código de salida es `0` con todos
+los casos vigentes aprobados, `1` con el control bloqueado y `2` con entradas
+inválidas. `set ... DONE` exige además el estado y la aprobación aplicables y
+coteja la evidencia vigente de las dependencias. `check` sin `--current` conserva
+la lectura histórica. Los comandos registrados son datos descriptivos. La
+herramienta comprueba su forma y la huella, y el verificador corrobora la
+ejecución. La aprobación humana y la autorización de entrega siguen su propio
+flujo. Los registros `candidate-v1` existentes se pueden seguir usando. Si se
+adopta el modo en un tablero, reuní evidencia para las tareas que deban cerrarse
+con el formato nuevo.
+
 ## Límites del protocolo
 
 - No implementar panel custom dentro de la app cerrada de Codex.
