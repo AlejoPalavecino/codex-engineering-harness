@@ -8,7 +8,7 @@ Revisá [EWP](docs/protocols/EWP.md) y [la arquitectura](docs/AGENTS.md). Buscá
 
 ## Pull requests
 
-Para proponer y aprobar cambios, seguí el [flujo de issues y PRs](docs/ISSUE_WORKFLOW.md), su formulario y catálogo de etiquetas. Los PRs deben vincular un issue aprobado, tener exactamente un tipo y mostrar evidencia; dividí diffs mayores de 400 líneas en unidades revisables contra su padre inmediato. No confundas aprobación del alcance con autorización de merge.
+Para proponer y aprobar cambios, seguí el [flujo de issues y PRs](docs/ISSUE_WORKFLOW.md), su formulario y catálogo de etiquetas. Los PRs deben vincular un issue aprobado, tener exactamente un tipo y mostrar evidencia; si el diff contra el padre inmediato supera 400 líneas, desglosá la autoría y justificá la estrategia de revisión en el PR. No confundas aprobación del alcance con autorización de merge.
 
 1. Crear una rama descriptiva.
 2. Cambiar el mínimo conjunto de archivos necesario.

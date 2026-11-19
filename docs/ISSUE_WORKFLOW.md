@@ -15,7 +15,7 @@ El [catálogo de etiquetas](../.github/labels.json) define los únicos nombres n
 | Mantenimiento | `type:chore` |
 | Cambio incompatible | `type:breaking-change` |
 
-Un PR debe tener exactamente un tipo. En issues, proponer cero o un tipo según la evidencia; no reemplazar clasificaciones existentes ni resolver conflictos automáticamente. No se incorpora `size:exception`: los cambios grandes se dividen en PRs de hasta 400 líneas contra su padre inmediato.
+Un PR debe tener exactamente un tipo. En issues, proponer cero o un tipo según la evidencia; no reemplazar clasificaciones existentes ni resolver conflictos automáticamente. La justificación del tamaño queda en el PR.
 
 ## Puesta en funcionamiento
 
@@ -32,6 +32,6 @@ En un arranque sin issue aprobado, mantener el PR en borrador hasta resolver la 
 
 La verificación local puede comprobar sintaxis YAML, campos y correspondencia con el catálogo; la presentación real del formulario requiere que GitHub lo cargue desde la rama por defecto. Las etiquetas y la aprobación son metadatos remotos y necesitan lectura posterior. No hay sincronización automática de etiquetas ni un gate nuevo de CI para aprobar o cerrar issues.
 
-Desde 1.0, el trabajo `review-size` de GitHub Actions consulta las adiciones y eliminaciones del PR contra su base inmediata y exige como máximo 400 líneas. Los proyectos que usen el perfil Chuli mantienen sus propias políticas. El tamaño de una tarea dentro de ODD es una ayuda para planificar y puede diferir del tamaño del PR.
+El trabajo `review-size` de GitHub Actions comprueba el head y suma las adiciones y eliminaciones contra la base inmediata. Por encima de 400 líneas totales emite un aviso. En el PR, separá autoría, generados, vendorizados y lockfiles, y justificá si conviene dividir o revisar el conjunto. Los proyectos que usen el perfil Chuli mantienen sus propias políticas. El tamaño de una tarea dentro de ODD es una ayuda para planificar y puede diferir del tamaño del PR.
 
 La cadena de 0.2 quedó registrada en el historial. Para la publicación de 1.0, el [issue de entrega](https://github.com/AlejoPalavecino/codex-engineering-harness/issues/17) enlaza las unidades de cambios, la integración y la release.

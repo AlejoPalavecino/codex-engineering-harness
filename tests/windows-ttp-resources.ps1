@@ -13,7 +13,8 @@ $resources = @(
     @{source='scripts/workflow_friction.py'; target='harness/bin/workflow_friction.py'},
     @{source='docs/evaluations/workflow-friction.md'; target='harness/docs/evaluations/workflow-friction.md'},
     @{source='tests/fixtures/workflow-friction/baseline.json'; target='harness/evaluations/workflow-friction/baseline.json'},
-    @{source='tests/fixtures/workflow-friction/candidate.json'; target='harness/evaluations/workflow-friction/candidate.json'}
+    @{source='tests/fixtures/workflow-friction/candidate.json'; target='harness/evaluations/workflow-friction/candidate.json'},
+    @{source='docs/protocols/OPERATIONS.md'; target='harness/docs/protocols/OPERATIONS.md'}
 )
 $failures = New-Object 'System.Collections.Generic.List[string]'
 
@@ -118,6 +119,16 @@ try {
         Write-Fixture $project ($template.Replace('- **Approval:** pending', '- **Approval:** approved'))
         $output = & python (Join-Path $homePath 'harness/bin/taskboard.py') check $project 2>&1
         Assert-That ($LASTEXITCODE -eq 0) ('Plantilla instalada rechazada por validador instalado: ' + ($output -join "`n"))
+        $baseline = Join-Path $homePath 'harness/evaluations/workflow-friction/baseline.json'
+        $candidate = Join-Path $homePath 'harness/evaluations/workflow-friction/candidate.json'
+        $comparison = & python (Join-Path $homePath 'harness/bin/workflow_friction.py') $baseline $candidate
+        Assert-That ($LASTEXITCODE -eq 0) 'El comparador instalado rechazó el piloto sintético.'
+        $result = ($comparison -join "`n") | ConvertFrom-Json
+        $scenario = $result.scenarios | Where-Object { $_.scenario -eq 'r2-interruption' }
+        $duration = $scenario.metrics.first_useful_test_seconds
+        Assert-That ($result.synthetic -and $duration.status -eq 'UNKNOWN' -and $null -eq $duration.delta) 'El piloto instalado asignó un delta a un tiempo desconocido.'
+
+
         $qualityFixture = Join-Path $repo 'tests/fixtures/taskboard-quality.md'
         $output = & python -X utf8 (Join-Path $homePath 'harness/bin/taskboard.py') quality $qualityFixture TASK-001 2>&1
         Assert-That ($LASTEXITCODE -eq 1 -and ($output -join "`n") -match 'not-run') 'El validador instalado no reporta verificaciones sin ejecutar.'

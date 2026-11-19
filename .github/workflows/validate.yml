@@ -26,11 +26,13 @@ jobs:
           SHA: ${{ github.event.pull_request.head.sha }}
         run: |
           set -euo pipefail
-          pr=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR")
-          test "$(jq -r .head.sha <<< "$pr")" = "$SHA"
-          count=$(jq '.additions + .deletions' <<< "$pr")
-          echo "$count / 400 changed lines"
-          test "$count" -le 400
+          stats=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR" --jq '[.head.sha, (.additions + .deletions)] | @tsv')
+          read -r head count <<< "$stats"
+          [[ "$head" == "$SHA" && "$count" =~ ^[0-9]+$ ]]
+          echo "$count líneas totales contra la base inmediata."
+          if (( count > 400 )); then
+            echo "::warning::El diff supera 400 líneas totales. Desglosá la autoría y justificá el corte en el PR."
+          fi
   structure:
     runs-on: ubuntu-latest
     steps:

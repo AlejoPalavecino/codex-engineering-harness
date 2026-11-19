@@ -41,6 +41,18 @@ En otras shells resolvé ese mismo directorio desde `CODEX_HOME` o su valor por 
 
 Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. Después de instalar o actualizar Chuli, ejecutá `scripts/verify.ps1` desde el checkout del harness: el verificador comprueba la presencia de los recursos obligatorios del paquete y devuelve un error si falta alguno. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
 
+## Revisar criterios antes de armar el tablero
+
+Pasá un criterio de aceptación por argumento, incluso si todavía no hay tareas:
+
+```sh
+python scripts/taskboard.py review-criteria "La búsqueda responde rápidamente" "Al cancelar, el turno vuelve a estar disponible"
+```
+
+Para el primer criterio, la consulta señala «rápidamente» y pregunta qué tiempo máximo se acepta para la carga acordada e indica que hay que precisarla si sigue abierta. Contrastá la pregunta con lo ya acordado. Si sigue abierta, resolvela antes de planificar el trabajo que depende de ella.
+
+El comando es de solo lectura. Devuelve 1 si encuentra expresiones a revisar o un criterio vacío, y 0 si las reglas de redacción no encuentran señales. Las reglas cubren expresiones frecuentes en español. El orquestador también revisa el significado en contexto, incluidos actores y resultados implícitos. Un aviso puede estar resuelto por un contrato citado. La consulta se ejecuta por separado de `check` y de las transiciones de tareas.
+
 ## Consultar el impacto de un requisito
 
 En una funcionalidad que requiera trazabilidad, agregá `- **Trace mode:** requirements-v1` antes de la primera tarea. En esa misma sección, definí cada requisito una vez, por ejemplo `- **REQ-001:** Reservar un turno disponible`. Si el requisito vive en una especificación aprobada, usá el enlace a su sección como valor. Conservá los identificadores dentro de la funcionalidad al reordenar o editar el texto. Nunca reasignes un ID retirado.

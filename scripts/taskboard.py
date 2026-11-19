@@ -506,6 +506,42 @@ def show_impact(filename: str, metadata: dict[str, str], tasks: list[Task]) -> N
         print(f"Tareas sin Scope: {unscoped}. Su impacto queda indeterminado.")
 
 
+# Advisory phrases for criteria written in Spanish. Each match points to a
+# decision, rather than proposing a product rule or executing a test.
+ACCEPTANCE_HINTS = (
+    (r"rápidamente|de (?:forma|manera) rápida|rápid[oa]s?|sin demora",
+     "¿Qué tiempo máximo se acepta bajo la carga acordada? Si la carga sigue abierta, precisala también."),
+    (r"fácil(?:es)? de usar|intuitiv[oa]s?|amigable[s]?",
+     "¿Para qué usuario y qué tarea se evalúa la facilidad de uso? ¿Cómo se observa el éxito?"),
+    (r"correctamente|adecuadamente|funcion(?:a|ar|e) bien|(?:de forma|de manera) adecuada",
+     "¿Con qué entrada y qué resultado observable se distingue éxito de fallo?"),
+    (r"cuando (?:corresponda|sea necesario)|si (?:corresponde|es necesario)|según corresponda",
+     "¿Qué condición activa el comportamiento y qué ocurre cuando no se cumple?"),
+    (r"pendiente de definir|por definir|TBD",
+     "¿Qué decisión pendiente cambia el resultado observable de la prueba?"),
+)
+
+
+def review_criteria(criteria: list[str]) -> int:
+    findings = False
+    for index, criterion in enumerate(criteria, start=1):
+        # A literal UI label can legitimately contain words such as «rápido».
+        text = re.sub(r'\b(texto|mensaje|etiqueta|botón)\s+(?:«[^»]*»|"[^"]*"|“[^”]*”)',
+                      " ", criterion, flags=re.IGNORECASE)
+        if not criterion.strip():
+            print(f"Criterio {index} vacío. ¿Qué resultado observable se espera y en qué situación?")
+            findings = True
+        for phrases, question in ACCEPTANCE_HINTS:
+            match = re.search(rf"\b(?:{phrases})\b", text, re.IGNORECASE)
+            if match:
+                print(f"Criterio {index}, «{match.group()}». {question}")
+                findings = True
+    if findings:
+        return 1
+    print("Sin señales en las reglas de redacción. Revisá el contexto y la evidencia prevista.")
+    return 0
+
+
 def report_quality(metadata: dict[str, str], task: Task, evidence: str, compute: Callable[[str], str]) -> int:
     cases = quality_cases(task)
     candidate, runs = quality_evidence(evidence, cases)
@@ -525,6 +561,8 @@ def report_quality(metadata: dict[str, str], task: Task, evidence: str, compute:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="TTP: validación y transición de tareas (sin dependencias)")
     sub = parser.add_subparsers(dest="action", required=True)
+    review = sub.add_parser("review-criteria", help="Revisar criterios en español antes de planificar")
+    review.add_argument("criteria", nargs="+", metavar="CRITERIO", help="Un argumento por criterio")
     for name in ("check", "show", "set", "fingerprint", "trace", "impact", "quality"):
         command = sub.add_parser(name)
         command.add_argument("file", type=Path)
@@ -547,6 +585,8 @@ def main(argv: list[str] | None = None) -> int:
             command.add_argument("--blocker")
             command.add_argument("--reason")
     args = parser.parse_args(argv)
+    if args.action == "review-criteria":
+        return review_criteria(args.criteria)
     try:
         source = args.file.read_text(encoding="utf-8")
         if args.action == "set":

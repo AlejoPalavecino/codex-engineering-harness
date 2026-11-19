@@ -23,13 +23,15 @@ Una respuesta parcial habilita solo lo resuelto; el silencio no cuenta como apro
 
 ## ODD, TDD y cortes de entrega
 
-Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
+Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. Antes de planificar en R2, revisá si cada criterio permite distinguir éxito y fallo. Si admite resultados distintos, citá la frase y señalá qué decisión falta para poder probarla. Consultá la especificación vigente antes de preguntar. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
 
 Antes de abrir una tarea, preguntate si otra sesión podría retomarla desde el diff y las pruebas. Nombrá el resultado desde la perspectiva de quien lo usa. Cada unidad incluye el código, la prueba y las instrucciones necesarios para demostrar ese resultado. Para cerrar un tablero nuevo, capturá la huella de los archivos de la tarea antes de la comprobación y cotejala al registrar comando y resultado. Al retomar, usá `taskboard.py check TABLERO --current` desde la raíz del proyecto.
 
 Para una regresión o regla ejecutable, obtené RED por la causa esperada, implementá GREEN y refactorizá con pruebas verdes. En docs pasivas comprobá referencias y lectura. Si falta runner, obtené la evidencia disponible y declaralo. En una migración o cambio de permisos, verificá también el camino negativo y el efecto sobre estado preexistente.
 
 Mantené código, pruebas y documentación del comportamiento juntos. Proyectá altas más bajas de autoría y procurá cortes de unas 400 líneas. Separá archivos vendorizados, generados o lockfiles al explicar la cifra. Proponé un corte cohesivo o justificá el exceso si dividir rompe la verificación. Para publicar, hacer push, abrir PR, merge o deploy, respetá la autorización aplicable al destino.
+
+Para trabajar con Git o GitHub, seguí `harness/docs/protocols/GIT-GITHUB.md` bajo `CODEX_HOME`. Consultá la política del destino antes de elegir issue, rama o estrategia de PR.
 
 ## TTP v1.0 · continuidad
 
@@ -63,6 +65,10 @@ Para TDD estricto separá escritor de pruebas, implementador y verificador. El i
 Activá sólo los procedimientos pertinentes. Las cinco skills nativas son `harness-discovery`, `harness-architecture`, `harness-ux-ui`, `harness-specification` y `harness-tdd-qa`. Para un objetivo especializado consultá `harness/docs/protocols/SKILLS.md` y luego el `SKILL.md` pertinente y sus referencias bajo demanda. Respetá su runtime, dependencias y destino. Los comandos de Gentle AI, Hermes o Pi requieren una instalación externa compatible. Las skills, la mera presencia de binarios y el inventario de MCP no conceden permisos.
 
 Cuando esté habilitado Engram, consultá sólo el proyecto correcto y guardá decisiones duraderas autorizadas. En la recuperación manda la decisión humana vigente, luego la especificación/ADR aprobado, el comportamiento actual comprobado, la memoria histórica y finalmente la hipótesis. Referenciá el tablero local en vez de copiarlo a memoria por defecto. No persistas secretos, historial íntegro ni datos personales.
+
+## Operación y evolución
+
+Para observabilidad, incidentes, mantenimiento o validación posterior a la entrega, leé `harness/docs/protocols/OPERATIONS.md` bajo el directorio del perfil. Vinculá evidencia, versión, requisito y prueba cuando estén disponibles. Separá la evaluación del producto de la comparación de versiones de Chuli y respetá la autorización específica para datos sensibles y producción.
 
 ## CES v1.0 · colaboración
 

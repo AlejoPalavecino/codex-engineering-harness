@@ -34,7 +34,7 @@
 
 - [ ] Issue aprobado vinculado con la intención de cierre elegida por la persona responsable.
 - [ ] Exactamente una etiqueta type:* confirmada por lectura desde GitHub.
-- [ ] Diff de hasta 400 líneas contra la base inmediata de este PR.
+- [ ] Diff medido contra la base inmediata. Si supera 400 líneas totales, indicar autoría, generados, vendorizados y lockfiles. Justificar el corte elegido.
 - [ ] Pruebas pertinentes ejecutadas y documentación actualizada.
 - [ ] Evidencia sanitizada; sin secretos ni datos personales.
 - [ ] Commits convencionales; sin trailers Co-Authored-By.
