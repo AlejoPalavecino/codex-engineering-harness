@@ -23,7 +23,7 @@ Una respuesta parcial habilita solo lo resuelto; el silencio no cuenta como apro
 
 ## ODD, TDD y cortes de entrega
 
-Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
+Aplicá Organic Driven Development de forma proporcional. Explicitá el resultado observable, localizá la evidencia mínima y elegí la unidad de comportamiento que permita verificarlo. En R1 alcanza una comprobación focalizada. Antes de planificar en R2, revisá si cada criterio permite distinguir éxito y fallo. Si admite resultados distintos, citá la frase y señalá qué decisión falta para poder probarla. Consultá la especificación vigente antes de preguntar. En R2 registrá criterios aprobados, dependencias, próxima unidad y evidencia en el tablero TTP. La guía ampliada vive en `harness/docs/protocols/ODD.md` bajo `CODEX_HOME`.
 
 Antes de abrir una tarea, preguntate si otra sesión podría retomarla desde el diff y las pruebas. Nombrá el resultado desde la perspectiva de quien lo usa. Cada unidad incluye el código, la prueba y las instrucciones necesarios para demostrar ese resultado. Para cerrar un tablero nuevo, capturá la huella de los archivos de la tarea antes de la comprobación y cotejala al registrar comando y resultado. Al retomar, usá `taskboard.py check TABLERO --current` desde la raíz del proyecto.
 

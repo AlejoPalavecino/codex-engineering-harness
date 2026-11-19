@@ -16,6 +16,14 @@ description: "Convertir alcance y diseño aprobados en especificaciones verifica
 
 No convertir un cambio R1 trivial en una especificación extensa.
 
+## Revisar la aceptación antes de planificar
+
+Para cada criterio, intentá describir una prueba que pase y un resultado que deba fallar. Comprobá si la situación inicial, el actor cuando importa y el efecto esperado permiten distinguirlos. Si dos interpretaciones razonables cambian el veredicto, citá el fragmento y explicá cuál decisión falta. Revisá primero los contratos y ejemplos aprobados; preguntá a la persona responsable solo por lo que siga abierto.
+
+Por ejemplo, para «la búsqueda debe ser rápida», recuperá del contrato el tiempo, la carga y la medición acordados. Si falta el umbral, preguntá «Con la carga acordada, ¿qué tiempo máximo aceptarías?». Para «el administrador puede borrar los registros del equipo», comprobá de qué equipo se trata y qué ocurre con un registro ajeno. Este segundo caso requiere contexto aunque todas las palabras parezcan precisas.
+
+El CLI instalado ofrece `harness/bin/taskboard.py review-criteria "criterio uno" "criterio dos"` como ayuda de lectura en español. Contrastá cada aviso con la especificación. Registrá la respuesta en el criterio original y retomá la planificación de las tareas dependientes cuando sea comprobable. Las unidades independientes con aceptación resuelta pueden avanzar.
+
 ## Seguimiento TTP para implementación R2
 
 Tras aprobar alcance, decisiones de arquitectura/diseño y autorizar implementación, dividí la especificación en tareas pequeñas por resultado verificable. Crear o actualizar un solo registro `odd/tasks/<feature>.md` por funcionalidad, usando IDs estables, dependencias, rol, criterio de aceptación, evidencia y bloqueo. No generar tareas para R0 o cambios triviales R1.
