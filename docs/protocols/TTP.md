@@ -20,7 +20,7 @@ Plan Mode sirve para discutir y aprobar el enfoque; TTP no escribe archivos ni f
 
 ## Recursos disponibles después de instalar
 
-El instalador distribuye las mismas fuentes canónicas del repositorio bajo `CODEX_HOME` (por defecto `~/.codex`):
+Usá la raíz del perfil del cliente que ejecuta la tarea: Codex usa `CODEX_HOME` (por defecto `~/.codex`), Claude Code usa `CLAUDE_CONFIG_DIR` (`~/.claude`) y Antigravity usa `AGY_HOME` (`~/.gemini/config`). Las rutas de la tabla son relativas a esa raíz.
 
 | Recurso | Ruta instalada |
 | --- | --- |
@@ -30,14 +30,19 @@ El instalador distribuye las mismas fuentes canónicas del repositorio bajo `COD
 
 Leé la [plantilla canónica](../../templates/feature-tasks.md) antes de crear un registro nuevo; su enlace también resuelve desde la guía instalada. No sobrescribas un tablero existente ni cambies Approval a approved sin aprobación y autorización reales. Conservá los encabezados, metadatos y claves de la plantilla en inglés para que el validador pueda leerlos; el contenido puede estar en español.
 
-Desde el proyecto, en PowerShell:
+Desde el proyecto, en PowerShell, elegí tu cliente cuando se solicite:
 
 ```powershell
-$ttpHome = if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' }
+$ttpHome = switch (Read-Host 'Cliente activo (codex, claude o agy)') {
+    'codex'  { if ($env:CODEX_HOME) { $env:CODEX_HOME } else { Join-Path $HOME '.codex' } }
+    'claude' { if ($env:CLAUDE_CONFIG_DIR) { $env:CLAUDE_CONFIG_DIR } else { Join-Path $HOME '.claude' } }
+    'agy'    { if ($env:AGY_HOME) { $env:AGY_HOME } else { Join-Path $HOME '.gemini/config' } }
+    default  { throw 'Cliente desconocido' }
+}
 python (Join-Path $ttpHome 'harness/bin/taskboard.py') check odd/tasks/mi-funcionalidad.md
 ```
 
-En otras shells resolvé ese mismo directorio desde `CODEX_HOME` o su valor por defecto. Los comandos `scripts/taskboard.py` de esta guía son para una copia del repositorio del harness; en otro proyecto usá la ruta instalada. Comprobá criterios y pruebas antes de DONE; después validá el tablero antes de anunciar el cierre. Un check exitoso no demuestra que se ejecutaron las pruebas declaradas ni ofrece aislamiento de escritura.
+En otras shells resolvé ese mismo directorio desde la variable del cliente activo o su valor por defecto. Los comandos `scripts/taskboard.py` de esta guía son para una copia del repositorio del harness; en otro proyecto usá la ruta instalada. Comprobá criterios y pruebas antes de DONE; después validá el tablero antes de anunciar el cierre. Un check exitoso no demuestra que se ejecutaron las pruebas declaradas ni ofrece aislamiento de escritura.
 
 Plantilla y guía participan del mismo plan, manifiesto, hashes, backup, preservación de personalizaciones y rollback que el validador. Un recurso personalizado se conserva por defecto; reemplazarlo exige `-ReplaceCustomized`. Después de instalar o actualizar Chuli, ejecutá `scripts/verify.ps1` desde el checkout del harness: el verificador comprueba la presencia de los recursos obligatorios del paquete y devuelve un error si falta alguno. No se modifica el formato TTP ni se crea otro sistema de seguimiento.
 
@@ -141,7 +146,7 @@ python scripts/taskboard.py set odd/tasks/mi-funcionalidad.md TASK-001 VERIFYING
 python scripts/taskboard.py fingerprint odd/tasks/mi-funcionalidad.md TASK-001 --root .
 ```
 
-El instalador coloca también una copia en `~/.codex/harness/bin/taskboard.py`. Si no hay Python instalado, Codex puede editar el Markdown respetando estas reglas y el usuario puede inspeccionar el diff. El script valida **estructura y transiciones**, no puede garantizar que una prueba se ejecutó ni impedir escrituras fuera del sandbox.
+El instalador coloca también una copia en `harness/bin/taskboard.py` dentro del perfil activo. Si no hay Python instalado, el orquestador puede editar el Markdown respetando estas reglas y el usuario puede inspeccionar el diff. El script valida **estructura y transiciones**, no puede garantizar que una prueba se ejecutó ni impedir escrituras fuera del sandbox.
 
 ### Evidencia del candidato
 

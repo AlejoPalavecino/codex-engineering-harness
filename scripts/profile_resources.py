@@ -133,6 +133,11 @@ def inventory(root: Path, client: str = "codex", disabled_skills: set[str] | Non
                 if folder == "agents" and client in ("claude", "agy"):
                     relative = path.stem + ".md"
                 result[f"{target}/{relative}"] = path.relative_to(root).as_posix()
+    if client == "agy" and "diagram-design" not in disabled:
+        base = f"{skills_target}/diagram-design/"
+        # Keep the pinned upstream guide beside its relative links and assets.
+        result[base + "GUIDE.md"] = result[base + "SKILL.md"]
+        result[base + "SKILL.md"] = "config/agy/diagram-design.md"
     if len({name.casefold() for name in result}) != len(result):
         raise ValueError("Case-insensitive collision in package paths")
     for source in result.values():
