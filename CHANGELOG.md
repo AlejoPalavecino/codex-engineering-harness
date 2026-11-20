@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.1.2] — 2026-11-19
+
+- En Codex, la instalación y la actualización muestran los modelos y esfuerzos de los siete roles en AGENTS.md también cuando coinciden con el preset equilibrado.
+
 ## [2.1.1] — 2026-11-19
 
 - TTP y la skill de especificación identifican la raíz del perfil de Codex, Claude Code y AGY para encontrar plantillas y ejecutar el validador.
