@@ -253,8 +253,6 @@ def render_orchestrator_body(
     role_models: dict[str, dict[str, str]] | None = None,
 ) -> bytes:
     raw = (ROOT / "config/AGENTS.md").read_bytes().decode("utf-8-sig").replace("\r\n", "\n").rstrip("\n")
-    if client == "codex" and role_models is None:
-        return raw.encode("utf-8")
     _, resolved = resolve_role_models(client, overrides=role_models)
     if client == "claude":
         raw = raw.replace("# Chuli · orquestador de ingeniería para Codex", "# Chuli · orquestador de ingeniería para Claude Code")
@@ -281,20 +279,18 @@ def render_orchestrator_body(
         "| `test_engineer` | Pruebas derivadas de aceptación y regresión. |\n"
         "| `quality_reviewer` | Revisión independiente sobre un candidato identificado. |"
     )
-    default_codex = load_catalog()["clients"]["codex"]["presets"]["codex-balanced"]["roles"]
-    if client != "codex" or resolved != default_codex:
-        new_table = (
-            f"Modelo configurado para `orchestrator`: **{fmt('orchestrator')}**.\n\n"
-            "| Rol estable | Modelo configurado | Encargo |\n"
-            "| --- | --- | --- |\n"
-            f"| `chuli_explorer` | `{fmt('chuli_explorer')}` | Lectura de rutas, consumidores y contratos. |\n"
-            f"| `chuli_worker` | `{fmt('chuli_worker')}` | Implementación y verificación focalizada. |\n"
-            f"| `solution_architect` | `{fmt('solution_architect')}` | Alternativas de arquitectura, datos y contratos. |\n"
-            f"| `product_designer` | `{fmt('product_designer')}` | Flujos, estados, accesibilidad y dirección visual. |\n"
-            f"| `test_engineer` | `{fmt('test_engineer')}` | Pruebas derivadas de aceptación y regresión. |\n"
-            f"| `quality_reviewer` | `{fmt('quality_reviewer')}` | Revisión independiente sobre un candidato identificado. |"
-        )
-        raw = raw.replace(old_table, new_table)
+    new_table = (
+        f"Modelo configurado para `orchestrator`: **{fmt('orchestrator')}**.\n\n"
+        "| Rol estable | Modelo configurado | Encargo |\n"
+        "| --- | --- | --- |\n"
+        f"| `chuli_explorer` | `{fmt('chuli_explorer')}` | Lectura de rutas, consumidores y contratos. |\n"
+        f"| `chuli_worker` | `{fmt('chuli_worker')}` | Implementación y verificación focalizada. |\n"
+        f"| `solution_architect` | `{fmt('solution_architect')}` | Alternativas de arquitectura, datos y contratos. |\n"
+        f"| `product_designer` | `{fmt('product_designer')}` | Flujos, estados, accesibilidad y dirección visual. |\n"
+        f"| `test_engineer` | `{fmt('test_engineer')}` | Pruebas derivadas de aceptación y regresión. |\n"
+        f"| `quality_reviewer` | `{fmt('quality_reviewer')}` | Revisión independiente sobre un candidato identificado. |"
+    )
+    raw = raw.replace(old_table, new_table)
     return raw.encode("utf-8")
 
 

@@ -302,13 +302,10 @@ def prepare_instructions(home: Path, output: Path, replace: bool, adopt_gentle: 
     sections = gentle_sections(data, path, adopt_gentle)
     for start, end, _ in reversed(sections):
         data = data[:start] + data[end:]
-    if client == "codex" and not preset and not role_models_json:
-        source = (ROOT / "config/AGENTS.md").read_bytes().decode("utf-8-sig").replace("\r\n", "\n").encode().rstrip(b"\n")
-    else:
-        import client_targets
-        overrides = json.loads(role_models_json) if role_models_json else None
-        _, resolved = client_targets.resolve_role_models(client, preset, overrides)
-        source = client_targets.render_orchestrator_body(client, resolved)
+    import client_targets
+    overrides = json.loads(role_models_json) if role_models_json else None
+    _, resolved = client_targets.resolve_role_models(client, preset, overrides)
+    source = client_targets.render_orchestrator_body(client, resolved)
     if BEGIN in source or END in source:
         raise ValueError("config/AGENTS.md must contain only the managed body")
     block = BEGIN + b"\n" + source + b"\n" + END + b"\n"

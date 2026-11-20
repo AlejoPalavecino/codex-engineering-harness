@@ -27,6 +27,26 @@ class ProfileTests(unittest.TestCase):
             self.assertEqual(expected, {s for s in resources.values() if s.startswith(directory + "/")})
         self.assertIn("harness/THIRD_PARTY_NOTICES.md", resources)
 
+    def test_update_keeps_explicit_codex_table_when_roles_match_default_preset(self):
+        import client_targets
+
+        preset, roles = client_targets.resolve_role_models("codex")
+        profile.prepare_instructions(self.home, self.output, False)
+        block = self.output.read_bytes()
+        for role, spec in roles.items():
+            label = f"{spec['model']} ({spec['effort']})"
+            expected = (f"Modelo configurado para `orchestrator`: **{label}**" if role == "orchestrator"
+                        else f"| `{role}` | `{label}` |")
+            self.assertIn(expected.encode(), block)
+        previous = b"My local instructions\r\n" + block
+        (self.home / "AGENTS.md").write_bytes(previous)
+        manifest = self.home / "harness-install/state.json"
+        manifest.parent.mkdir()
+        manifest.write_text(json.dumps({"orchestrator_baseline_sha256": profile.digest(block)}))
+        profile.prepare_instructions(self.home, self.output, False, preset=preset,
+                                     role_models_json=json.dumps(roles))
+        self.assertEqual(self.output.read_bytes(), previous)
+
     def test_operation_guide_is_discoverable_with_installed_links(self):
         guide = "harness/docs/protocols/OPERATIONS.md"
         for client in ("codex", "claude", "agy"):
