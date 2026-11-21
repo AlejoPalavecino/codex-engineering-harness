@@ -9,7 +9,8 @@ Desde la raíz, con Go 1.26+, PowerShell y Python 3.11+:
 ```sh
 python tests/validate_repository.py
 python -B -m unittest discover -s tests -p 'test_*.py'
-go test ./...
+go test -short ./...   # ciclo rápido (omite integraciones PowerShell en internal/manager)
+go test ./...          # suite completa (incluye instalación/rollback real)
 go vet ./...
 go mod tidy -diff
 go run ./cmd/chuli --source . eval check
@@ -22,7 +23,9 @@ Para comprobar los fixtures Python ejecutá `python -B -m unittest discover -s t
 - `tests/windows-smoke.ps1` recorre la instalación, verificación y reversión con un perfil temporal.
 - `tests/windows-regression.ps1` cubre personalizaciones, TOML y fallos de seguridad de versiones anteriores.
 - `tests/windows-ttp-resources.ps1` comprueba preservación, actualización y rollback. El CI ejecuta esa suite con los dos motores PowerShell de Windows.
-- `go test ./internal/manager` incluye el camino de los paquetes de release. Ejecutar con PowerShell y Python en PATH permite probar los scripts reales, incluyendo la restauración y el diagnóstico con la copia local verificada.
+- `tests/windows-multiclient.ps1` verifica instalación, presets y rollback para Codex, Claude Code y AGY CLI.
+- En CI, el job `posix-installer` ejecuta además `tests/windows-smoke.ps1` y `tests/windows-multiclient.ps1` con `pwsh` sobre `ubuntu-latest` y `macos-latest`.
+- `go test ./internal/manager` incluye el camino de los paquetes de release. Ejecutar con PowerShell y Python en PATH permite probar los scripts reales, incluyendo la restauración y el diagnóstico con la copia local verificada. Con `-short` se ejecutan solo los tests unitarios rápidos sin lanzar procesos PowerShell.
 
 En una instalación de aceptación, verificá primero una acción en vista previa, instalá, reabrí el cliente y comprobá el descubrimiento del catálogo. Una segunda prueba debe partir de un perfil personalizado con instrucciones y archivos ajenos. Compará sus bytes antes y después del rollback.
 

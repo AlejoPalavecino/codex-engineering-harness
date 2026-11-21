@@ -9,7 +9,7 @@ import (
 )
 
 func TestIntegrationCommandPreparesWithoutWriting(t *testing.T) {
-	m := model{mgr: manager.Manager{Home: canonicalTUITestHome(t)}, integrationID: "exa"}
+	m := model{mgr: manager.Manager{Home: canonicalTUITestHome(t)}, integrationState: integrationState{integrationID: "exa"}}
 	message := m.integrationCmd("configure")().(integrationMsg)
 	if message.err != nil || message.screen != integrationPreview || message.plan.Revision == "" {
 		t.Fatal(message)

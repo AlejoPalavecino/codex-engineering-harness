@@ -43,7 +43,7 @@ func TestPickerLoadsNewModelsWhileOpen(t *testing.T) {
 
 func TestAGYModelChoicesRespectAgentTiers(t *testing.T) {
 	spec, _ := manager.FindClient("agy")
-	m := model{modelChoices: []string{"new-agy-model"}}
+	m := model{modelPickerState: modelPickerState{modelChoices: []string{"new-agy-model"}}}
 	if !slices.Contains(m.choicesForRole(spec, "orchestrator"), "new-agy-model") {
 		t.Fatal("main agent cannot select discovered ID")
 	}

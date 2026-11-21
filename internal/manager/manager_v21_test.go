@@ -122,6 +122,9 @@ func TestCheckUpdatesDetectsOutdatedProfilesAndManager(t *testing.T) {
 }
 
 func TestPrepareApplyLocalAndSpecificTagDowngrade(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs PowerShell installer integration")
+	}
 	if _, err := shell(); err != nil {
 		t.Skip("requires PowerShell and Python 3.11+")
 	}

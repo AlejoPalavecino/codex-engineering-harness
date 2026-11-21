@@ -139,7 +139,7 @@ func TestUpdateSearchPreservesOperationLog(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			const operationLog = "INSTALLER_TECHNICAL_LOG"
 			const notes = "RELEASE_NOTES"
-			m := model{screen: tc.screen, busyReturnScreen: tc.returnScreen, log: operationLog, resultSummary: "Installation outcome", showTechLog: true, width: 100, height: 30}
+			m := model{screen: tc.screen, progressState: progressState{busyReturnScreen: tc.returnScreen}, log: operationLog, resultSummary: "Installation outcome", showTechLog: true, width: 100, height: 30}
 			next, _ := m.Update(updatesLoadedMsg{report: manager.UpdateReport{Summary: notes}})
 			m = next.(model)
 			if m.log != operationLog {

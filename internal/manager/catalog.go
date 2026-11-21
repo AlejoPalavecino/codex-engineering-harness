@@ -1,12 +1,16 @@
 package manager
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/AlejoPalavecino/codex-engineering-harness/v2/config"
 )
 
 type RoleModel struct {
@@ -40,179 +44,183 @@ type ClientSpec struct {
 	Presets       []PresetSpec
 }
 
-var roleCatalog = []RoleSpec{
-	{ID: "orchestrator", Name: "Orquestador", Summary: "Enrutamiento EWP, autoridad y continuidad"},
-	{ID: "chuli_explorer", Name: "Exploración · chuli_explorer", Summary: "Mapa de código y contratos en lectura"},
-	{ID: "chuli_worker", Name: "Implementación · chuli_worker", Summary: "Unidad autorizada con pruebas y verificación"},
-	{ID: "solution_architect", Name: "Arquitectura · solution_architect", Summary: "Alternativas técnicas y contratos"},
-	{ID: "product_designer", Name: "Producto · product_designer", Summary: "Flujos por tarea, estados UX/UI y accesibilidad"},
-	{ID: "test_engineer", Name: "Pruebas · test_engineer", Summary: "Casos ejecutables derivados de aceptación y TDD"},
-	{ID: "quality_reviewer", Name: "Revisión · quality_reviewer", Summary: "Verificación independiente de candidatos"},
+type orderedEntry struct {
+	Key   string
+	Value json.RawMessage
 }
 
-var clientCatalog = []ClientSpec{
-	{
-		ID:            "codex",
-		Name:          "OpenAI Codex",
-		Short:         "Codex",
-		DefaultHome:   ".codex",
-		EnvHome:       "CODEX_HOME",
-		DefaultPreset: "codex-balanced",
-		Models:        []string{"gpt-6.2-sol", "gpt-6.2-astra", "gpt-6.1-sol", "gpt-6.1-terra", "gpt-6-luna", "gpt-6-astra"},
-		Efforts:       []string{"low", "medium", "high"},
-		Presets: []PresetSpec{
-			{
-				ID:          "codex-balanced",
-				Name:        "Equilibrado (Astra 6.2 + Sol 6.2)",
-				Description: "Astra coordina y diseña la arquitectura. Sol explora, implementa, diseña la UX, prueba y revisa.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "gpt-6.2-astra", Effort: "medium"},
-					"chuli_explorer":     {Model: "gpt-6.2-sol", Effort: "medium"},
-					"chuli_worker":       {Model: "gpt-6.2-sol", Effort: "medium"},
-					"solution_architect": {Model: "gpt-6.2-astra", Effort: "high"},
-					"product_designer":   {Model: "gpt-6.2-sol", Effort: "medium"},
-					"test_engineer":      {Model: "gpt-6.2-sol", Effort: "medium"},
-					"quality_reviewer":   {Model: "gpt-6.2-sol", Effort: "high"},
-				},
-			},
-			{
-				ID:          "codex-astra-max",
-				Name:        "Máxima Capacidad (Astra + Sol High)",
-				Description: "Prioriza GPT-6 Astra en decisiones críticas, arquitectura y revisión.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "gpt-6-astra", Effort: "high"},
-					"chuli_explorer":     {Model: "gpt-6.1-sol", Effort: "medium"},
-					"chuli_worker":       {Model: "gpt-6.1-sol", Effort: "high"},
-					"solution_architect": {Model: "gpt-6-astra", Effort: "high"},
-					"product_designer":   {Model: "gpt-6.1-terra", Effort: "high"},
-					"test_engineer":      {Model: "gpt-6.1-sol", Effort: "high"},
-					"quality_reviewer":   {Model: "gpt-6-astra", Effort: "high"},
-				},
-			},
-			{
-				ID:          "codex-fast",
-				Name:        "Rápido y Económico (Sol + Luna)",
-				Description: "Menor latencia y consumo de cuota para cambios acotados.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "gpt-6.1-sol", Effort: "low"},
-					"chuli_explorer":     {Model: "gpt-6-luna", Effort: "low"},
-					"chuli_worker":       {Model: "gpt-6-luna", Effort: "medium"},
-					"solution_architect": {Model: "gpt-6.1-sol", Effort: "medium"},
-					"product_designer":   {Model: "gpt-6.1-terra", Effort: "low"},
-					"test_engineer":      {Model: "gpt-6-luna", Effort: "medium"},
-					"quality_reviewer":   {Model: "gpt-6.1-sol", Effort: "medium"},
-				},
-			},
-		},
-	},
-	{
-		ID:            "claude",
-		Name:          "Claude Code",
-		Short:         "Claude",
-		DefaultHome:   ".claude",
-		EnvHome:       "CLAUDE_CONFIG_DIR",
-		DefaultPreset: "claude-balanced",
-		Models:        []string{"claude-fable-5-2", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5", "inherit", "opus", "sonnet", "haiku"},
-		Efforts:       []string{"low", "medium", "high"},
-		Presets: []PresetSpec{
-			{
-				ID:          "claude-balanced",
-				Name:        "Equilibrado (Opus + Sonnet + Haiku)",
-				Description: "Opus coordina, diseña la arquitectura y revisa. Sonnet implementa, diseña la UX y prueba. Haiku explora.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "opus", Effort: "medium"},
-					"chuli_explorer":     {Model: "haiku", Effort: "low"},
-					"chuli_worker":       {Model: "sonnet", Effort: "medium"},
-					"solution_architect": {Model: "opus", Effort: "high"},
-					"product_designer":   {Model: "sonnet", Effort: "medium"},
-					"test_engineer":      {Model: "sonnet", Effort: "medium"},
-					"quality_reviewer":   {Model: "opus", Effort: "high"},
-				},
-			},
-			{
-				ID:          "claude-fable-max",
-				Name:        "Máxima Capacidad (Fable 5.2 + Opus 5.5)",
-				Description: "Razonamiento profundo con Claude Fable 5.2 y Opus 5.5 en todo el flujo.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "claude-fable-5-2", Effort: "high"},
-					"chuli_explorer":     {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"chuli_worker":       {Model: "claude-opus-5-5", Effort: "high"},
-					"solution_architect": {Model: "claude-fable-5-2", Effort: "high"},
-					"product_designer":   {Model: "claude-opus-5-5", Effort: "medium"},
-					"test_engineer":      {Model: "claude-opus-5-5", Effort: "medium"},
-					"quality_reviewer":   {Model: "claude-fable-5-2", Effort: "high"},
-				},
-			},
-			{
-				ID:          "claude-fast",
-				Name:        "Rápido y Eficiente (Sonnet 5.5 + Haiku 5.5)",
-				Description: "Optimiza velocidad y cuota con Sonnet 5.5 y exploración en Haiku 5.5.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"chuli_explorer":     {Model: "claude-haiku-5-5", Effort: "low"},
-					"chuli_worker":       {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"solution_architect": {Model: "claude-opus-5-5", Effort: "medium"},
-					"product_designer":   {Model: "claude-sonnet-5-5", Effort: "medium"},
-					"test_engineer":      {Model: "claude-sonnet-5-5", Effort: "low"},
-					"quality_reviewer":   {Model: "claude-opus-5-5", Effort: "high"},
-				},
-			},
-		},
-	},
-	{
-		ID:            "agy",
-		Name:          "AGY CLI (Antigravity)",
-		Short:         "AGY",
-		DefaultHome:   ".gemini/config",
-		EnvHome:       "AGY_HOME",
-		DefaultPreset: "agy-balanced",
-		Models:        []string{"orchestrator-argon", "orchestrator-carbon", "gemini-4-carbon", "gemini-4-argon", "gemini-4-hydrogen", "inherit"},
-		Efforts:       []string{"low", "medium", "high", "xhigh"},
-		Presets: []PresetSpec{
-			{
-				ID:          "agy-balanced",
-				Name:        "Equilibrado (Orchestrator Argon + Pro + Flash)",
-				Description: "Orchestrator (Argon) coordina. Pro implementa, diseña y revisa. Flash prueba y Flash Lite explora.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "orchestrator-argon", Effort: "medium"},
-					"chuli_explorer":     {Model: "flash_lite", Effort: "low"},
-					"chuli_worker":       {Model: "pro", Effort: "high"},
-					"solution_architect": {Model: "pro", Effort: "high"},
-					"product_designer":   {Model: "pro", Effort: "medium"},
-					"test_engineer":      {Model: "flash", Effort: "high"},
-					"quality_reviewer":   {Model: "pro", Effort: "high"},
-				},
-			},
-			{
-				ID:          "agy-carbon-max",
-				Name:        "Máxima Capacidad (Orchestrator Carbon + Carbon High)",
-				Description: "Frontera Gemini 4 Carbon en orquestación, arquitectura y revisión crítica.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "orchestrator-carbon", Effort: "high"},
-					"chuli_explorer":     {Model: "gemini-4-argon", Effort: "medium"},
-					"chuli_worker":       {Model: "gemini-4-argon", Effort: "high"},
-					"solution_architect": {Model: "gemini-4-carbon", Effort: "high"},
-					"product_designer":   {Model: "gemini-4-carbon", Effort: "medium"},
-					"test_engineer":      {Model: "gemini-4-argon", Effort: "high"},
-					"quality_reviewer":   {Model: "gemini-4-carbon", Effort: "high"},
-				},
-			},
-			{
-				ID:          "agy-hydrogen-fast",
-				Name:        "Alta Velocidad (Hydrogen High/Extra + Argon)",
-				Description: "Ejecución rápida en Gemini 4 Hydrogen con soporte de Argon en decisiones.",
-				Roles: map[string]RoleModel{
-					"orchestrator":       {Model: "gemini-4-hydrogen", Effort: "xhigh"},
-					"chuli_explorer":     {Model: "gemini-4-hydrogen", Effort: "low"},
-					"chuli_worker":       {Model: "gemini-4-hydrogen", Effort: "high"},
-					"solution_architect": {Model: "gemini-4-argon", Effort: "high"},
-					"product_designer":   {Model: "gemini-4-hydrogen", Effort: "high"},
-					"test_engineer":      {Model: "gemini-4-hydrogen", Effort: "medium"},
-					"quality_reviewer":   {Model: "gemini-4-argon", Effort: "high"},
-				},
-			},
-		},
-	},
+func decodeOrderedObject(raw []byte) ([]orderedEntry, error) {
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	delim, ok := tok.(json.Delim)
+	if !ok || delim != '{' {
+		return nil, errors.New("expected JSON object")
+	}
+	var entries []orderedEntry
+	seen := make(map[string]bool)
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		key, ok := keyTok.(string)
+		if !ok {
+			return nil, errors.New("expected JSON object key")
+		}
+		if seen[key] {
+			return nil, fmt.Errorf("duplicate JSON key %q", key)
+		}
+		seen[key] = true
+		var val json.RawMessage
+		if err := dec.Decode(&val); err != nil {
+			return nil, err
+		}
+		entries = append(entries, orderedEntry{Key: key, Value: val})
+	}
+	endTok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	if d, ok := endTok.(json.Delim); !ok || d != '}' {
+		return nil, errors.New("expected closing brace")
+	}
+	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+		return nil, errors.New("trailing JSON data")
+	}
+	return entries, nil
+}
+
+func parseCatalog(raw []byte) ([]RoleSpec, []ClientSpec, error) {
+	var doc struct {
+		SchemaVersion int             `json:"schema_version"`
+		Roles         []RoleSpec      `json:"roles"`
+		Clients       json.RawMessage `json:"clients"`
+	}
+	dec := json.NewDecoder(bytes.NewReader(raw))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&doc); err != nil {
+		return nil, nil, fmt.Errorf("invalid models catalog: %w", err)
+	}
+	if _, err := dec.Token(); !errors.Is(err, io.EOF) {
+		return nil, nil, errors.New("invalid models catalog: trailing data")
+	}
+	if doc.SchemaVersion != 1 {
+		return nil, nil, fmt.Errorf("unsupported models catalog schema_version %d", doc.SchemaVersion)
+	}
+	if len(doc.Roles) == 0 {
+		return nil, nil, errors.New("models catalog has no roles")
+	}
+	roleIDs := make(map[string]bool, len(doc.Roles))
+	for _, r := range doc.Roles {
+		if r.ID == "" || roleIDs[r.ID] {
+			return nil, nil, fmt.Errorf("invalid or duplicate role %q", r.ID)
+		}
+		roleIDs[r.ID] = true
+	}
+	clientEntries, err := decodeOrderedObject(doc.Clients)
+	if err != nil {
+		return nil, nil, fmt.Errorf("invalid clients map: %w", err)
+	}
+	if len(clientEntries) == 0 {
+		return nil, nil, errors.New("models catalog has no clients")
+	}
+	clients := make([]ClientSpec, 0, len(clientEntries))
+	for _, ce := range clientEntries {
+		var rawClient struct {
+			ID            string          `json:"id"`
+			Name          string          `json:"name"`
+			Short         string          `json:"short"`
+			DefaultHome   string          `json:"default_home"`
+			EnvHome       string          `json:"env_home"`
+			DefaultPreset string          `json:"default_preset"`
+			Models        []string        `json:"models"`
+			Efforts       []string        `json:"efforts"`
+			Presets       json.RawMessage `json:"presets"`
+		}
+		cdec := json.NewDecoder(bytes.NewReader(ce.Value))
+		cdec.DisallowUnknownFields()
+		if err := cdec.Decode(&rawClient); err != nil {
+			return nil, nil, fmt.Errorf("client %q: %w", ce.Key, err)
+		}
+		if rawClient.ID != ce.Key || rawClient.Name == "" || rawClient.DefaultHome == "" || rawClient.EnvHome == "" {
+			return nil, nil, fmt.Errorf("client %q: invalid identity or home fields", ce.Key)
+		}
+		presetEntries, err := decodeOrderedObject(rawClient.Presets)
+		if err != nil {
+			return nil, nil, fmt.Errorf("client %q presets: %w", ce.Key, err)
+		}
+		if len(presetEntries) == 0 {
+			return nil, nil, fmt.Errorf("client %q has no presets", ce.Key)
+		}
+		presets := make([]PresetSpec, 0, len(presetEntries))
+		hasDefault := false
+		for _, pe := range presetEntries {
+			var preset PresetSpec
+			pdec := json.NewDecoder(bytes.NewReader(pe.Value))
+			pdec.DisallowUnknownFields()
+			if err := pdec.Decode(&preset); err != nil {
+				return nil, nil, fmt.Errorf("client %q preset %q: %w", ce.Key, pe.Key, err)
+			}
+			preset.ID = pe.Key
+			if preset.ID == rawClient.DefaultPreset {
+				hasDefault = true
+			}
+			for roleID := range roleIDs {
+				if rm, ok := preset.Roles[roleID]; !ok || rm.Model == "" || rm.Effort == "" {
+					return nil, nil, fmt.Errorf("client %q preset %q missing role %q", ce.Key, pe.Key, roleID)
+				}
+			}
+			presets = append(presets, preset)
+		}
+		if !hasDefault {
+			return nil, nil, fmt.Errorf("client %q default_preset %q not found", ce.Key, rawClient.DefaultPreset)
+		}
+		clients = append(clients, ClientSpec{
+			ID:            rawClient.ID,
+			Name:          rawClient.Name,
+			Short:         rawClient.Short,
+			DefaultHome:   rawClient.DefaultHome,
+			EnvHome:       rawClient.EnvHome,
+			DefaultPreset: rawClient.DefaultPreset,
+			Models:        rawClient.Models,
+			Efforts:       rawClient.Efforts,
+			Presets:       presets,
+		})
+	}
+	return doc.Roles, clients, nil
+}
+
+var (
+	roleCatalog   []RoleSpec
+	clientCatalog []ClientSpec
+)
+
+func init() {
+	roles, clients, err := parseCatalog(config.ModelsJSON)
+	if err != nil {
+		panic("chuli: embedded config/models.json invalid: " + err.Error())
+	}
+	roleCatalog = roles
+	clientCatalog = clients
+}
+
+func cloneClientSpec(c ClientSpec) ClientSpec {
+	out := c
+	out.Models = append([]string(nil), c.Models...)
+	out.Efforts = append([]string(nil), c.Efforts...)
+	out.Presets = make([]PresetSpec, len(c.Presets))
+	for i, p := range c.Presets {
+		roles := make(map[string]RoleModel, len(p.Roles))
+		for k, v := range p.Roles {
+			roles[k] = v
+		}
+		p.Roles = roles
+		out.Presets[i] = p
+	}
+	return out
 }
 
 func Roles() []RoleSpec {
@@ -223,7 +231,9 @@ func Roles() []RoleSpec {
 
 func Clients() []ClientSpec {
 	out := make([]ClientSpec, len(clientCatalog))
-	copy(out, clientCatalog)
+	for i, c := range clientCatalog {
+		out[i] = cloneClientSpec(c)
+	}
 	return out
 }
 
@@ -233,7 +243,7 @@ func FindClient(id string) (ClientSpec, bool) {
 	}
 	for _, c := range clientCatalog {
 		if c.ID == id {
-			return c, true
+			return cloneClientSpec(c), true
 		}
 	}
 	return ClientSpec{}, false

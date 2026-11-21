@@ -37,6 +37,9 @@ func TestSavedProfilesCRUDAndValidation(t *testing.T) {
 }
 
 func TestSkillsListDisableInInstallVerifyRollbackAndCustom(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs PowerShell installer integration")
+	}
 	if _, err := shell(); err != nil {
 		t.Skip("requires PowerShell and Python 3.11+")
 	}
