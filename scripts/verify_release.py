@@ -15,6 +15,48 @@ from package_release import profile_files
 
 ROOT = Path(__file__).resolve().parents[1]
 CHECKSUMS = "SHA256SUMS.txt"
+# Must stay aligned with internal/manager/archive.go extraction limits.
+MAX_PROFILE_ARCHIVE_BYTES = 16 << 20
+MAX_PROFILE_EXPANDED_BYTES = 32 << 20
+MAX_PROFILE_ENTRY_BYTES = 4 << 20
+MAX_PROFILE_ENTRIES = 2048
+
+
+def verify_profile_budget(
+    path,
+    infos,
+    *,
+    max_archive=MAX_PROFILE_ARCHIVE_BYTES,
+    max_expanded=MAX_PROFILE_EXPANDED_BYTES,
+    max_entry=MAX_PROFILE_ENTRY_BYTES,
+    max_entries=MAX_PROFILE_ENTRIES,
+):
+    archive_bytes = path.stat().st_size
+    if archive_bytes > max_archive:
+        raise ValueError(
+            f"Profile compressed size {archive_bytes} exceeds limit {max_archive}"
+        )
+    entries = len(infos)
+    if entries > max_entries:
+        raise ValueError(
+            f"Profile entry count {entries} exceeds limit {max_entries}"
+        )
+    expanded_bytes = 0
+    for info in infos:
+        if info.file_size > max_entry:
+            raise ValueError(
+                f"Profile entry {info.filename} exceeds size limit {max_entry}"
+            )
+        expanded_bytes += info.file_size
+    if expanded_bytes > max_expanded:
+        raise ValueError(
+            f"Profile expanded size {expanded_bytes} exceeds limit {max_expanded}"
+        )
+    return {
+        "archive_bytes": archive_bytes,
+        "expanded_bytes": expanded_bytes,
+        "entries": entries,
+    }
 
 
 def verify_metadata(version):
@@ -39,7 +81,9 @@ def verify_zip(path, version=None):
             if archive.namelist() != ["chuli.exe"] or not archive.getinfo("chuli.exe").file_size:
                 raise ValueError("Expected a single non-empty chuli.exe")
         else:
-            if sorted(archive.namelist()) != profile_files():
+            infos = archive.infolist()
+            verify_profile_budget(path, infos)
+            if sorted(info.filename for info in infos) != profile_files():
                 raise ValueError("Incorrect profile contents for this checkout")
             if archive.read("VERSION").decode().strip() != version:
                 raise ValueError("Incorrect profile VERSION")

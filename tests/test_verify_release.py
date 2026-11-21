@@ -150,3 +150,59 @@ class VerifyRelease(unittest.TestCase):
     def test_rejects_altered_installer(self):
         (self.assets / NAMES[4]).write_bytes(b"different installer")
         self.assert_rejected("installer differs")
+
+    def test_profile_files_excludes_go_sources(self):
+        from package_release import select_profile_files
+
+        selected = select_profile_files([*PROFILE_FILES, "config/models_embed.go"])
+        self.assertIn("config/models.json", selected)
+        self.assertNotIn("config/models_embed.go", selected)
+        self.assertFalse(any(name.endswith(".go") for name in selected))
+
+    def test_profile_budget_constants_match_go_archive_limits(self):
+        import re
+        import verify_release as vr
+
+        archive_go = (ROOT / "internal/manager/archive.go").read_text(encoding="utf-8")
+        expected = {
+            "maxArchive": vr.MAX_PROFILE_ARCHIVE_BYTES,
+            "maxExpanded": vr.MAX_PROFILE_EXPANDED_BYTES,
+            "maxEntry": vr.MAX_PROFILE_ENTRY_BYTES,
+            "maxEntries": vr.MAX_PROFILE_ENTRIES,
+        }
+        for name, value in expected.items():
+            match = re.search(rf"\b{name}\s*=\s*(\d+)(?:\s*<<\s*(\d+))?", archive_go)
+            self.assertIsNotNone(match, f"Missing {name} in internal/manager/archive.go")
+            go_val = int(match.group(1)) << int(match.group(2) or 0)
+            self.assertEqual(value, go_val, f"{name} mismatch between verify_release.py and archive.go")
+
+    def test_profile_budget_rejects_limit_violations(self):
+        import verify_release as vr
+
+        profile_path = self.assets / NAMES[0]
+        with zipfile.ZipFile(profile_path) as archive:
+            infos = archive.infolist()
+
+        vr.verify_profile_budget(profile_path, infos)
+        with self.assertRaisesRegex(ValueError, "compressed size"):
+            vr.verify_profile_budget(profile_path, infos, max_archive=1)
+        with self.assertRaisesRegex(ValueError, "expanded size"):
+            vr.verify_profile_budget(profile_path, infos, max_expanded=1)
+        with self.assertRaisesRegex(ValueError, "entry .* exceeds"):
+            vr.verify_profile_budget(profile_path, infos, max_entry=1)
+        with self.assertRaisesRegex(ValueError, "entry count"):
+            vr.verify_profile_budget(profile_path, infos, max_entries=1)
+
+    def test_real_packaged_profile_fits_budget(self):
+        import verify_release as vr
+
+        result = subprocess.run(
+            [sys.executable, str(ROOT / "scripts/package_release.py"), "profile", str(self.assets)],
+            capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        with zipfile.ZipFile(self.assets / NAMES[0]) as archive:
+            stats = vr.verify_profile_budget(self.assets / NAMES[0], archive.infolist())
+        self.assertGreater(stats["entries"], 0)
+        self.assertLessEqual(stats["archive_bytes"], vr.MAX_PROFILE_ARCHIVE_BYTES)
+        self.assertLessEqual(stats["expanded_bytes"], vr.MAX_PROFILE_EXPANDED_BYTES)

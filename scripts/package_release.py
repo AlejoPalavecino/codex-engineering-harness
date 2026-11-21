@@ -18,13 +18,20 @@ PROFILE_FILES = {
 }
 
 
-def profile_files():
-    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
-    files = sorted(p for p in tracked if p in PROFILE_FILES or p.startswith(PROFILE_DIRS))
+def select_profile_files(tracked):
+    files = sorted(
+        p for p in tracked
+        if p and not p.endswith(".go") and (p in PROFILE_FILES or p.startswith(PROFILE_DIRS))
+    )
     missing = PROFILE_FILES - set(files)
     if missing:
         raise ValueError(f"Missing release resources: {sorted(missing)}")
     return files
+
+
+def profile_files():
+    tracked = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
+    return select_profile_files(tracked)
 
 
 def package_profile(output, version):
