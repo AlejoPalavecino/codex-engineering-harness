@@ -74,12 +74,21 @@ function Get-ChuliFileSha256([string]$Path) {
 }
 
 function Assert-ChuliSafeRegularTarget([string]$Path) {
+    $isMac = [bool](Get-Variable -Name IsMacOS -ValueOnly -ErrorAction SilentlyContinue)
     $cursor = $Path
     $isLeaf = $true
     while ($cursor) {
         if (Test-Path -LiteralPath $cursor) {
             $item = Get-Item -LiteralPath $cursor -Force
-            if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
+            $skipMacSystemAlias = $false
+            if ($isMac -and -not $isLeaf -and ($cursor -eq '/tmp' -or $cursor -eq '/var')) {
+                $target = if ($item.PSObject.Properties['LinkTarget']) { [string]$item.LinkTarget } else { '' }
+                $expected = 'private' + $cursor
+                if ($target -eq $expected -or $target -eq ('/' + $expected)) {
+                    $skipMacSystemAlias = $true
+                }
+            }
+            if (-not $skipMacSystemAlias -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
                 throw ('Symbolic link or reparse point rejected: ' + $cursor)
             }
             if ($isLeaf -and $item.PSIsContainer) {
