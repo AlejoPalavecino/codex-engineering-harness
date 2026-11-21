@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.3] — 2026-11-20
+
+- Unificación del catálogo de modelos: `internal/manager` embebe y parsea `config/models.json` como única fuente de verdad junto con Python, preservando el orden de clientes y presets sin incluir archivos `.go` en el paquete del perfil.
+- Cobertura cross-platform en CI: nuevo job `posix-installer` con `pwsh` en `ubuntu-latest` y `macos-latest`, y soporte de los alias del sistema `/tmp` y `/var` en macOS dentro de `scripts/profile.ps1`.
+- Guardrails de presupuesto en `scripts/verify_release.py` alineados con los límites de extracción de `internal/manager/archive.go` (16 MiB comprimido, 32 MiB expandido, 4 MiB por archivo, 2048 entradas), conservando íntegro el pin upstream de `diagram-design`.
+- Modularización del estado de `internal/tui`, extracción de actualizaciones/versiones a `internal/tui/versions.go`, modo rápido `go test -short ./...` en `internal/manager` y actualización de `docs/ROADMAP.md` y `docs/TESTING.md`.
+
 ## [2.1.2] — 2026-11-19
 
 - En Codex, la instalación y la actualización muestran los modelos y esfuerzos de los siete roles en AGENTS.md también cuando coinciden con el preset equilibrado.
