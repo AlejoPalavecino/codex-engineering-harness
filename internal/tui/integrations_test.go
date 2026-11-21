@@ -89,7 +89,7 @@ func TestIntegrationConfirmApplyAndUndo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	m := model{mgr: manager.Manager{Home: homeDir}, screen: integrationPreview, integrationID: "exa", integrationPlan: plan}
+	m := model{mgr: manager.Manager{Home: homeDir}, screen: integrationPreview, integrationState: integrationState{integrationID: "exa", integrationPlan: plan}}
 	m, cmd := integrationKey(m, "s")
 	if cmd == nil || m.screen != busy {
 		t.Fatal("explicit confirmation did not apply")
@@ -125,7 +125,7 @@ func TestIntegrationConfirmApplyAndUndo(t *testing.T) {
 }
 
 func TestIntegrationTextRemainsScrollableInNarrowTerminal(t *testing.T) {
-	m := model{screen: integrationDetail, integrationID: "github", width: 42, height: 24, log: strings.Repeat("contenido legible ", 50)}
+	m := model{screen: integrationDetail, integrationState: integrationState{integrationID: "github"}, width: 42, height: 24, log: strings.Repeat("contenido legible ", 50)}
 	for _, line := range m.lines() {
 		if lipgloss.Width(line) > 40 {
 			t.Fatal("text exceeds content width", line)

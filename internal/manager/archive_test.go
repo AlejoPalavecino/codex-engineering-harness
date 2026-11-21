@@ -151,6 +151,9 @@ func realProfile(t *testing.T, repo, version string) []byte {
 // Exercise the actual scripts from release-shaped archives. No real GitHub,
 // personal CODEX_HOME, Git checkout as cwd, or network during recovery.
 func TestOfficialProfileLifecycle(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs PowerShell installer integration")
+	}
 	if _, err := shell(); err != nil {
 		t.Skip("requires PowerShell and Python 3.11+")
 	}

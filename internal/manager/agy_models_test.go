@@ -64,6 +64,9 @@ func TestDiscoverAGYModelsCancelled(t *testing.T) {
 }
 
 func TestAGYLabelInstallationSnapshot(t *testing.T) {
+	if testing.Short() {
+		t.Skip("runs PowerShell installer integration")
+	}
 	if _, err := shell(); err != nil {
 		t.Skip("requires PowerShell and Python")
 	}

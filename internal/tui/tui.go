@@ -45,39 +45,31 @@ func choices(mgr manager.Manager) []menuItem {
 	}
 }
 
-type model struct {
-	width               int
-	integrationID       string
-	integrationCursor   int
-	integrationPlan     integrations.Plan
-	configuredMCPs      []integrations.ConfiguredServer
-	selectedCustomMCP   integrations.ConfiguredServer
-	customMCPField      int
-	customMCPName       string
-	customMCPIsCmd      bool
-	customMCPTarget     string
-	customMCPEnv        string
-	roleCursor          int
-	height, offset      int
-	mgr                 manager.Manager
-	managerVersion      string
-	installed           string
-	cursor              int
-	screen              string
-	title               string
-	action              string
-	prepared            manager.Prepared
-	log                 string
-	fault               string
-	resultSummary       string
-	resultNext          string
-	showTechLog         bool
-	statuses            []manager.ClientStatus
-	updatesChecked      bool
-	updateCheckErr      string
-	updateReport        manager.UpdateReport
-	releases            []manager.Release
-	cachedTags          []string
+type integrationState struct {
+	integrationID     string
+	integrationCursor int
+	integrationPlan   integrations.Plan
+	configuredMCPs    []integrations.ConfiguredServer
+	selectedCustomMCP integrations.ConfiguredServer
+	customMCPField    int
+	customMCPName     string
+	customMCPIsCmd    bool
+	customMCPTarget   string
+	customMCPEnv      string
+}
+
+type updateState struct {
+	statuses       []manager.ClientStatus
+	updatesChecked bool
+	updateCheckErr string
+	updateReport   manager.UpdateReport
+	releases       []manager.Release
+	cachedTags     []string
+	versionCursor  int
+	updateCursor   int
+}
+
+type wizardState struct {
 	wizardSelected      map[string]bool
 	wizardConfigs       map[string]wizardClientConfig
 	wizardCursor        int
@@ -88,30 +80,61 @@ type model struct {
 	wizardUseLocal      bool
 	wizardReturn        bool
 	adoptGentle         bool
-	versionCursor       int
-	updateCursor        int
-	rolePickerModelIdx  int
-	modelChoices        []string
-	modelLabels         map[string]string
-	pickerChoices       []string
-	modelSource         string
-	modelRequest        int
-	progressStep        int
-	progressTotal       int
-	progressLabel       string
-	spinnerIdx          int
-	activeTracker       *progressTracker
-	busyCancelable      bool
-	busyReturnScreen    string
-	savedProfiles       []manager.SavedProfile
-	savedProfileIdx     int
-	profileNameInput    string
+}
+
+type modelPickerState struct {
+	roleCursor         int
+	rolePickerModelIdx int
+	modelChoices       []string
+	modelLabels        map[string]string
+	pickerChoices      []string
+	modelSource        string
+	modelRequest       int
+	savedProfiles      []manager.SavedProfile
+	savedProfileIdx    int
+	profileNameInput   string
+}
+
+type progressState struct {
+	progressStep     int
+	progressTotal    int
+	progressLabel    string
+	spinnerIdx       int
+	activeTracker    *progressTracker
+	busyCancelable   bool
+	busyReturnScreen string
+}
+
+type skillsState struct {
 	skillsList          []manager.SkillInfo
 	skillsDraftDisabled map[string]bool
 	skillsCursor        int
 	skillsDirty         bool
 	skillPathInput      string
 	skillNotice         string
+}
+
+type model struct {
+	width, height, offset int
+	mgr                   manager.Manager
+	managerVersion        string
+	installed             string
+	cursor                int
+	screen                string
+	title                 string
+	action                string
+	prepared              manager.Prepared
+	log                   string
+	fault                 string
+	resultSummary         string
+	resultNext            string
+	showTechLog           bool
+	integrationState
+	updateState
+	wizardState
+	modelPickerState
+	progressState
+	skillsState
 }
 
 type preparedMsg struct {
@@ -151,6 +174,9 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) update(message tea.Msg) (model, tea.Cmd) {
+	if next, cmd, handled := m.updateVersions(message); handled {
+		return next, cmd
+	}
 	if next, cmd, handled := m.updateWizard(message); handled {
 		return next, cmd
 	}
@@ -461,13 +487,13 @@ func Run(mgr manager.Manager, version string) error {
 	}
 	statuses := mgr.DetectClients()
 	initial := model{
-		mgr:                 mgr,
-		managerVersion:      version,
-		installed:           installed,
-		statuses:            statuses,
-		screen:              home,
-		savedProfileIdx:     -1,
-		skillsDraftDisabled: map[string]bool{},
+		mgr:              mgr,
+		managerVersion:   version,
+		installed:        installed,
+		screen:           home,
+		updateState:      updateState{statuses: statuses},
+		modelPickerState: modelPickerState{savedProfileIdx: -1},
+		skillsState:      skillsState{skillsDraftDisabled: map[string]bool{}},
 	}
 	initial.reloadSavedProfiles()
 	if servers, err := initial.integrationService().ListConfigured(context.Background()); err == nil {

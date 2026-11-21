@@ -223,8 +223,10 @@ func (m model) crtBody(width int, page string) (string, string) {
 		return m.crtIntegration(width, page)
 	}
 	switch m.screen {
-	case installPlatformsScreen, installProfileScreen, installConfirmScreen, installGentleScreen, updateScreen, versionsScreen:
+	case installPlatformsScreen, installProfileScreen, installConfirmScreen, installGentleScreen:
 		return m.crtWizard(width, page)
+	case updateScreen, versionsScreen:
+		return m.crtVersions(width, page)
 	case skillsScreen, skillsAddScreen:
 		return m.crtSkills(width)
 	case home:

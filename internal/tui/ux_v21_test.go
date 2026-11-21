@@ -161,16 +161,18 @@ func TestUpdateAndVersionsScreensRenderSummaryAndTags(t *testing.T) {
 		managerVersion: "2.0.0",
 		installed:      "2.0.0",
 		mgr:            manager.Manager{Home: "/tmp/codex", Target: "codex"},
-		updatesChecked: true,
-		releases:       []manager.Release{{Tag: "v2.1.0"}, {Tag: "v2.0.0"}},
-		cachedTags:     []string{"v2.0.0"},
-		updateReport: manager.UpdateReport{
-			Latest:           manager.Release{Tag: "v2.1.0"},
-			Summary:          "• Instalación animada sin ruido\n• Gestión de Skills",
-			ManagerNewer:     true,
-			AnyProfileUpdate: true,
-			Clients: []manager.ClientUpdateStatus{
-				{ID: "codex", Name: "Codex", Installed: "2.0.0", HasInstall: true, HasUpdate: true},
+		updateState: updateState{
+			updatesChecked: true,
+			releases:       []manager.Release{{Tag: "v2.1.0"}, {Tag: "v2.0.0"}},
+			cachedTags:     []string{"v2.0.0"},
+			updateReport: manager.UpdateReport{
+				Latest:           manager.Release{Tag: "v2.1.0"},
+				Summary:          "• Instalación animada sin ruido\n• Gestión de Skills",
+				ManagerNewer:     true,
+				AnyProfileUpdate: true,
+				Clients: []manager.ClientUpdateStatus{
+					{ID: "codex", Name: "Codex", Installed: "2.0.0", HasInstall: true, HasUpdate: true},
+				},
 			},
 		},
 	}
@@ -211,7 +213,7 @@ func TestSavedProfileAndCustomMCPAndSkillsScreens(t *testing.T) {
 	mgr, _ = manager.NewForClient("", "agy")
 
 	// 1. Save, cycle and delete a custom AI profile
-	m := model{screen: modelsScreen, width: 90, height: 28, mgr: mgr, savedProfileIdx: -1}
+	m := model{screen: modelsScreen, width: 90, height: 28, mgr: mgr, modelPickerState: modelPickerState{savedProfileIdx: -1}}
 	m.ensureModelState()
 	m, _ = sendKey(m, "g")
 	if m.screen != modelsSaveScreen {
@@ -255,11 +257,11 @@ func TestSavedProfileAndCustomMCPAndSkillsScreens(t *testing.T) {
 		t.Fatal(err)
 	}
 	m = model{
-		screen:              skillsScreen,
-		width:               90,
-		height:              28,
-		mgr:                 mgr,
-		skillsDraftDisabled: map[string]bool{},
+		screen:      skillsScreen,
+		width:       90,
+		height:      28,
+		mgr:         mgr,
+		skillsState: skillsState{skillsDraftDisabled: map[string]bool{}},
 	}
 	next, _ := m.Update(skillsLoadedMsg{
 		items: []manager.SkillInfo{{Name: "harness-discovery", Description: "Discovery R2", Source: "chuli", Enabled: true}},
@@ -282,7 +284,7 @@ func TestUpdateSearchReturnsFromBusyAndAllowsCancel(t *testing.T) {
 		height:         28,
 		managerVersion: "2.0.0",
 		mgr:            manager.Manager{Home: "/tmp/codex", Target: "codex"},
-		updatesChecked: true,
+		updateState:    updateState{updatesChecked: true},
 	}
 	// Pressing R enters cancelable busy screen and returns to updateScreen on updatesLoadedMsg
 	m, cmd := sendKey(m, "r")

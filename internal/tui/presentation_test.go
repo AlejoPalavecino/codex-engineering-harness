@@ -60,7 +60,7 @@ func TestCRTResponsiveHome(t *testing.T) {
 func TestCRTStatesAndScrollableLogs(t *testing.T) {
 	states := map[string]string{busy: "EN CURSO", preview: "REVISIÓN PREVIA", conflict: "CONFLICTO", result: "COMPLETADO", about: "Acerca de Chuli", integrationList: "Integraciones", integrationDetail: "V comprobar", integrationPreview: "S / Y confirmar", integrationResult: "COMPLETADO"}
 	for screen, want := range states {
-		m := model{screen: screen, width: 60, height: 24, integrationID: "exa", mgr: manager.Manager{Home: "/temporary/codex"}, log: "cambios revisables"}
+		m := model{screen: screen, width: 60, height: 24, integrationState: integrationState{integrationID: "exa"}, mgr: manager.Manager{Home: "/temporary/codex"}, log: "cambios revisables"}
 		text := ansi.Strip(m.renderCRT().Content)
 		if !strings.Contains(text, want) {
 			t.Errorf("%s missing %q: %s", screen, want, text)
@@ -74,7 +74,7 @@ func TestCRTStatesAndScrollableLogs(t *testing.T) {
 		}
 	}
 	for _, screen := range []string{preview, conflict, result, integrationDetail, integrationPreview, integrationResult} {
-		m := model{screen: screen, width: 60, height: 24, integrationID: "exa", log: strings.Repeat("registro\n", 40) + "ULTIMA LINEA"}
+		m := model{screen: screen, width: 60, height: 24, integrationState: integrationState{integrationID: "exa"}, log: strings.Repeat("registro\n", 40) + "ULTIMA LINEA"}
 		for range 50 {
 			next, _ := m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 			m = next.(model)
@@ -95,19 +95,23 @@ func TestCRTAllScreensFitTerminalWidth(t *testing.T) {
 	for _, size := range [][2]int{{40, 24}, {80, 24}, {120, 32}} {
 		for _, screen := range screens {
 			m := model{
-				screen:              screen,
-				width:               size[0],
-				height:              size[1],
-				integrationID:       "github",
-				wizardActiveID:      "codex",
-				wizardSelected:      map[string]bool{"codex": true},
-				wizardConfigs:       map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
-				updatesChecked:      true,
-				updateReport:        manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: "• Mejoras generales"},
-				skillsDraftDisabled: map[string]bool{},
-				title:               "Comprobando integración",
-				log:                 strings.Repeat("cambio revisable ", 15),
-				mgr:                 manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
+				screen:           screen,
+				width:            size[0],
+				height:           size[1],
+				integrationState: integrationState{integrationID: "github"},
+				wizardState: wizardState{
+					wizardActiveID: "codex",
+					wizardSelected: map[string]bool{"codex": true},
+					wizardConfigs:  map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
+				},
+				updateState: updateState{
+					updatesChecked: true,
+					updateReport:   manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: "• Mejoras generales"},
+				},
+				skillsState: skillsState{skillsDraftDisabled: map[string]bool{}},
+				title:       "Comprobando integración",
+				log:         strings.Repeat("cambio revisable ", 15),
+				mgr:         manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
 			}
 			text := ansi.Strip(m.renderCRT().Content)
 			for _, line := range strings.Split(text, "\n") {
@@ -144,19 +148,23 @@ func TestCRTHeightKeepsControlsVisible(t *testing.T) {
 	for _, size := range [][2]int{{40, 24}, {80, 24}, {120, 32}} {
 		for _, screen := range screens {
 			m := model{
-				screen:              screen,
-				width:               size[0],
-				height:              size[1],
-				integrationID:       "exa",
-				wizardActiveID:      "codex",
-				wizardSelected:      map[string]bool{"codex": true},
-				wizardConfigs:       map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
-				updatesChecked:      true,
-				updateReport:        manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: strings.Repeat("• Novedad importante\n", 30)},
-				skillsDraftDisabled: map[string]bool{},
-				mgr:                 manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
-				log:                 strings.Repeat("cambio revisable largo ", 100),
-				fault:               "un error recuperable",
+				screen:           screen,
+				width:            size[0],
+				height:           size[1],
+				integrationState: integrationState{integrationID: "exa"},
+				wizardState: wizardState{
+					wizardActiveID: "codex",
+					wizardSelected: map[string]bool{"codex": true},
+					wizardConfigs:  map[string]wizardClientConfig{"codex": {Preset: "codex-balanced"}},
+				},
+				updateState: updateState{
+					updatesChecked: true,
+					updateReport:   manager.UpdateReport{Latest: manager.Release{Tag: "v2.1.0"}, Summary: strings.Repeat("• Novedad importante\n", 30)},
+				},
+				skillsState: skillsState{skillsDraftDisabled: map[string]bool{}},
+				mgr:         manager.Manager{Home: "/temporary/" + strings.Repeat("destination/", 12)},
+				log:         strings.Repeat("cambio revisable largo ", 100),
+				fault:       "un error recuperable",
 			}
 			content := m.renderCRT().Content
 			if rows := lipgloss.Height(content); rows > size[1] {
