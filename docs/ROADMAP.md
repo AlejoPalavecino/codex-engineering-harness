@@ -1,6 +1,6 @@
 # Trayectoria de Chuli
 
-## Decisiones vigentes (v2.1.4)
+## Decisiones vigentes (v2.1.5)
 
 | Decisión | Motivo y consecuencia |
 | --- | --- |
@@ -24,6 +24,7 @@
 | 2.0.0–2.0.3 | Soporte multi-cliente completo (Codex, Claude Code y AGY CLI), asistente guiado en 4 pasos, perfiles de AI guardados, gestión de skills, MCPs multi-cliente, descubrimiento dinámico de modelos, comparador de fricción y Frontend Design. |
 | 2.1.0–2.1.2 | Cierre del roadmap del ciclo de vida ([issue #63](https://github.com/AlejoPalavecino/codex-engineering-harness/issues/63), [tablero](../odd/tasks/roadmap-ciclo-de-vida.md)): flujo Git/GitHub compartido en los tres clientes, revisión de criterios ambiguos, trazabilidad por requisito, impacto por archivo, quality gates, revisión de seguridad, publicación del artefacto exacto de CI, guía de operación y correcciones de recursos TTP/AGY/Codex. |
 | 2.1.4 | Voz que enseña mientras trabaja ([PR #84](https://github.com/AlejoPalavecino/codex-engineering-harness/pull/84)): CES explica qué se rompe si no se atiende, qué significa un error, sus causas posibles y por qué se elige la solución, sin dar por sabido lo técnico; criterio VOZ-08 y escenario V-08. |
+| 2.1.5 | Aviso de estilo de salida en Claude Code ([PR #85](https://github.com/AlejoPalavecino/codex-engineering-harness/pull/85)): `chuli --client claude doctor` advierte, sin bloquear ni modificar nada, cuando un `outputStyle` activo puede contradecir el tono CES. |
 | 2.1.3 | Resolución de hallazgos de auditoría ([PR #83](https://github.com/AlejoPalavecino/codex-engineering-harness/pull/83)): `config/models.json` como fuente única embebida en Go y Python, validación funcional `pwsh` en CI sobre Ubuntu/macOS, guardrails de presupuesto de paquete en `verify_release.py`, modularización de `internal/tui` y `go test -short ./...` en `internal/manager`. |
 
 ## Próximos frentes y evidencia
