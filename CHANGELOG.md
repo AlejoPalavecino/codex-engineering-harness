@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [2.1.5] — 2026-11-24
 
 - `chuli --client claude doctor` advierte, sin bloquear ni modificar nada, cuando `settings.json` tiene un `outputStyle` activo (por ejemplo `Neutral` de Gentle AI) que puede contradecir el tono CES de Chuli.
 

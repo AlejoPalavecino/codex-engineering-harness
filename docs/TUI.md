@@ -9,7 +9,7 @@ El menú se abre con `chuli` o `chuli.exe`. Mantiene la consola CRT retro y orga
 5. **MCPs:** administra conexiones MCP multi-cliente (**Codex** en `config.toml`, **Claude Code** en `.claude.json` y **AGY CLI** en `mcp_config.json`), combinando el catálogo recomendado (`Context7`, `Engram`, `Exa`, `GitHub` + guía `Egolite`) con alta y baja segura de MCPs personalizados (`N`).
 6. **Skills:** lista las skills del perfil y skills propias con su descripción, permite prender o apagar skills por plataforma (`Espacio` + `Enter`/`S` manteniendo la verificación en regla) y sumar o quitar skills locales (`A` / `X`).
 
-Accesos secundarios al pie de la portada: `D` ejecuta verificación (`doctor`), `?` abre *Acerca de Chuli*, `Tab`/`1`/`2`/`3` alterna el cliente activo y `q` sale. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.4` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
+Accesos secundarios al pie de la portada: `D` ejecuta verificación (`doctor`), `?` abre *Acerca de Chuli*, `Tab`/`1`/`2`/`3` alterna el cliente activo y `q` sale. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.5` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
 
 Para usar `chuli` desde cualquier carpeta en Windows, desde v1.1.1 podés descargar `install-chuli-windows.ps1` de la release (fuente: `scripts/install-manager.ps1`): revisá su vista previa y ejecutalo con `-Apply` para instalarlo y registrarlo en el PATH de tu usuario. [Instalación del comando](INSTALLATION.md#comando-chuli-en-windows). El ZIP del Manager sigue disponible como alternativa portable.
 
@@ -72,7 +72,7 @@ Para probar desde el checkout: `go run ./cmd/chuli integrations list`. Usá un `
 El rediseño local incorpora el logotipo pixel-art de la PC retro y las letras en bloque `CHULI` con sombra sobre fondo oscuro, manteniendo una paleta verde neón, ámbar y beige de alto contraste. Conserva las mismas operaciones y atajos de teclado. En terminales anchas (`>= 100` cols), el menú principal muestra la explicación lateral y la tarjeta enmarcada del equipo activo con los 7 roles y sus badges de esfuerzo; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
 
 ```text
-  ▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄░   ● MULTI-CLIENT HARNESS · v2.1.4
+  ▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄░   ● MULTI-CLIENT HARNESS · v2.1.5
   ██  ▀▄        ██░   ▄█████▄ ██░ ██░ ██░ ██░ ██░    █████░
   ██  ▄▀ ▄▄▄    ██░   ██░  ▀▀ ██░ ██░ ██░ ██░ ██░     ▐█▌░
   ▀█▄▄▄▄▄▄▄▄▄▄▄▄█▀░   ██░     ██████░ ██░ ██░ ██░     ▐█▌░
@@ -81,4 +81,4 @@ El rediseño local incorpora el logotipo pixel-art de la PC retro y las letras e
  ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀   [● 1:Codex]  [○ 2:Claude]  [○ 3:AGY]
 ```
 
-Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres Unicode de bloque estándar, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v2.1.4. Las PRs #52–#56 corresponden al asistente original; el rediseño visual y el configurador multi-cliente se integraron sobre esa base.
+Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres Unicode de bloque estándar, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v2.1.5. Las PRs #52–#56 corresponden al asistente original; el rediseño visual y el configurador multi-cliente se integraron sobre esa base.
