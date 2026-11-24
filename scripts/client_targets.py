@@ -371,7 +371,21 @@ def prepare_json_settings(
     return out_bytes, {"changed": changed, "preserved": preserved, "tracked": tracked}
 
 
-def validate_json_settings(raw: bytes, state: dict | None = None) -> dict:
+def output_style_warnings(data: dict, client: str | None) -> list[str]:
+    """Advise when a Claude Code output style may override Chuli's CES tone. Never edits settings."""
+    if client != "claude":
+        return []
+    style = data.get("outputStyle")
+    if not isinstance(style, str) or style.strip().lower() in ("", "default"):
+        return []
+    return [
+        f'outputStyle "{style}" activo en settings.json: un output style se suma al system prompt '
+        "y puede contradecir el tono CES de Chuli (voseo, registro, profundidad). "
+        "Si querés el tono de Chuli, quitá la clave outputStyle o elegí el estilo Default."
+    ]
+
+
+def validate_json_settings(raw: bytes, state: dict | None = None, client: str | None = None) -> dict:
     text = raw.decode("utf-8-sig").strip()
     data = json.loads(text) if text else {}
     if not isinstance(data, dict):
@@ -389,7 +403,7 @@ def validate_json_settings(raw: bytes, state: dict | None = None) -> dict:
                 cur = cur[part]
             if not found or cur != wanted:
                 drift.append(key)
-    return {"syntax": "valid", "managed_drift": drift}
+    return {"syntax": "valid", "managed_drift": drift, "warnings": output_style_warnings(data, client)}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -496,7 +510,9 @@ def main(argv: list[str] | None = None) -> int:
                 )
             else:
                 manifest = json.loads(args.manifest.read_text(encoding="utf-8")) if args.manifest else None
-                report = validate_json_settings(raw, manifest)
+                report = validate_json_settings(raw, manifest, client=args.client)
+                for warning in report["warnings"]:
+                    print("WARNING:", warning)
                 if report["managed_drift"]:
                     print("INVALID: managed key drift:", ", ".join(report["managed_drift"]))
                     return 2

@@ -52,6 +52,8 @@ Revisá el plan si ya tenés agentes, skills del mismo nombre, un modelo elegido
 
 Si ya tenés Gentle AI en ese mismo perfil, la acción normal se detiene al detectar su orquestador. Elegí en la TUI la opción de adoptar Chuli y revisá la nueva vista previa. Se respaldan los bloques Gentle de orquestación y routing; otros bloques separados, como persona o memoria, permanecen en el archivo. El programa rechaza marcas ambiguas o incompletas. En la CLI, previsualizá con `chuli install --adopt-gentle-routing` y añadí `--apply` únicamente después de revisar el resultado. La decisión afecta ese perfil de Codex. Tu instalación Gentle en Pi tiene su propio directorio.
 
+En Claude Code, un `outputStyle` activo en `~/.claude/settings.json` (por ejemplo `Neutral`, que instala Gentle AI) se suma al system prompt y puede contradecir el tono CES de Chuli: prohíbe voseo y modismos regionales. Chuli no modifica esa clave. `chuli --client claude doctor` la informa como advertencia no bloqueante. Si querés el tono de Chuli, quitá `outputStyle` o elegí el estilo Default. El diagnóstico no revisa los `settings.json` de cada proyecto.
+
 Para actualizar, volvés a abrir la TUI. Para comprobar o revertir, usá las acciones de diagnóstico y rollback. Si el destino cambió después de instalar, consultá el diagnóstico antes de revertir. La reversión se aplica a la última operación registrada y conserva evidencia en el directorio de respaldos del perfil.
 
 ## Desarrollo desde fuentes

@@ -31,7 +31,10 @@ try {
     $installedClaudeSettings = [IO.File]::ReadAllText((Join-Path $claudeHome 'settings.json')) | ConvertFrom-Json
     Assert-That ($installedClaudeSettings.model -eq 'claude-fable-5-2') 'Claude orchestrator model override not applied.'
     Assert-That ($installedClaudeSettings.outputStyle -eq 'concise') 'Claude unrelated setting lost.'
-    & $verify -CodexHome $claudeHome -Client 'claude' | Out-Null
+    $claudeVerify = (& $verify -CodexHome $claudeHome -Client 'claude' | Out-String)
+    Assert-That ($LASTEXITCODE -eq 0) 'Claude verify failed with an active outputStyle.'
+    Assert-That ($claudeVerify.Contains('WARNING: outputStyle "concise"')) 'Claude verify did not warn about the active outputStyle.'
+    Assert-That ($claudeVerify -match 'advertencias \(deriva no bloqueante\): [1-9]') 'Claude verify did not count the outputStyle warning.'
     & $rollback -CodexHome $claudeHome -Client 'claude' -Apply | Out-Null
     Assert-That ([IO.File]::ReadAllText((Join-Path $claudeHome 'CLAUDE.md')) -eq $claudeMd) 'Claude rollback did not restore CLAUDE.md.'
     Assert-That (-not (Test-Path (Join-Path $claudeHome 'agents/solution_architect.md'))) 'Claude rollback did not remove installed agent.'
