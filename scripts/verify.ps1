@@ -114,8 +114,10 @@ if ($effectiveClient -eq 'codex') {
 $command = [string]$python.command
 $allArgs = @($python.prefix) + $params
 $result = & $command @allArgs 2>&1
+$configExit = $LASTEXITCODE
 Write-Output (($result | Out-String).Trim())
-if ($LASTEXITCODE -ne 0) { $errors++ }
+$warnings += @($result | Where-Object { [string]$_ -like 'WARNING:*' }).Count
+if ($configExit -ne 0) { $errors++ }
 if ($effectiveClient -eq 'agy') {
     $agyCliStatePath = Join-Path $homePath 'harness-install/agy-cli-settings.json'
     if (Test-Path -LiteralPath $agyCliStatePath -PathType Leaf) {

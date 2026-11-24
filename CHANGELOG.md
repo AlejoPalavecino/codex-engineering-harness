@@ -1,5 +1,9 @@
 # Changelog
 
+## [Unreleased]
+
+- `chuli --client claude doctor` advierte, sin bloquear ni modificar nada, cuando `settings.json` tiene un `outputStyle` activo (por ejemplo `Neutral` de Gentle AI) que puede contradecir el tono CES de Chuli.
+
 ## [2.1.4] — 2026-11-24
 
 - CES explica para que la persona aprenda mientras se trabaja: no da por sabido lo técnico, cuenta qué se rompe si no se atiende, qué significa un error, sus causas posibles, cuál aplica según la evidencia y por qué se elige la solución. La profundidad se sigue ajustando ante dominio demostrado o pedido de ir directo al código.

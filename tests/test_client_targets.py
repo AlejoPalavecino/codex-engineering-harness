@@ -115,6 +115,32 @@ class ClientTargetsTests(unittest.TestCase):
         agy_explorer = ct.render_agy_agent(agents["chuli_explorer"], "gemini-4-hydrogen", "low").decode("utf-8")
         self.assertIn("model: flash_lite", agy_explorer)
 
+    def test_claude_output_style_warns_without_blocking_or_editing(self):
+        raw = json.dumps({"outputStyle": "Neutral", "model": "opus"}).encode("utf-8")
+        report = ct.validate_json_settings(raw, None, client="claude")
+        self.assertEqual(report["managed_drift"], [])
+        self.assertEqual(len(report["warnings"]), 1)
+        self.assertIn("Neutral", report["warnings"][0])
+        self.assertIn("CES", report["warnings"][0])
+
+        for quiet in ({}, {"outputStyle": ""}, {"outputStyle": "default"}, {"outputStyle": "Default"}):
+            quiet_raw = json.dumps(quiet).encode("utf-8")
+            self.assertEqual(ct.validate_json_settings(quiet_raw, None, client="claude")["warnings"], [])
+        self.assertEqual(ct.validate_json_settings(raw, None, client="agy")["warnings"], [])
+
+        with tempfile.TemporaryDirectory() as tmp:
+            settings = Path(tmp) / "settings.json"
+            settings.write_bytes(raw)
+            from contextlib import redirect_stdout
+            import io
+
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                code = ct.main(["json-config", "validate", "--client", "claude", "--input", str(settings)])
+            self.assertEqual(code, 0)
+            self.assertIn("WARNING: ", buf.getvalue())
+            self.assertEqual(settings.read_bytes(), raw)
+
     def test_json_settings_preserves_bom_and_unrelated_keys(self):
         _, claude_roles = ct.resolve_role_models("claude", "claude-balanced")
         existing = ct.BOM + json.dumps(
