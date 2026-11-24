@@ -40,9 +40,15 @@ instructions = (root / "config/AGENTS.md").read_text(encoding="utf-8")
 for required in ("R0", "R1", "R2", "Criticidad", "Human-in-the-Loop", "Engram", "CES v1.0"):
     assert required in instructions, required
 
+# CES teaching mode: explain risk, possible causes and the reason behind the chosen approach.
+ces = (root / "docs/protocols/CES.md").read_text(encoding="utf-8")
+for source, text in (("config/AGENTS.md", instructions), ("docs/protocols/CES.md", ces)):
+    for required in ("sin dar por sabido", "qué se rompe", "causas posibles", "por qué de esa manera"):
+        assert required in text, f"{source}: {required}"
+
 for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json", "tests/test_taskboard.py", "VERSION", "config/models.json", "scripts/client_targets.py", "docs/specs/multi-client-v2.md"):
     assert (root / required_path).is_file(), required_path
-assert (root / "VERSION").read_text(encoding="utf-8").strip() == "2.1.3"
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "2.1.4"
 
 legacy_hashes = json.loads((root / "scripts/legacy-managed-hashes.json").read_text(encoding="utf-8"))
 assert set(legacy_hashes) == {"0.1.3", "0.2.0"}
