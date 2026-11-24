@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.1.4] — 2026-11-24
+
+- CES explica para que la persona aprenda mientras se trabaja: no da por sabido lo técnico, cuenta qué se rompe si no se atiende, qué significa un error, sus causas posibles, cuál aplica según la evidencia y por qué se elige la solución. La profundidad se sigue ajustando ante dominio demostrado o pedido de ir directo al código.
+- Nuevo criterio VOZ-08, escenario de evaluación V-08 y comprobación en `tests/validate_repository.py` de que la regla se distribuye en `config/AGENTS.md` y `docs/protocols/CES.md`.
+
 ## [2.1.3] — 2026-11-20
 
 - Unificación del catálogo de modelos: `internal/manager` embebe y parsea `config/models.json` como única fuente de verdad junto con Python, preservando el orden de clientes y presets sin incluir archivos `.go` en el paquete del perfil.
