@@ -146,6 +146,7 @@ func (m model) startApplyUpdates() (model, tea.Cmd) {
 		}
 	}
 	m.wizardUseLocal = false
+	m.resultFromWizard = false
 	m.busyCancelable = false
 	m.busyReturnScreen = ""
 	m.screen = busy
@@ -230,7 +231,7 @@ func (m model) updateVersions(message tea.Msg) (model, tea.Cmd, bool) {
 	case updateScreen:
 		actions := m.updateActions()
 		switch key {
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit, true
 		case "esc":
 			m.screen = home
@@ -269,13 +270,16 @@ func (m model) updateVersions(message tea.Msg) (model, tea.Cmd, bool) {
 	case versionsScreen:
 		items := m.availableVersionTags()
 		switch key {
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit, true
 		case "esc":
 			m.screen = home
 			return m, nil, true
 		case "tab":
 			m.nextClient()
+			return m, nil, true
+		case "shift+tab":
+			m.prevClient()
 			return m, nil, true
 		case "1":
 			m.switchClient("codex")

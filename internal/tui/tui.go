@@ -70,16 +70,22 @@ type updateState struct {
 }
 
 type wizardState struct {
-	wizardSelected      map[string]bool
-	wizardConfigs       map[string]wizardClientConfig
-	wizardCursor        int
-	wizardProfileCursor int
-	wizardActiveID      string
-	wizardProviderIdx   int
-	wizardConfirmCursor int
-	wizardUseLocal      bool
-	wizardReturn        bool
-	adoptGentle         bool
+	wizardSelected         map[string]bool
+	wizardConfigs          map[string]wizardClientConfig
+	wizardCursor           int
+	wizardProfileCursor    int
+	wizardActiveID         string
+	wizardProviderIdx      int
+	wizardConfirmCursor    int
+	wizardUseLocal         bool
+	wizardReturn           bool
+	wizardCameFromFastPath bool
+	wizardSavedName        map[string]string
+	wizardAdoptGentle      map[string]bool
+	wizardPreflight        map[string]bool
+	wizardRuntime          manager.RuntimePreflight
+	wizardPreflightDone    bool
+	adoptGentle            bool
 }
 
 type modelPickerState struct {
@@ -128,6 +134,8 @@ type model struct {
 	fault                 string
 	resultSummary         string
 	resultNext            string
+	resultCursor          int
+	resultFromWizard      bool
 	showTechLog           bool
 	integrationState
 	updateState
@@ -214,10 +222,21 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 			return m, nil
 		} // Do not detach a mutating process.
 		switch key {
-		case "ctrl+c", "q":
+		case "ctrl+c":
 			m.prepared.Cleanup()
 			return m, tea.Quit
+		case "q":
+			if m.screen == home || m.screen == about || (m.screen == result && !m.showTechLog) {
+				m.prepared.Cleanup()
+				return m, tea.Quit
+			}
+			return m, nil
 		case "esc":
+			if m.screen == result && m.showTechLog && m.resultSummary != "" {
+				m.showTechLog = false
+				m.offset = 0
+				return m, nil
+			}
 			m.prepared.Cleanup()
 			m.prepared = manager.Prepared{}
 			m.screen = home
@@ -225,10 +244,12 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 			m.log = ""
 			m.resultSummary = ""
 			m.resultNext = ""
+			m.resultCursor = 0
+			m.resultFromWizard = false
 			m.showTechLog = false
 			return m, nil
 		}
-		if m.screen == preview || m.screen == result || m.screen == conflict {
+		if m.screen == preview || m.screen == conflict || (m.screen == result && (m.resultSummary == "" || m.showTechLog)) {
 			switch key {
 			case "down", "j", "pgdown", "up", "k", "pgup":
 				step := 1
@@ -250,14 +271,15 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 		if m.screen == home {
 			options := choices(m.mgr)
 			switch key {
-			case "tab":
+			case "tab", "right", "l":
 				m.nextClient()
-			case "1":
-				m.switchClient("codex")
-			case "2":
-				m.switchClient("claude")
-			case "3":
-				m.switchClient("agy")
+			case "shift+tab", "left", "h":
+				m.prevClient()
+			case "1", "2", "3", "4", "5", "6":
+				idx := int(key[0] - '1')
+				if idx >= 0 && idx < len(options) {
+					return m.activateHomeChoice(idx)
+				}
 			case "m":
 				m.ensureModelState()
 				m.reloadSavedProfiles()
@@ -275,6 +297,8 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 				m.log = ""
 				m.resultSummary = ""
 				m.resultNext = ""
+				m.resultCursor = 0
+				m.resultFromWizard = false
 				m.showTechLog = true
 				m.progressStep, m.progressTotal = 1, 1
 				m.progressLabel = "Comprobando archivos, reglas y configuración..."
@@ -289,63 +313,7 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 					m.cursor++
 				}
 			case "enter":
-				choice := options[m.cursor]
-				m.offset = 0
-				m.title = choice.label
-				m.action = choice.action
-				m.fault = ""
-				m.log = ""
-				m.resultSummary = ""
-				m.resultNext = ""
-				m.showTechLog = false
-				switch choice.action {
-				case "install":
-					m.initWizard()
-					m.screen = installPlatformsScreen
-					return m, nil
-				case "update":
-					m.updateCursor = 0
-					if !m.updatesChecked {
-						m.screen = busy
-						m.busyCancelable = true
-						m.busyReturnScreen = updateScreen
-						m.title = "Buscando actualizaciones"
-						m.progressStep, m.progressTotal = 1, 1
-						m.progressLabel = "Consultando últimas releases oficiales en GitHub..."
-						return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
-					}
-					m.screen = updateScreen
-					m.log = m.updateReport.Summary
-					return m, nil
-				case "versions":
-					m.versionCursor = 0
-					if !m.updatesChecked {
-						m.screen = busy
-						m.busyCancelable = true
-						m.busyReturnScreen = versionsScreen
-						m.title = "Cargando versiones"
-						m.progressStep, m.progressTotal = 1, 1
-						m.progressLabel = "Consultando releases disponibles en GitHub..."
-						return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
-					}
-					m.screen = versionsScreen
-					return m, nil
-				case "models":
-					m.ensureModelState()
-					m.reloadSavedProfiles()
-					m.wizardReturn = false
-					m.screen = modelsScreen
-					return m, nil
-				case "integrations":
-					m.integrationCursor = 0
-					m.screen = integrationList
-					return m, nil
-				case "skills":
-					m.skillsCursor = 0
-					m.skillNotice = ""
-					m.screen = skillsScreen
-					return m, loadSkillsCmd(m.mgr)
-				}
+				return m.activateHomeChoice(m.cursor)
 			}
 		} else if m.screen == conflict && key == "a" {
 			m.screen = busy
@@ -366,13 +334,32 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 				m.prepared = manager.Prepared{}
 				m.screen = home
 			}
-		} else if m.screen == result && key == "enter" {
-			m.screen = home
-			m.resultSummary = ""
-			m.resultNext = ""
-			m.showTechLog = false
-			m.fault = ""
-			m.log = ""
+		} else if m.screen == result {
+			if m.resultSummary != "" && !m.showTechLog {
+				actions := m.resultActions()
+				switch key {
+				case "up", "k":
+					m.resultCursor = max(0, m.resultCursor-1)
+					return m, nil
+				case "down", "j":
+					m.resultCursor = min(max(0, len(actions)-1), m.resultCursor+1)
+					return m, nil
+				case "enter":
+					if len(actions) > 0 {
+						chosen := actions[min(m.resultCursor, len(actions)-1)].id
+						return m.executeResultAction(chosen)
+					}
+				}
+			} else if key == "enter" {
+				m.screen = home
+				m.resultSummary = ""
+				m.resultNext = ""
+				m.resultCursor = 0
+				m.resultFromWizard = false
+				m.showTechLog = false
+				m.fault = ""
+				m.log = ""
+			}
 		}
 	case preparedMsg:
 		if msg.err != nil {
@@ -393,6 +380,8 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 		m.prepared = manager.Prepared{}
 		m.screen = result
 		m.offset = 0
+		m.resultCursor = 0
+		m.resultFromWizard = false
 		m.log = msg.log
 		if msg.err != nil {
 			m.fault = msg.err.Error()
@@ -405,6 +394,169 @@ func (m model) update(message tea.Msg) (model, tea.Cmd) {
 		return m, nil
 	}
 	return m, nil
+}
+
+func (m model) hasAnyInstall() bool {
+	if m.installed != "" {
+		return true
+	}
+	for _, st := range m.statuses {
+		if st.InstalledVersion != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func (m model) activateHomeChoice(idx int) (model, tea.Cmd) {
+	options := choices(m.mgr)
+	if idx < 0 || idx >= len(options) {
+		return m, nil
+	}
+	m.cursor = idx
+	choice := options[idx]
+	m.offset = 0
+	m.title = choice.label
+	m.action = choice.action
+	m.fault = ""
+	m.log = ""
+	m.resultSummary = ""
+	m.resultNext = ""
+	m.resultCursor = 0
+	m.resultFromWizard = false
+	m.showTechLog = false
+	switch choice.action {
+	case "install":
+		m.initWizard()
+		m.screen = installPlatformsScreen
+		return m, nil
+	case "update":
+		m.updateCursor = 0
+		if !m.updatesChecked {
+			m.screen = busy
+			m.busyCancelable = true
+			m.busyReturnScreen = updateScreen
+			m.title = "Buscando actualizaciones"
+			m.progressStep, m.progressTotal = 1, 1
+			m.progressLabel = "Consultando últimas releases oficiales en GitHub..."
+			return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
+		}
+		m.screen = updateScreen
+		m.log = m.updateReport.Summary
+		return m, nil
+	case "versions":
+		m.versionCursor = 0
+		if !m.updatesChecked {
+			m.screen = busy
+			m.busyCancelable = true
+			m.busyReturnScreen = versionsScreen
+			m.title = "Cargando versiones"
+			m.progressStep, m.progressTotal = 1, 1
+			m.progressLabel = "Consultando releases disponibles en GitHub..."
+			return m, tea.Batch(checkUpdatesCmd(m.mgr, m.managerVersion), animTickCmd())
+		}
+		m.screen = versionsScreen
+		return m, nil
+	case "models":
+		m.ensureModelState()
+		m.reloadSavedProfiles()
+		m.wizardReturn = false
+		m.screen = modelsScreen
+		return m, nil
+	case "integrations":
+		m.integrationCursor = 0
+		m.screen = integrationList
+		return m, nil
+	case "skills":
+		m.skillsCursor = 0
+		m.skillNotice = ""
+		m.screen = skillsScreen
+		return m, loadSkillsCmd(m.mgr)
+	}
+	return m, nil
+}
+
+func (m model) resultActions() []struct{ id, label string } {
+	var actions []struct{ id, label string }
+	if m.fault == "" {
+		return []struct{ id, label string }{
+			{"home", "▶ Volver al menú principal"},
+			{"mcps", "🔌 Configurar MCPs opcionales"},
+			{"skills", "🧩 Revisar Skills instaladas"},
+			{"quit", "⏻ Salir para empezar a usar Chuli"},
+		}
+	}
+	if m.log != "" {
+		actions = append(actions, struct{ id, label string }{"log", "🔍 Ver detalle técnico del error (V)"})
+	}
+	if m.resultFromWizard {
+		actions = append(actions, struct{ id, label string }{"retry-wizard", "← Volver a confirmación del asistente"})
+	}
+	actions = append(actions, struct{ id, label string }{"home", "⌂ Volver al menú principal"})
+	return actions
+}
+
+func (m model) executeResultAction(id string) (model, tea.Cmd) {
+	switch id {
+	case "mcps":
+		if m.resultFromWizard {
+			if sel := m.selectedClientIDs(); len(sel) > 0 {
+				m.switchClient(sel[0])
+			}
+		}
+		m.resultSummary = ""
+		m.resultNext = ""
+		m.resultCursor = 0
+		m.resultFromWizard = false
+		m.showTechLog = false
+		m.fault = ""
+		m.log = ""
+		m.integrationCursor = 0
+		m.screen = integrationList
+		return m, loadConfiguredMCPsCmd(m)
+	case "skills":
+		if m.resultFromWizard {
+			if sel := m.selectedClientIDs(); len(sel) > 0 {
+				m.switchClient(sel[0])
+			}
+		}
+		m.resultSummary = ""
+		m.resultNext = ""
+		m.resultCursor = 0
+		m.resultFromWizard = false
+		m.showTechLog = false
+		m.fault = ""
+		m.log = ""
+		m.skillsCursor = 0
+		m.skillNotice = ""
+		m.screen = skillsScreen
+		return m, loadSkillsCmd(m.mgr)
+	case "retry-wizard":
+		m.resultSummary = ""
+		m.resultNext = ""
+		m.resultCursor = 0
+		m.showTechLog = false
+		m.fault = ""
+		m.log = ""
+		return m.enterInstallConfirm(m.wizardCameFromFastPath)
+	case "log":
+		m.showTechLog = true
+		m.offset = 0
+		return m, nil
+	case "quit":
+		m.prepared.Cleanup()
+		return m, tea.Quit
+	default:
+		m.screen = home
+		m.resultSummary = ""
+		m.resultNext = ""
+		m.resultCursor = 0
+		m.resultFromWizard = false
+		m.showTechLog = false
+		m.fault = ""
+		m.log = ""
+		return m, nil
+	}
 }
 
 func prepareCmd(m manager.Manager, action string, adoptGentleRouting bool) tea.Cmd {

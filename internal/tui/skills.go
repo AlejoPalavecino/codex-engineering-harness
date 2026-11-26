@@ -137,7 +137,7 @@ func (m model) updateSkills(message tea.Msg) (model, tea.Cmd, bool) {
 	}
 
 	switch key {
-	case "q", "ctrl+c":
+	case "ctrl+c":
 		return m, tea.Quit, true
 	case "esc":
 		m.screen = home
@@ -146,6 +146,10 @@ func (m model) updateSkills(message tea.Msg) (model, tea.Cmd, bool) {
 		return m, nil, true
 	case "tab":
 		m.nextClient()
+		m.skillNotice = ""
+		return m, loadSkillsCmd(m.mgr), true
+	case "shift+tab":
+		m.prevClient()
 		m.skillNotice = ""
 		return m, loadSkillsCmd(m.mgr), true
 	case "1":

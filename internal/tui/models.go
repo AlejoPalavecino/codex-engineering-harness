@@ -118,6 +118,21 @@ func (m *model) nextClient() {
 	m.switchClient("codex")
 }
 
+func (m *model) prevClient() {
+	clients := manager.Clients()
+	cur := m.mgr.Target
+	if cur == "" {
+		cur = "codex"
+	}
+	for i, c := range clients {
+		if c.ID == cur {
+			m.switchClient(clients[(i-1+len(clients))%len(clients)].ID)
+			return
+		}
+	}
+	m.switchClient("codex")
+}
+
 func (m *model) cyclePreset() {
 	m.ensureModelState()
 	spec, ok := manager.FindClient(m.mgr.Target)
@@ -242,9 +257,11 @@ func (m model) confirmModelsAction() (model, tea.Cmd) {
 			m.wizardConfigs = map[string]wizardClientConfig{}
 		}
 		m.wizardConfigs[m.mgr.Target] = wizardClientConfig{Preset: m.mgr.Preset, Roles: m.mgr.RoleModels}
+		if m.wizardSavedName != nil {
+			delete(m.wizardSavedName, m.mgr.Target)
+		}
 		m.wizardReturn = false
-		m.advanceWizardProvider()
-		return m, nil
+		return m.advanceWizardProvider()
 	}
 	if m.installed == "" && m.mgr.Source == "" {
 		m.initWizard()
@@ -252,9 +269,7 @@ func (m model) confirmModelsAction() (model, tea.Cmd) {
 		m.wizardConfigs[m.mgr.Target] = wizardClientConfig{Preset: m.mgr.Preset, Roles: m.mgr.RoleModels}
 		m.wizardProviderIdx = 0
 		m.wizardActiveID = m.mgr.Target
-		m.wizardConfirmCursor = 0
-		m.screen = installConfirmScreen
-		return m, nil
+		return m.enterInstallConfirm(false)
 	}
 	applyMgr := m.mgr
 	for _, st := range m.statuses {
@@ -316,7 +331,7 @@ func (m model) updateModels(message tea.Msg) (model, tea.Cmd, bool) {
 			m.savedProfileIdx = -1
 		}
 		switch key {
-		case "q", "ctrl+c":
+		case "ctrl+c":
 			return m, tea.Quit, true
 		case "esc":
 			m.screen = modelsScreen
@@ -385,22 +400,43 @@ func (m model) updateModels(message tea.Msg) (model, tea.Cmd, bool) {
 	roles := manager.Roles()
 	maxRoleCursor := len(roles) + 1 // roles (0..6), Accept/Apply (7), Save custom (8)
 	switch key {
-	case "q", "ctrl+c":
+	case "ctrl+c":
 		return m, tea.Quit, true
 	case "esc":
 		m.fault = ""
 		if m.wizardReturn {
 			m.wizardReturn = false
+			m.syncWizardProfileCursor()
 			m.screen = installProfileScreen
 			return m, nil, true
 		}
 		m.screen = home
 		return m, nil, true
 	case "tab":
-		if !m.wizardReturn {
-			m.nextClient()
+		if m.wizardReturn {
+			if m.roleCursor < len(roles) {
+				m.roleCursor = len(roles)
+			} else {
+				m.roleCursor = 0
+			}
+			return m, nil, true
 		}
+		m.nextClient()
 		return m, nil, true
+	case "shift+tab":
+		if m.wizardReturn {
+			if m.roleCursor < len(roles) {
+				m.roleCursor = len(roles)
+			} else {
+				m.roleCursor = 0
+			}
+			return m, nil, true
+		}
+		m.prevClient()
+		return m, nil, true
+	case "s", "ctrl+s":
+		next, cmd := m.confirmModelsAction()
+		return next, cmd, true
 	case "1":
 		if !m.wizardReturn {
 			m.switchClient("codex")
@@ -512,7 +548,7 @@ func (m model) crtModels(width int) (string, string) {
 				b.WriteString("  " + line + "\n")
 			}
 		}
-		help := "↑↓ elegir modelo · ←→ esfuerzo · Enter aceptar · Esc volver"
+		help := "↑↓ elegir modelo · E / ←→ esfuerzo · Enter aceptar · Esc volver"
 		if spec.ID == "agy" && roleSpec.ID == "orchestrator" && cur.Label != "" {
 			help = "↑↓ elegir variante · Enter aceptar · Esc volver"
 		}
@@ -606,11 +642,11 @@ func (m model) crtModels(width int) (string, string) {
 	if m.fault != "" {
 		b.WriteString("\n\n" + crtAmber.Render(m.fault))
 	}
-	keys := "↑↓ mover · Enter elegir modelo / aceptar · ←→ modelo · E esfuerzo · P preset · Esc volver"
+	keys := "↑↓ mover · Enter elegir modelo · S aplicar · ←→ modelo · E esfuerzo · P preset · Esc volver"
 	if m.wizardReturn {
-		keys = "↑↓ mover · Enter editar rol o continuar · ←→ modelo · E esfuerzo · Esc atrás"
+		keys = "↑↓ mover · Enter editar · S aceptar · ←→ modelo · E esfuerzo · Esc atrás"
 	} else if width < 70 {
-		keys = "↑↓ mover · Enter editar / aplicar\n←→ modelo · E esfuerzo · Esc volver"
+		keys = "↑↓ mover · Enter editar · S aplicar\n←→ modelo · E esfuerzo · Esc volver"
 	}
 	return strings.TrimRight(b.String(), "\n"), keys
 }

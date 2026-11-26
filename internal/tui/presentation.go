@@ -60,12 +60,11 @@ func colorBlockShadow(line string) string {
 
 func renderClientTabs(activeID string) string {
 	var tabs []string
-	for idx, c := range manager.Clients() {
-		label := fmt.Sprintf("%d:%s", idx+1, c.Short)
+	for _, c := range manager.Clients() {
 		if c.ID == activeID {
-			tabs = append(tabs, crtNeon.Render("[● "+label+"]"))
+			tabs = append(tabs, crtNeon.Render("[● "+c.Short+"]"))
 		} else {
-			tabs = append(tabs, crtBeige.Render("[○ "+label+"]"))
+			tabs = append(tabs, crtBeige.Render("[○ "+c.Short+"]"))
 		}
 	}
 	return strings.Join(tabs, "  ")
@@ -139,6 +138,114 @@ func (m model) renderCRT() tea.View {
 	return view
 }
 
+func (m model) crtBreadcrumb(width int) string {
+	crumb := ""
+	switch m.screen {
+	case installPlatformsScreen:
+		crumb = "Inicio › Instalar › Paso 1/4: Plataformas"
+	case installProfileScreen:
+		crumb = "Inicio › Instalar › Paso 2/4: Modelos"
+	case installConfirmScreen:
+		crumb = "Inicio › Instalar › Paso 3/4: Confirmar"
+	case installGentleScreen:
+		crumb = "Inicio › Instalar › Conflicto Gentle"
+	case modelsScreen:
+		if m.wizardReturn {
+			crumb = "Inicio › Instalar › Paso 2/4: Roles"
+		} else {
+			crumb = "Inicio › Perfiles de AI"
+		}
+	case modelsSaveScreen:
+		crumb = "Inicio › Perfiles de AI › Guardar"
+	case rolePickerScreen:
+		if m.wizardReturn {
+			crumb = "Inicio › Instalar › Paso 2/4: Elegir modelo"
+		} else {
+			crumb = "Inicio › Perfiles de AI › Elegir modelo"
+		}
+	case updateScreen:
+		crumb = "Inicio › Actualizar"
+	case versionsScreen:
+		crumb = "Inicio › Gestionar versiones"
+	case skillsScreen:
+		crumb = "Inicio › Skills"
+	case skillsAddScreen:
+		crumb = "Inicio › Skills › Agregar"
+	case integrationList:
+		crumb = "Inicio › MCPs"
+	case integrationDetail:
+		name := m.integrationID
+		if item, ok := integrations.Find(m.integrationID); ok {
+			name = item.Name
+		}
+		crumb = "Inicio › MCPs › " + crtText(name)
+	case integrationPreview:
+		crumb = "Inicio › MCPs › Revisión previa"
+	case integrationResult:
+		crumb = "Inicio › MCPs › Resultado"
+	case integrationCustomForm:
+		crumb = "Inicio › MCPs › Nuevo MCP"
+	case busy:
+		if m.title != "" {
+			crumb = m.title
+		} else {
+			crumb = "En curso"
+		}
+	case preview:
+		crumb = "Revisión previa"
+	case conflict:
+		crumb = "Conflicto Gentle"
+	case result:
+		if m.resultFromWizard {
+			crumb = "Inicio › Instalar › Paso 4/4: Resultado"
+		} else {
+			crumb = "Resultado"
+		}
+	case about:
+		crumb = "Acerca de Chuli"
+	default:
+		crumb = "Manager"
+	}
+	line := crtGreen.Render("CHULI") + crtBeige.Render(" › ") + crtAmber.Render(crumb)
+	return ansi.Truncate(line, max(10, width), "…")
+}
+
+func styleKeySegment(seg string) string {
+	tokens := strings.Split(seg, " ")
+	if len(tokens) <= 1 {
+		return crtBeige.Render(seg)
+	}
+	keyCount := 1
+	for i := 1; i < len(tokens)-1; i++ {
+		tok := tokens[i]
+		prev := tokens[i-1]
+		if tok == "/" || prev == "/" || (prev == "j" && tok == "k") {
+			keyCount = i + 1
+			continue
+		}
+		break
+	}
+	keyPart := strings.Join(tokens[:keyCount], " ")
+	descPart := strings.Join(tokens[keyCount:], " ")
+	keyStyle := crtAmber
+	if strings.HasPrefix(keyPart, "Enter") {
+		keyStyle = crtNeon
+	}
+	return keyStyle.Render(keyPart) + " " + crtBeige.Render(descPart)
+}
+
+func renderKeyBar(keys string) string {
+	lines := strings.Split(keys, "\n")
+	for li, line := range lines {
+		segs := strings.Split(line, " · ")
+		for si, seg := range segs {
+			segs[si] = styleKeySegment(seg)
+		}
+		lines[li] = strings.Join(segs, crtCaseSide.Render(" · "))
+	}
+	return strings.Join(lines, "\n")
+}
+
 func (m model) crtFrame(page string) string {
 	width := m.width
 	if width <= 0 {
@@ -151,11 +258,45 @@ func (m model) crtFrame(page string) string {
 	if installed == "" {
 		installed = "No instalado"
 	}
-	clientSpec, ok := manager.FindClient(m.mgr.Target)
+	effectiveTarget := m.mgr.Target
+	if effectiveTarget == "" {
+		effectiveTarget = "codex"
+	}
+	displayClientID := effectiveTarget
+	displayHome := m.mgr.Home
+	displayInstalled := installed
+	displayPreset := m.mgr.Preset
+
+	inWizardClientScreen := m.screen == installProfileScreen || m.screen == installConfirmScreen || ((m.screen == modelsScreen || m.screen == rolePickerScreen) && m.wizardReturn)
+	if inWizardClientScreen && m.wizardActiveID != "" && m.wizardActiveID != effectiveTarget {
+		displayClientID = m.wizardActiveID
+		displayInstalled = "No instalado"
+		for _, st := range m.statuses {
+			if st.Spec.ID == displayClientID {
+				if st.Home != "" {
+					displayHome = crtText(st.Home)
+				}
+				if st.InstalledVersion != "" {
+					displayInstalled = crtText(st.InstalledVersion)
+				}
+				break
+			}
+		}
+		if displayHome == m.mgr.Home {
+			if h, err := manager.ResolveClientHome(displayClientID); err == nil {
+				displayHome = crtText(h)
+			}
+		}
+		if cfg, ok := m.wizardConfigs[displayClientID]; ok && cfg.Preset != "" {
+			displayPreset = cfg.Preset
+		}
+	}
+
+	clientSpec, ok := manager.FindClient(displayClientID)
 	if !ok {
 		clientSpec, _ = manager.FindClient("codex")
 	}
-	presetLabel := m.mgr.Preset
+	presetLabel := displayPreset
 	if presetLabel == "" {
 		presetLabel = clientSpec.DefaultPreset
 	}
@@ -169,10 +310,13 @@ func (m model) crtFrame(page string) string {
 	if width >= 68 {
 		headerLine += " · " + crtAmber.Render("Cliente: "+clientSpec.Short) + " (" + crtCyan.Render(presetLabel) + ")"
 	}
+	if m.screen != home {
+		headerLine = m.crtBreadcrumb(width)
+	}
 	b.WriteString(headerLine + "\n")
-	b.WriteString("Perfil: " + installed + "\n")
+	b.WriteString("Perfil: " + displayInstalled + "\n")
 	prefix := "Carpeta " + clientSpec.Short + ": "
-	homeLabel := m.mgr.Home
+	homeLabel := displayHome
 	keep := max(1, width-lipgloss.Width(prefix)-1)
 	if w := lipgloss.Width(homeLabel); w > keep {
 		if keep <= 1 {
@@ -193,7 +337,7 @@ func (m model) crtFrame(page string) string {
 	body, keys := m.crtBody(width, page)
 	b.WriteString(body)
 	if keys != "" {
-		b.WriteString("\n\n" + crtBeige.Render(keys))
+		b.WriteString("\n\n" + renderKeyBar(keys))
 	}
 	// Wrap rather than truncate: destinations, changes and shortcuts stay readable.
 	content := ansi.Wrap(b.String(), width, "")
@@ -230,9 +374,9 @@ func (m model) crtBody(width int, page string) (string, string) {
 	case skillsScreen, skillsAddScreen:
 		return m.crtSkills(width)
 	case home:
-		keys := "↑↓ navegar · Enter elegir · Tab cliente · D verificar · ? ayuda · q salir"
-		if width < 72 {
-			keys = "↑↓ nav · Enter elegir · D verificar · q salir"
+		keys := "↑↓ / 1-6 navegar · Enter elegir · Tab cliente · D verificar · ? ayuda · q salir"
+		if width < 78 {
+			keys = "↑↓ nav · Enter elegir · Tab cliente · q salir"
 		}
 		return m.crtHome(width), keys
 	case modelsScreen, modelsSaveScreen, rolePickerScreen:
@@ -262,25 +406,47 @@ func (m model) crtBody(width int, page string) (string, string) {
 		return crtBeige.Render("CONFLICTO / Gentle controla el enrutamiento") + "\n\nA · Usar Chuli como orquestador y respaldar Gentle\nPrimero verás el plan. La confirmación se solicita después.\n\n" + page, "A revisar plan · Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
 	case result:
 		if m.resultSummary != "" && !m.showTechLog {
+			compact := m.height > 0 && m.height <= 24
 			var res strings.Builder
 			res.WriteString(m.crtOutcome() + "\n")
 			if m.title != "" {
-				res.WriteString(crtAmber.Render(m.title) + "\n\n")
+				res.WriteString(crtAmber.Render(m.title) + "\n")
+				if !compact {
+					res.WriteString("\n")
+				}
 			}
 			if m.fault != "" {
-				res.WriteString(crtAmber.Render("Motivo: ") + crtText(m.fault) + "\n\n")
+				res.WriteString(crtAmber.Render("Motivo: ") + crtText(m.fault) + "\n")
+				if !compact {
+					res.WriteString("\n")
+				}
 			}
 			res.WriteString(crtText(m.resultSummary))
-			if m.resultNext != "" {
+			if m.resultNext != "" && !compact {
 				res.WriteString("\n\n" + crtGreen.Render("Próximo paso:") + "\n" + crtText(m.resultNext))
 			}
-			keys := "Enter / Esc volver al inicio · q salir"
+			actions := m.resultActions()
+			if len(actions) > 0 {
+				res.WriteString("\n\n")
+				selected := min(m.resultCursor, len(actions)-1)
+				for i, act := range actions {
+					if i == selected {
+						res.WriteString(crtNeon.Render("› " + act.label))
+					} else {
+						res.WriteString("  " + act.label)
+					}
+					if i < len(actions)-1 {
+						res.WriteString("\n")
+					}
+				}
+			}
+			keys := "↑↓ elegir · Enter aceptar · q salir"
 			if m.log != "" {
-				keys = "V ver detalle técnico · " + keys
+				keys = "↑↓ elegir · Enter aceptar · V detalle técnico · q salir"
 			}
 			return res.String(), keys
 		}
-		keys := "Enter / Esc volver · q salir\n↑↓ / j k / PgUp / PgDn desplazar"
+		keys := "Enter / Esc volver\n↑↓ / j k / PgUp / PgDn desplazar"
 		if m.resultSummary != "" {
 			keys = "V ocultar detalle técnico · " + keys
 		}
@@ -366,6 +532,7 @@ func renderTeamCard(clientSpec manager.ClientSpec, presetID string, roles map[st
 func (m model) crtHome(width int) string {
 	var menu strings.Builder
 	items := choices(m.mgr)
+	hasInstall := m.hasAnyInstall()
 	compactHeight := m.height > 0 && m.height <= 25
 	gap := "\n\n"
 	if width < 60 || compactHeight {
@@ -374,7 +541,9 @@ func (m model) crtHome(width int) string {
 	menu.WriteString(crtGreen.Render("Seleccioná una acción") + gap)
 	for index, item := range items {
 		name := item.label
-		if item.action == "update" && m.updateReport.AnyProfileUpdate && m.updateReport.Latest.Tag != "" {
+		if item.action == "install" && !hasInstall && width >= 54 {
+			name += " (recomendado)"
+		} else if item.action == "update" && m.updateReport.AnyProfileUpdate && m.updateReport.Latest.Tag != "" {
 			if width >= 54 {
 				name += " [NUEVA " + m.updateReport.Latest.Tag + "]"
 			} else {
@@ -393,11 +562,15 @@ func (m model) crtHome(width int) string {
 			if width >= 100 {
 				prefix = "   "
 			}
-			menu.WriteString(prefix + label + "\n")
+			if !hasInstall && (item.action == "update" || item.action == "versions") {
+				menu.WriteString(crtCaseSide.Render(prefix+label) + "\n")
+			} else {
+				menu.WriteString(prefix + label + "\n")
+			}
 		}
 	}
 	explanations := map[string]string{
-		"install":      "Elegí AGY, Claude o Codex, seleccioná un preset o personalizá\ntus modelos e instalá paso a paso con animación limpia.",
+		"install":      "Elegí AGY, Claude o Codex, usá la vía rápida o personalizá\ntus modelos e instalá paso a paso con respaldo automático.",
 		"update":       "Detecta nuevas releases, muestra un resumen de qué incluyen\ny actualiza tus plataformas ya instaladas.",
 		"versions":     "Mirá qué versión tenés en cada plataforma, cambiá a otra\nrelease o restaurá la instalación anterior (rollback).",
 		"models":       "Configurá presets, modelos por rol o perfiles propios\nsegún el proveedor (Codex, Claude o AGY) y aplicalos directo.",
@@ -405,6 +578,10 @@ func (m model) crtHome(width int) string {
 		"skills":       "Explorá qué hace cada skill, prendelas o apagalas por\nplataforma y sumá tus propias skills locales.",
 	}
 	explanation := explanations[items[max(0, min(m.cursor, len(items)-1))].action]
+	onboarding := ""
+	if !hasInstall && (width >= 100 || (!compactHeight && width >= 56)) {
+		onboarding = crtAmber.Render("★ Primera vez: presioná 1 o Enter para instalar Chuli.") + "\n"
+	}
 	if width >= 100 {
 		clientSpec, ok := manager.FindClient(m.mgr.Target)
 		if !ok {
@@ -422,14 +599,15 @@ func (m model) crtHome(width int) string {
 		rightWidth := width - leftWidth - 2
 		card := renderTeamCard(clientSpec, presetID, roles, rightWidth, compactHeight)
 		left := lipgloss.NewStyle().Width(leftWidth).Render(menu.String())
-		right := lipgloss.NewStyle().Width(rightWidth).Render(gap + explanation + card)
+		rightBody := gap + onboarding + explanation + card
+		right := lipgloss.NewStyle().Width(rightWidth).Render(rightBody)
 		return lipgloss.JoinHorizontal(lipgloss.Top, left, "  ", right)
 	}
 	separator := "\n"
 	if compactHeight && len(items) > 6 {
 		separator = ""
 	}
-	return menu.String() + separator + explanation
+	return menu.String() + separator + onboarding + explanation
 }
 
 func (m model) crtOutcome() string {
