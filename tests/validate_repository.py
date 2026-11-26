@@ -48,7 +48,7 @@ for source, text in (("config/AGENTS.md", instructions), ("docs/protocols/CES.md
 
 for required_path in ("docs/protocols/TTP.md", "templates/feature-tasks.md", "scripts/taskboard.py", "scripts/legacy-managed-hashes.json", "tests/test_taskboard.py", "VERSION", "config/models.json", "scripts/client_targets.py", "docs/specs/multi-client-v2.md"):
     assert (root / required_path).is_file(), required_path
-assert (root / "VERSION").read_text(encoding="utf-8").strip() == "2.1.5"
+assert (root / "VERSION").read_text(encoding="utf-8").strip() == "2.1.6"
 
 legacy_hashes = json.loads((root / "scripts/legacy-managed-hashes.json").read_text(encoding="utf-8"))
 assert set(legacy_hashes) == {"0.1.3", "0.2.0"}

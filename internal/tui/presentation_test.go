@@ -210,7 +210,7 @@ func TestModelsConfiguratorAndClientSwitch(t *testing.T) {
 		t.Fatalf("expected agy-balanced, got %s / %s", m.mgr.Target, m.mgr.Preset)
 	}
 	text := ansi.Strip(m.renderCRT().Content)
-	for _, want := range []string{"Modelos y Presets", "3:AGY", "agy-balanced", "orchestrator-argon"} {
+	for _, want := range []string{"Modelos y Presets", "[● AGY]", "agy-balanced", "orchestrator-argon"} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("missing %q in models screen:\n%s", want, text)
 		}

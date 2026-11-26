@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.6] — 2026-11-26
+
+- Vía rápida en el asistente de instalación (`Paso 1 → Paso 3` con `Enter` conservando personalizaciones o aplicando `Equilibrado`) junto a acceso explícito al `Paso 2` (`M` / `C` o fila dedicada).
+- Navegación consistente en toda la TUI: `1`–`6` abren las acciones de la portada, `Tab`/`Shift+Tab`/`←`/`→` alternan el cliente sin prefijos numéricos en pestañas, breadcrumbs de una línea en subpantallas, barra de atajos con contraste y `q` acotado a portada y pantallas finales.
+- `Paso 2` con pestañas de proveedor (`Tab`), perfiles propios guardados (`★`), navegación `↑`/`↓` no destructiva sobre configuraciones `custom`, y atajo `S`/`Ctrl+S` en el editor de roles.
+- `Paso 3` con preflight asíncrono no destructivo de PowerShell/Python 3.11+ y detección de Gentle AI fuera de bloques de código con casilla opcional de respaldo previo; pantalla final (`result`) con próximos pasos navegables hacia MCPs, Skills o inicio.
+
 ## [2.1.5] — 2026-11-24
 
 - `chuli --client claude doctor` advierte, sin bloquear ni modificar nada, cuando `settings.json` tiene un `outputStyle` activo (por ejemplo `Neutral` de Gentle AI) que puede contradecir el tono CES de Chuli.

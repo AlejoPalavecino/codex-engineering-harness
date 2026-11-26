@@ -138,7 +138,7 @@ func (m model) updateIntegrations(message tea.Msg) (model, tea.Cmd, bool) {
 		return m, nil, true
 	}
 
-	if key == "q" || key == "ctrl+c" {
+	if key == "ctrl+c" || (key == "q" && m.screen == integrationResult) {
 		return m, tea.Quit, true
 	}
 	if key == "esc" || (key == "n" && m.screen == integrationPreview) {
@@ -164,6 +164,11 @@ func (m model) updateIntegrations(message tea.Msg) (model, tea.Cmd, bool) {
 		switch key {
 		case "tab":
 			m.nextClient()
+			m.integrationCursor = 0
+			m.fault = ""
+			return m, loadConfiguredMCPsCmd(m), true
+		case "shift+tab":
+			m.prevClient()
 			m.integrationCursor = 0
 			m.fault = ""
 			return m, loadConfiguredMCPsCmd(m), true

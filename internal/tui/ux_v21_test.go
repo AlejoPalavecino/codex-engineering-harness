@@ -94,16 +94,13 @@ func TestInstallWizardAnimatesCleanlyHidingTechnicalNoise(t *testing.T) {
 	if m.screen != installPlatformsScreen {
 		t.Fatalf("expected install-platforms, got %s", m.screen)
 	}
-	// Toggle AGY (index 2) and move down to "Continuar" button + Enter
+	// Toggle AGY (index 2) and open Step 2 (presets/models) with "m"
 	m, _ = sendKey(m, "3")
-	for range 3 {
-		m, _ = sendKey(m, "down")
-	}
-	m, _ = sendKey(m, "enter")
+	m, _ = sendKey(m, "m")
 	if m.screen != installProfileScreen {
 		t.Fatalf("expected install-profile, got %s", m.screen)
 	}
-	// Open customizer from wizard using arrows + Enter and return
+	// Open customizer from wizard and accept directly with "s"
 	m, _ = sendKey(m, "c")
 	if m.screen != modelsScreen || !m.wizardReturn {
 		t.Fatalf("expected modelsScreen with wizardReturn=true, got %s", m.screen)
@@ -111,10 +108,7 @@ func TestInstallWizardAnimatesCleanlyHidingTechnicalNoise(t *testing.T) {
 	// Accept customizer -> advances through remaining selected providers to confirm
 	for m.screen == modelsScreen || m.screen == installProfileScreen {
 		if m.screen == modelsScreen {
-			for range 7 {
-				m, _ = sendKey(m, "down")
-			}
-			m, _ = sendKey(m, "enter")
+			m, _ = sendKey(m, "s")
 		} else {
 			m, _ = sendKey(m, "enter")
 		}
@@ -326,14 +320,15 @@ func TestWizardSequentialMultiProviderWithArrowsAndEnter(t *testing.T) {
 	if m.screen != installPlatformsScreen {
 		t.Fatalf("expected installPlatformsScreen, got %s", m.screen)
 	}
-	// Move down to AGY (index 2) and toggle with Enter (because cursor is on platform!)
+	// Move down to AGY (index 2) and toggle with Space
 	m, _ = sendKey(m, "down")
 	m, _ = sendKey(m, "down")
-	m, _ = sendKey(m, "enter")
+	m, _ = sendKey(m, "space")
 	if !m.wizardSelected["agy"] || !m.wizardSelected["codex"] {
 		t.Fatalf("expected codex and agy selected, got %+v", m.wizardSelected)
 	}
-	// Move down to "Continuar" (index 3) and press Enter -> Paso 2, provider 1 of 2 (Codex)
+	// Move down to "Personalizar modelos" (index 4) and press Enter -> Paso 2, provider 1 of 2 (Codex)
+	m, _ = sendKey(m, "down")
 	m, _ = sendKey(m, "down")
 	m, _ = sendKey(m, "enter")
 	if m.screen != installProfileScreen || m.wizardActiveID != "codex" || m.wizardProviderIdx != 0 {
@@ -374,12 +369,15 @@ func TestWizardSequentialMultiProviderWithArrowsAndEnter(t *testing.T) {
 	if !strings.Contains(agyView, "2 de 2") || !strings.Contains(agyView, "AGY") {
 		t.Fatalf("missing 2 de 2 AGY indicator:\n%s", agyView)
 	}
-	// Moving down selects preset live; pressing Enter accepts AGY and moves to Paso 3 (confirm)
+	// Moving down previews without overwriting; Enter applies AGY preset and moves to Paso 3 (confirm)
 	m, _ = sendKey(m, "down")
-	if m.wizardConfigs["agy"].Preset != "agy-carbon-max" {
-		t.Fatalf("moving cursor should select preset live, got %s", m.wizardConfigs["agy"].Preset)
+	if m.wizardConfigs["agy"].Preset != "agy-balanced" {
+		t.Fatalf("moving cursor must not overwrite preset before selection, got %s", m.wizardConfigs["agy"].Preset)
 	}
 	m, _ = sendKey(m, "enter")
+	if m.wizardConfigs["agy"].Preset != "agy-carbon-max" {
+		t.Fatalf("expected agy-carbon-max applied on enter, got %s", m.wizardConfigs["agy"].Preset)
+	}
 	if m.screen != installConfirmScreen {
 		t.Fatalf("expected Paso 3 installConfirmScreen after finishing 2/2 providers, got %s", m.screen)
 	}

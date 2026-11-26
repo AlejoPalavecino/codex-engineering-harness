@@ -2,14 +2,14 @@
 
 El menú se abre con `chuli` o `chuli.exe`. Mantiene la consola CRT retro y organiza la gestión en **6 opciones principales**:
 
-1. **Instalar:** asistente guiado en 4 pasos (`Paso 1` plataformas → `Paso 2` preset o personalización proveedor por proveedor con navegación por flechas y `Enter` → `Paso 3` resumen → `Paso 4` animación limpia que oculta la salida técnica hasta mostrar el resultado, con tecla `V` opcional para ver el log técnico).
+1. **Instalar:** asistente guiado en 4 pasos con vía rápida y personalización opcional (`Paso 1` marcás plataformas con `Espacio`/`1`–`3` y avanzás con `Enter` directo al `Paso 3` usando `Equilibrado` o conservando tus modelos instalados, o entrás al `Paso 2` con `M` para alternar plataformas con `Tab`, elegir presets o perfiles guardados sin sobreescribir `custom` al navegar y editar rol por rol con `S` para aceptar → `Paso 3` resumen legible con preflight no destructivo de PowerShell/Python y adopción opcional de Gentle AI → `Paso 4` animación limpia que oculta la salida técnica hasta mostrar el resultado, con tecla `V` para ver el log técnico y acciones navegables al finalizar para abrir MCPs, Skills o volver al inicio).
 2. **Actualizar:** consulta las releases oficiales en segundo plano (cancelable con `Esc` si está consultando), muestra una notificación en la portada cuando hay una versión nueva (para tus perfiles o el Manager), resume qué incluye la release y actualiza las plataformas ya instaladas.
 3. **Gestionar versiones:** muestra qué versión tenés instalada en cada plataforma, lista las releases oficiales y copias en caché local, permite instalar o cambiar a una versión puntual y restaurar la instalación anterior (`rollback`).
 4. **Perfiles de AI:** gestiona presets y modelos/esfuerzos por rol según proveedor (`Codex`, `Claude`, `AGY`), permite guardar perfiles propios con nombre (`G`), cargarlos (`N`) y aplicar cambios directo localmente sin re-descargar.
 5. **MCPs:** administra conexiones MCP multi-cliente (**Codex** en `config.toml`, **Claude Code** en `.claude.json` y **AGY CLI** en `mcp_config.json`), combinando el catálogo recomendado (`Context7`, `Engram`, `Exa`, `GitHub` + guía `Egolite`) con alta y baja segura de MCPs personalizados (`N`).
 6. **Skills:** lista las skills del perfil y skills propias con su descripción, permite prender o apagar skills por plataforma (`Espacio` + `Enter`/`S` manteniendo la verificación en regla) y sumar o quitar skills locales (`A` / `X`).
 
-Accesos secundarios al pie de la portada: `D` ejecuta verificación (`doctor`), `?` abre *Acerca de Chuli*, `Tab`/`1`/`2`/`3` alterna el cliente activo y `q` sale. Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.5` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
+Accesos en la portada: `1`–`6` abren directo las opciones del menú, `Tab`/`Shift+Tab`/`←`/`→` alternan el cliente activo, `D` ejecuta verificación (`doctor`), `?` abre *Acerca de Chuli* y `q` sale desde portada o pantallas finales (`Esc` vuelve un paso atrás en asistentes y formularios). Con Go 1.26+ podés instalar o actualizar el ejecutable desde cualquier sistema con `go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.6` (o `@latest`); sin Go, descargá el nuevo Manager de la release.
 
 Para usar `chuli` desde cualquier carpeta en Windows, desde v1.1.1 podés descargar `install-chuli-windows.ps1` de la release (fuente: `scripts/install-manager.ps1`): revisá su vista previa y ejecutalo con `-Apply` para instalarlo y registrarlo en el PATH de tu usuario. [Instalación del comando](INSTALLATION.md#comando-chuli-en-windows). El ZIP del Manager sigue disponible como alternativa portable.
 
@@ -72,13 +72,13 @@ Para probar desde el checkout: `go run ./cmd/chuli integrations list`. Usá un `
 El rediseño local incorpora el logotipo pixel-art de la PC retro y las letras en bloque `CHULI` con sombra sobre fondo oscuro, manteniendo una paleta verde neón, ámbar y beige de alto contraste. Conserva las mismas operaciones y atajos de teclado. En terminales anchas (`>= 100` cols), el menú principal muestra la explicación lateral y la tarjeta enmarcada del equipo activo con los 7 roles y sus badges de esfuerzo; en anchos menores se apila y se compactan los nombres. El destino completo y los cambios permanecen disponibles al desplazar la vista previa. La ruta abreviada de la cabecera es sólo una ayuda visual.
 
 ```text
-  ▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄░   ● MULTI-CLIENT HARNESS · v2.1.5
+  ▄█▀▀▀▀▀▀▀▀▀▀▀▀█▄░   ● MULTI-CLIENT HARNESS · v2.1.6
   ██  ▀▄        ██░   ▄█████▄ ██░ ██░ ██░ ██░ ██░    █████░
   ██  ▄▀ ▄▄▄    ██░   ██░  ▀▀ ██░ ██░ ██░ ██░ ██░     ▐█▌░
   ▀█▄▄▄▄▄▄▄▄▄▄▄▄█▀░   ██░     ██████░ ██░ ██░ ██░     ▐█▌░
  ▄▄▄▄▄▄▄████▄▄▄▄▄▄▄░  ██░  ▄▄ ██░ ██░ ██░ ██░ ██░     ▐█▌░
  ███▄▄▄██████▀▀▀███░  ▀█████▀ ██░ ██░ ▀████▀░ █████░ █████░
- ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀   [● 1:Codex]  [○ 2:Claude]  [○ 3:AGY]
+ ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀   [● Codex]  [○ Claude]  [○ AGY]
 ```
 
-Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres Unicode de bloque estándar, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v2.1.5. Las PRs #52–#56 corresponden al asistente original; el rediseño visual y el configurador multi-cliente se integraron sobre esa base.
+Tamaños de comprobación: 40×24, 80×24 y 120×32; para trabajar cómodamente se recomienda 80×24 o más. El logo utiliza caracteres Unicode de bloque estándar, sin descargar fuentes ni requerir imágenes, animaciones o un emulador específico. Esta presentación se incluye en el Manager v2.1.6. Las PRs #52–#56 corresponden al asistente original; el rediseño visual y el configurador multi-cliente se integraron sobre esa base.
