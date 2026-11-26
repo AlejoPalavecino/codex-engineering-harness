@@ -64,5 +64,7 @@
 - **Verification:** gofmt -l cmd/chuli config internal/manager internal/tui internal/eval internal/integrations; go vet ./...; go test -short ./internal/manager ./internal/tui ./internal/eval ./internal/integrations; python tests/validate_repository.py
 - **Acceptance:** Las suites `internal/manager` e `internal/tui` (incluyendo `internal/tui/ux_flow_test.go`, `TestCRTAllScreensFitTerminalWidth` y `TestCRTHeightKeepsControlsVisible`) pasan sin regresiones, `docs/TUI.md` y `README.md` describen el flujo vigente y `tests/validate_repository.py` termina sin errores.
 - **Scope:** ["internal/tui/presentation_test.go", "internal/tui/ux_v21_test.go", "internal/tui/ux_flow_test.go", "docs/TUI.md", "README.md"]
-- **Evidence:** {"command": "gofmt -l; go vet ./...; go test -count=1 -short ./internal/manager ./internal/tui ./internal/eval ./internal/integrations; python tests/validate_repository.py", "result": "Todos los paquetes Go (-short) en verde, gofmt/go vet limpios y validate_repository OK", "candidate": "sha256:93246796dbed0b45ebf73799ed49b7ce2e918d844c91733a9ad8872d9cfd90e3"}
+- **Evidence:** {"command": "python tests/validate_repository.py; python -B -m unittest tests/test_verify_release.py; go test -short ./internal/manager ./internal/tui", "result": "Checks de release, validate_repository y pruebas Go (-short) en verde para v2.1.6", "candidate": "sha256:542dc5fc778f53f6c308a563e7c9b368fa9bc268d34f7bcefb5ece267903be4b"}
 - **Blocker:** none
+- **Reopen reason:** Actualizar referencias de release v2.1.6 en README y TUI
+

@@ -13,8 +13,8 @@ El perfil se instala según tu cliente: `~/.codex` (`CODEX_HOME`), `~/.claude` (
 Con Go 1.26 o posterior instalado y el directorio `bin` de Go en tu `PATH`, podés instalar Chuli Manager desde Windows, Linux o macOS:
 
 ```sh
-# Stable channel: the latest release (v2.1.5)
-go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.5
+# Stable channel: the latest release (v2.1.6)
+go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@v2.1.6
 
 # O siempre la última release estable etiquetada
 go install github.com/AlejoPalavecino/codex-engineering-harness/v2/cmd/chuli@latest
@@ -40,7 +40,7 @@ La fuente del instalador es `scripts/install-manager.ps1` y también se puede ej
 
 ### Descarga portable
 
-Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v2.1.5.zip` en esta versión.
+Descargá y extraé el Manager de [GitHub Releases](https://github.com/AlejoPalavecino/codex-engineering-harness/releases/latest). Si verificás la descarga manualmente, compará el resultado de `Get-FileHash -Algorithm SHA256` o `sha256sum` con la línea del mismo nombre en `SHA256SUMS.txt`. Abrí la TUI, elegí la release estable, revisá el destino y confirmá el plan. El perfil descargado se llama `chuli-profile-v2.1.6.zip` en esta versión.
 
 Reiniciá el cliente o abrí una sesión nueva. En el selector de skills buscá `harness-tdd-qa`, `cognitive-doc-design` y `judgment-day`. Podés pedir al orquestador que delegue una exploración a `chuli_explorer` y mirar el agente usado. La disponibilidad de un modelo depende del cliente y la cuenta. El chat web o móvil no lee la carpeta local del equipo.
 
