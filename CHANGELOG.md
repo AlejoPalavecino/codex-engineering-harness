@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1.7] — 2026-11-26
+
+- Fallback automático en `Manager.Latest`: ante `HTTP 403` o `429` por límite de consultas anónimas en `api.github.com`, resuelve el tag siguiendo de forma segura la redirección HTTPS de `github.com/<repo>/releases/latest`.
+- Resolución única de `latest` por lote multi-plataforma en el asistente TUI (`wizard.go`), evitando repetir consultas a `api.github.com` y reutilizando la caché local entre clientes.
+- Soporte opcional de `GITHUB_TOKEN` o `GH_TOKEN` enviado únicamente a `https://api.github.com` y mensajes de error legibles con la hora de reinicio del rate limit cuando falla también el respaldo.
+
 ## [2.1.6] — 2026-11-26
 
 - Vía rápida en el asistente de instalación (`Paso 1 → Paso 3` con `Enter` conservando personalizaciones o aplicando `Equilibrado`) junto a acceso explícito al `Paso 2` (`M` / `C` o fila dedicada).
