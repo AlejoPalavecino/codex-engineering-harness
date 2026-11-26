@@ -14,9 +14,13 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
-const githubReleasesAPI = "https://api.github.com/repos/" + Repository + "/releases?per_page="
+const (
+	githubReleasesAPI  = "https://api.github.com/repos/" + Repository + "/releases?per_page="
+	githubLatestWebURL = "https://github.com/" + Repository + "/releases/latest"
+)
 
 type Release struct {
 	Tag         string
@@ -49,6 +53,32 @@ func toRelease(v githubReleaseJSON) (Release, error) {
 	}, nil
 }
 
+type githubHTTPStatusError struct {
+	StatusCode  int
+	RateLimited bool
+	ResetAt     time.Time
+}
+
+func (e *githubHTTPStatusError) Error() string {
+	if e.RateLimited {
+		when := "en unos minutos"
+		if !e.ResetAt.IsZero() && e.ResetAt.After(time.Now()) {
+			when = "a las " + e.ResetAt.Local().Format("15:04")
+		}
+		return fmt.Sprintf("GitHub API limitó las consultas sin autenticar (HTTP %d); probá de nuevo %s o configurá GITHUB_TOKEN", e.StatusCode, when)
+	}
+	return fmt.Sprintf("GitHub Releases: HTTP %d", e.StatusCode)
+}
+
+func githubAPIToken() string {
+	for _, env := range []string{"GITHUB_TOKEN", "GH_TOKEN"} {
+		if token := strings.TrimSpace(os.Getenv(env)); token != "" {
+			return token
+		}
+	}
+	return ""
+}
+
 func (m Manager) fetchJSON(ctx context.Context, url string, limit int64, dst any) error {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -56,20 +86,90 @@ func (m Manager) fetchJSON(ctx context.Context, url string, limit int64, dst any
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "Chuli-Manager")
+	if req.URL.Scheme == "https" && req.URL.Hostname() == "api.github.com" {
+		if token := githubAPIToken(); token != "" {
+			req.Header.Set("Authorization", "Bearer "+token)
+		}
+	}
 	resp, err := m.httpClient().Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("GitHub Releases: HTTP %d", resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		rateLimited := resp.StatusCode == http.StatusTooManyRequests
+		if resp.StatusCode == http.StatusForbidden {
+			if resp.Header.Get("X-RateLimit-Remaining") == "0" || strings.Contains(strings.ToLower(string(body)), "rate limit") {
+				rateLimited = true
+			}
+		}
+		var resetAt time.Time
+		if rawReset := strings.TrimSpace(resp.Header.Get("X-RateLimit-Reset")); rawReset != "" {
+			if epoch, convErr := strconv.ParseInt(rawReset, 10, 64); convErr == nil && epoch > 0 {
+				resetAt = time.Unix(epoch, 0)
+			}
+		}
+		return &githubHTTPStatusError{
+			StatusCode:  resp.StatusCode,
+			RateLimited: rateLimited,
+			ResetAt:     resetAt,
+		}
 	}
 	return json.NewDecoder(io.LimitReader(resp.Body, limit)).Decode(dst)
+}
+
+func (m Manager) latestViaWebRedirect(ctx context.Context) (Release, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", githubLatestWebURL, nil)
+	if err != nil {
+		return Release{}, err
+	}
+	req.Header.Set("User-Agent", "Chuli-Manager")
+	client := *m.httpClient()
+	client.CheckRedirect = func(*http.Request, []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return Release{}, err
+	}
+	defer resp.Body.Close()
+	switch resp.StatusCode {
+	case http.StatusMovedPermanently, http.StatusFound, http.StatusSeeOther, http.StatusTemporaryRedirect, http.StatusPermanentRedirect:
+	default:
+		return Release{}, fmt.Errorf("GitHub latest redirect: HTTP %d", resp.StatusCode)
+	}
+	loc, err := resp.Location()
+	if err != nil {
+		return Release{}, err
+	}
+	if loc.Scheme != "https" || loc.Hostname() != "github.com" {
+		return Release{}, errors.New("redirección de release fuera de github.com")
+	}
+	prefix := "/" + Repository + "/releases/tag/"
+	if !strings.HasPrefix(loc.Path, prefix) {
+		return Release{}, errors.New("ruta de release inesperada")
+	}
+	tag := strings.TrimPrefix(loc.Path, prefix)
+	if strings.Contains(tag, "/") || !releaseTag.MatchString(tag) {
+		return Release{}, fmt.Errorf("tag de release inválido en redirección: %q", tag)
+	}
+	return Release{
+		Tag:  tag,
+		Name: tag,
+		URL:  "https://github.com/" + Repository + "/releases/tag/" + tag,
+	}, nil
 }
 
 func (m Manager) Latest(ctx context.Context) (Release, error) {
 	var raw githubReleaseJSON
 	if err := m.fetchJSON(ctx, githubAPI, 256<<10, &raw); err != nil {
+		var statusErr *githubHTTPStatusError
+		if errors.As(err, &statusErr) && (statusErr.StatusCode == http.StatusForbidden || statusErr.StatusCode == http.StatusTooManyRequests) {
+			if fallback, fbErr := m.latestViaWebRedirect(ctx); fbErr == nil {
+				return fallback, nil
+			}
+		}
 		return Release{}, err
 	}
 	return toRelease(raw)

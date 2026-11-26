@@ -457,6 +457,13 @@ func runInstallBatchRemainingCmd(mgr manager.Manager, ids []string, configs map[
 			return msg
 		}
 
+		batchAction := action
+		if ((batchAction == "" && !useLocal) || batchAction == "latest") && len(ids) > 1 {
+			if rel, err := mgr.Latest(ctx); err == nil && rel.Tag != "" {
+				batchAction = "tag:" + rel.Tag
+			}
+		}
+
 		for i, id := range ids {
 			spec, _ := manager.FindClient(id)
 			base := i * 4
@@ -479,7 +486,7 @@ func runInstallBatchRemainingCmd(mgr manager.Manager, ids []string, configs map[
 					cm.DisabledSkills = st.DisabledSkills
 				}
 			}
-			act := action
+			act := batchAction
 			if act == "" {
 				act = "latest"
 				if useLocal && cm.Source != "" {
